@@ -1,0 +1,88 @@
+﻿using CertVal.Core.Enums;
+
+namespace CertVal.Core.Entities;
+
+public class User
+{
+    public Guid Id { get; private set; } = Guid.NewGuid();
+    public string Email { get; private set; } = string.Empty;
+    public string PasswordHash { get; private set; } = string.Empty;
+    public string FirstName { get; private set; } = string.Empty;
+    public string LastName { get; private set; } = string.Empty;
+
+    public bool IsEmailConfirmed { get; private set; } = false;
+    public string? EmailConfirmationToken { get; private set; }
+    public DateTime? EmailConfirmedAt { get; private set; }
+
+    public string? PasswordResetToken { get; private set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; private set; }
+
+    public DateTime LastLoginAt { get; private set; } = DateTime.UtcNow;
+    public UserStatus Status { get; private set; } = UserStatus.Active;
+
+    public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual ICollection<Workspace> OwnedWorkspaces { get; private set; } = [];
+    public virtual ICollection<WorkspaceMember> WorkspaceMemberships { get; private set; } = [];
+    public virtual ICollection<ApiToken> ApiTokens { get; private set; } = [];
+
+    private User() { } // EF Constructor
+
+    public static User Create(string email, string passwordHash, string firstName, string lastName)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be empty", nameof(email));
+
+        if (string.IsNullOrWhiteSpace(passwordHash))
+            throw new ArgumentException("Password hash cannot be empty", nameof(passwordHash));
+
+        return new User
+        {
+            Email = email.Trim().ToLowerInvariant(),
+            PasswordHash = passwordHash,
+            FirstName = firstName.Trim(),
+            LastName = lastName.Trim(),
+            EmailConfirmationToken = Guid.NewGuid().ToString()
+        };
+    }
+
+    public void ConfirmEmail()
+    {
+        IsEmailConfirmed = true;
+        EmailConfirmedAt = DateTime.UtcNow;
+        EmailConfirmationToken = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdatePassword(string newPasswordHash)
+    {
+        PasswordHash = newPasswordHash;
+        PasswordResetToken = null;
+        PasswordResetTokenExpiresAt = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetPasswordResetToken(string token, DateTime expiresAt)
+    {
+        PasswordResetToken = token;
+        PasswordResetTokenExpiresAt = expiresAt;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateLastLogin()
+    {
+        LastLoginAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateProfile(string firstName, string lastName)
+    {
+        FirstName = firstName.Trim();
+        LastName = lastName.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public string FullName => $"{FirstName} {LastName}".Trim();
+}
