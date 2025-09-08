@@ -1,8 +1,10 @@
 ﻿using CertVal.Core.Enums;
+using CertVal.Core.Events;
 
 namespace CertVal.Core.Entities;
 
-public class NotificationRule
+// NotificationRule with events
+public class NotificationRule : BaseEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid WorkspaceId { get; private set; }
@@ -38,7 +40,7 @@ public class NotificationRule
         if (daysBeforeExpiry < 0)
             throw new ArgumentException("Days before expiry cannot be negative", nameof(daysBeforeExpiry));
 
-        return new NotificationRule
+        var rule = new NotificationRule
         {
             WorkspaceId = workspaceId,
             Name = name.Trim(),
@@ -47,6 +49,10 @@ public class NotificationRule
             ChannelConfig = channelConfig,
             Frequency = frequency
         };
+
+        rule.AddDomainEvent(new NotificationRuleCreatedEvent(rule.Id, rule.WorkspaceId, rule.Name, rule.DaysBeforeExpiry));
+
+        return rule;
     }
 
     public void Toggle() => IsEnabled = !IsEnabled;

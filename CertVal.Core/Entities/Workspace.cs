@@ -1,6 +1,8 @@
-﻿namespace CertVal.Core.Entities;
+﻿using CertVal.Core.Events;
 
-public class Workspace
+namespace CertVal.Core.Entities;
+
+public class Workspace : BaseEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public string Name { get; private set; } = string.Empty;
@@ -30,12 +32,16 @@ public class Workspace
         if (ownerId == Guid.Empty)
             throw new ArgumentException("Owner ID cannot be empty", nameof(ownerId));
 
-        return new Workspace
+        var workspace = new Workspace
         {
             Name = name.Trim(),
             Description = description?.Trim(),
             OwnerId = ownerId
         };
+
+        workspace.AddDomainEvent(new WorkspaceCreatedEvent(workspace.Id, workspace.OwnerId, workspace.Name));
+
+        return workspace;
     }
 
     public void Update(string name, string? description = null)
@@ -43,9 +49,15 @@ public class Workspace
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Workspace name cannot be empty", nameof(name));
 
+        var oldName = Name;
         Name = name.Trim();
         Description = description?.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        if (oldName != Name)
+        {
+            AddDomainEvent(new WorkspaceUpdatedEvent(Id, Name));
+        }
     }
 
     public void UpdateSettings(int maxCertificates, bool isPublic, bool allowMemberInvites)

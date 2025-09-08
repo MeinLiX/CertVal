@@ -1,8 +1,9 @@
 ﻿using CertVal.Core.Enums;
+using CertVal.Core.Events;
 
 namespace CertVal.Core.Entities;
 
-public class ApiToken
+public class ApiToken : BaseEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid UserId { get; private set; }
@@ -36,7 +37,7 @@ public class ApiToken
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Token name cannot be empty", nameof(name));
 
-        return new ApiToken
+        var token = new ApiToken
         {
             UserId = userId,
             Name = name.Trim(),
@@ -45,6 +46,10 @@ public class ApiToken
             Scope = scope,
             ExpiresAt = expiresAt
         };
+
+        token.AddDomainEvent(new ApiTokenCreatedEvent(token.Id, token.UserId, token.Name, token.Scope.ToString()));
+
+        return token;
     }
 
     public void UpdateLastUsed(string? ipAddress = null)
@@ -52,12 +57,16 @@ public class ApiToken
         LastUsedAt = DateTime.UtcNow;
         LastUsedIpAddress = ipAddress;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new ApiTokenUsedEvent(Id, UserId, ipAddress));
     }
 
     public void Revoke()
     {
         IsActive = false;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new ApiTokenRevokedEvent(Id, UserId));
     }
 
     public bool IsExpired => ExpiresAt.HasValue && DateTime.UtcNow > ExpiresAt.Value;

@@ -1,8 +1,9 @@
 ﻿using CertVal.Core.Enums;
+using CertVal.Core.Events;
 
 namespace CertVal.Core.Entities;
 
-public class User
+public class User : BaseEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public string Email { get; private set; } = string.Empty;
@@ -42,7 +43,7 @@ public class User
         if (string.IsNullOrWhiteSpace(passwordHash))
             throw new ArgumentException("Password hash cannot be empty", nameof(passwordHash));
 
-        return new User
+        var user = new User
         {
             Email = email.Trim().ToLowerInvariant(),
             PasswordHash = passwordHash,
@@ -50,6 +51,10 @@ public class User
             LastName = lastName.Trim(),
             EmailConfirmationToken = Guid.NewGuid().ToString()
         };
+
+        user.AddDomainEvent(new UserRegisteredEvent(user.Id, user.Email, user.FullName));
+
+        return user;
     }
 
     public void ConfirmEmail()
@@ -58,6 +63,8 @@ public class User
         EmailConfirmedAt = DateTime.UtcNow;
         EmailConfirmationToken = null;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new UserEmailConfirmedEvent(Id, Email));
     }
 
     public void UpdatePassword(string newPasswordHash)
@@ -66,6 +73,8 @@ public class User
         PasswordResetToken = null;
         PasswordResetTokenExpiresAt = null;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new UserPasswordChangedEvent(Id));
     }
 
     public void SetPasswordResetToken(string token, DateTime expiresAt)

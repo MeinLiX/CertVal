@@ -1,8 +1,9 @@
 ﻿using CertVal.Core.Enums;
+using CertVal.Core.Events;
 
 namespace CertVal.Core.Entities;
 
-public class NotificationHistory
+public class NotificationHistory : BaseEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid NotificationRuleId { get; private set; }
@@ -63,6 +64,8 @@ public class NotificationHistory
         SentAt = DateTime.UtcNow;
         ExternalId = externalId;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new NotificationSentEvent(Id, CertificateId, Recipient, ChannelType.ToString()));
     }
 
     public void MarkAsDelivered(string? responseData = null)
@@ -80,6 +83,8 @@ public class NotificationHistory
         ResponseData = responseData;
         RetryCount++;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new NotificationFailedEvent(Id, CertificateId, Recipient, errorMessage));
     }
 
     public void ScheduleRetry(DateTime nextAttemptAt)

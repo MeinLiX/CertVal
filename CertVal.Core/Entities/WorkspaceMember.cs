@@ -1,8 +1,9 @@
 ﻿using CertVal.Core.Enums;
+using CertVal.Core.Events;
 
 namespace CertVal.Core.Entities;
 
-public class WorkspaceMember
+public class WorkspaceMember : BaseEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid WorkspaceId { get; private set; }
@@ -30,7 +31,7 @@ public class WorkspaceMember
         WorkspaceRole role,
         Guid? invitedByUserId = null)
     {
-        return new WorkspaceMember
+        var member = new WorkspaceMember
         {
             WorkspaceId = workspaceId,
             UserId = userId,
@@ -39,6 +40,18 @@ public class WorkspaceMember
             InvitedAt = invitedByUserId.HasValue ? DateTime.UtcNow : null,
             JoinedAt = invitedByUserId.HasValue ? null : DateTime.UtcNow
         };
+
+        if (invitedByUserId.HasValue)
+        {
+            member.Status = WorkspaceMemberStatus.Invited;
+            member.AddDomainEvent(new WorkspaceMemberInvitedEvent(workspaceId, userId, invitedByUserId.Value));
+        }
+        else
+        {
+            member.AddDomainEvent(new WorkspaceMemberJoinedEvent(workspaceId, userId));
+        }
+
+        return member;
     }
 
     public void AcceptInvitation()
@@ -49,6 +62,8 @@ public class WorkspaceMember
         Status = WorkspaceMemberStatus.Active;
         JoinedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new WorkspaceMemberJoinedEvent(WorkspaceId, UserId));
     }
 
     public void ChangeRole(WorkspaceRole newRole)
@@ -61,6 +76,8 @@ public class WorkspaceMember
     {
         Status = WorkspaceMemberStatus.Inactive;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new WorkspaceMemberRemovedEvent(WorkspaceId, UserId));
     }
 
     public bool CanManageWorkspace => Role == WorkspaceRole.Admin;

@@ -1,8 +1,9 @@
 ﻿using CertVal.Core.Enums;
+using CertVal.Core.Events;
 
 namespace CertVal.Core.Entities;
 
-public class Certificate
+public class Certificate : BaseEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid WorkspaceId { get; private set; }
@@ -55,7 +56,7 @@ public class Certificate
         Guid? parentCertificateId = null,
         bool isBundle = false)
     {
-        return new Certificate
+        var certificate = new Certificate
         {
             WorkspaceId = workspaceId,
             Subject = subject,
@@ -71,6 +72,39 @@ public class Certificate
             ParentCertificateId = parentCertificateId,
             IsBundle = isBundle
         };
+
+        certificate.AddDomainEvent(new CertificateUploadedEvent(
+            certificate.Id,
+            certificate.WorkspaceId,
+            certificate.Subject,
+            certificate.NotAfter));
+
+        return certificate;
+    }
+
+    public static void CreateBundle(Guid parentCertificateId, Guid workspaceId, List<Certificate> childCertificates)
+    {
+        if (childCertificates.Count > 0)
+        {
+            var bundleEvent = new CertificateBundleProcessedEvent(parentCertificateId, workspaceId, childCertificates.Count);
+
+            // Add event to the first child certificate to trigger processing
+            childCertificates[0].AddDomainEvent(bundleEvent);
+        }
+    }
+
+    public void CheckExpiry()
+    {
+        var daysUntilExpiry = (NotAfter - DateTime.UtcNow).Days;
+
+        if (IsExpired && Status != CertificateStatus.Expired)
+        {
+            AddDomainEvent(new CertificateExpiredEvent(Id, WorkspaceId, Subject, NotAfter));
+        }
+        else if (daysUntilExpiry <= 30 && daysUntilExpiry > 0)
+        {
+            AddDomainEvent(new CertificateExpiringEvent(Id, WorkspaceId, Subject, NotAfter, daysUntilExpiry));
+        }
     }
 
     public bool IsExpired => DateTime.UtcNow > NotAfter;
@@ -80,5 +114,7 @@ public class Certificate
     {
         Status = CertificateStatus.Expired;
         UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new CertificateExpiredEvent(Id, WorkspaceId, Subject, NotAfter));
     }
 }
