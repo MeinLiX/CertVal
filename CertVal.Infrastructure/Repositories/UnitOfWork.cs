@@ -17,6 +17,7 @@ public class UnitOfWork : IUnitOfWork
     private INotificationHistoryRepository? _notificationHistory;
     private IWorkspaceMemberRepository? _workspaceMembers;
     private IApiTokenRepository? _apiTokens;
+    private IEventStoreRepository? _eventStore;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -43,6 +44,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IApiTokenRepository ApiTokens =>
         _apiTokens ??= new ApiTokenRepository(_context);
+
+    public IEventStoreRepository EventStore =>
+        _eventStore ??= new EventStoreRepository(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
