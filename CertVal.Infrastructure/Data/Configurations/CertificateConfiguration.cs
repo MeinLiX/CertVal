@@ -83,6 +83,6 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
         builder.HasMany(c => c.NotificationHistory)
             .WithOne(nh => nh.Certificate)
             .HasForeignKey(nh => nh.CertificateId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

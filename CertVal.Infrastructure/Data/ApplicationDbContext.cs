@@ -1,10 +1,14 @@
 ﻿using CertVal.Core.Entities;
+using CertVal.Core.Events;
+using CertVal.Infrastructure.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace CertVal.Infrastructure.Data;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IDomainEventDispatcher? domainEventDispatcher = null) : DbContext(options)
 {
+    private readonly IDomainEventDispatcher? _domainEventDispatcher = domainEventDispatcher;
+
     public DbSet<User> Users => Set<User>();
     public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
@@ -12,6 +16,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
     public DbSet<NotificationHistory> NotificationHistory => Set<NotificationHistory>();
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
+    public DbSet<StoredEvent> StoredEvents => Set<StoredEvent>();
 
     public bool EnsureDelete() => Database.EnsureDeleted();
     public bool EnsureCreate() => Database.EnsureCreated();
@@ -19,6 +24,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Ignore<DomainEvent>();
+
+        var domainEventTypes = typeof(DomainEvent).Assembly
+            .GetTypes()
+            .Where(t => t.IsSubclassOf(typeof(DomainEvent)));
+
+        foreach (var eventType in domainEventTypes)
+        {
+            modelBuilder.Ignore(eventType);
+        }
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
@@ -52,7 +68,34 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         UpdateTimestamps();
 
-        return await base.SaveChangesAsync(cancellationToken);
+        var domainEvents = await CollectDomainEventsAsync();
+
+        var result = await base.SaveChangesAsync(cancellationToken);
+
+        if (_domainEventDispatcher != null && domainEvents.Any())
+        {
+            await _domainEventDispatcher.PublishAsync(domainEvents, cancellationToken);
+        }
+
+        return result;
+    }
+
+    private Task<List<DomainEvent>> CollectDomainEventsAsync()
+    {
+        var domainEvents = new List<DomainEvent>();
+
+        var entitiesWithEvents = ChangeTracker
+            .Entries<IHasDomainEvents>()
+            .Where(e => e.Entity.DomainEvents.Any())
+            .ToList();
+
+        foreach (var entity in entitiesWithEvents)
+        {
+            domainEvents.AddRange(entity.Entity.DomainEvents);
+            entity.Entity.ClearDomainEvents();
+        }
+
+        return Task.FromResult(domainEvents);
     }
 
     private void UpdateTimestamps()
