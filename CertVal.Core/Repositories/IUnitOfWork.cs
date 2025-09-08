@@ -9,6 +9,7 @@ public interface IUnitOfWork : IDisposable
     INotificationHistoryRepository NotificationHistory { get; }
     IWorkspaceMemberRepository WorkspaceMembers { get; }
     IApiTokenRepository ApiTokens { get; }
+    IEventStoreRepository EventStore { get; } // Add Event Store
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);
