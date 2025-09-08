@@ -1,6 +1,8 @@
 ﻿using CertVal.Core.Entities;
+using CertVal.Core.Events;
 using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Data;
+using CertVal.Infrastructure.Events;
 using CertVal.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,34 +18,33 @@ public static class ServiceRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddDbContext<ApplicationDbContext>(options =>
-        {
-            var connectionString = configuration.GetConnectionString("CertVal-database")
-                ?? throw new InvalidOperationException("Database connection string 'CertVal-database' not found.");
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
-            options.UseSqlServer(connectionString, sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorNumbersToAdd: null);
 
-                sqlOptions.CommandTimeout(30);
-                sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-            });
+        services.AddScoped<IDomainEventHandler<UserRegisteredEvent>, UserEventHandlers>();
+        services.AddScoped<IDomainEventHandler<UserEmailConfirmedEvent>, UserEventHandlers>();
+        services.AddScoped<IDomainEventHandler<UserPasswordChangedEvent>, UserEventHandlers>();
 
-            if (configuration.GetValue<bool>("DetailedErrors"))
-            {
-                options.EnableSensitiveDataLogging();
-                options.EnableDetailedErrors();
-            }
+        services.AddScoped<IDomainEventHandler<WorkspaceCreatedEvent>, WorkspaceEventHandlers>();
+        services.AddScoped<IDomainEventHandler<WorkspaceUpdatedEvent>, WorkspaceEventHandlers>();
+        services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>, WorkspaceEventHandlers>();
+        services.AddScoped<IDomainEventHandler<WorkspaceMemberJoinedEvent>, WorkspaceEventHandlers>();
+        services.AddScoped<IDomainEventHandler<WorkspaceMemberRemovedEvent>, WorkspaceEventHandlers>();
 
-            if (configuration.GetValue<bool>("Logging:Database:EnableQueryLogging"))
-            {
-                options.LogTo(Console.WriteLine, LogLevel.Information);
-            }
-        });
+        services.AddScoped<IDomainEventHandler<CertificateUploadedEvent>, CertificateEventHandlers>();
+        services.AddScoped<IDomainEventHandler<CertificateExpiringEvent>, CertificateEventHandlers>();
+        services.AddScoped<IDomainEventHandler<CertificateExpiredEvent>, CertificateEventHandlers>();
+        services.AddScoped<IDomainEventHandler<CertificateBundleProcessedEvent>, CertificateEventHandlers>();
 
+        services.AddScoped<IDomainEventHandler<NotificationRuleCreatedEvent>, NotificationEventHandlers>();
+        services.AddScoped<IDomainEventHandler<NotificationSentEvent>, NotificationEventHandlers>();
+        services.AddScoped<IDomainEventHandler<NotificationFailedEvent>, NotificationEventHandlers>();
+
+        services.AddScoped<IDomainEventHandler<ApiTokenCreatedEvent>, ApiTokenEventHandlers>();
+        services.AddScoped<IDomainEventHandler<ApiTokenUsedEvent>, ApiTokenEventHandlers>();
+        services.AddScoped<IDomainEventHandler<ApiTokenRevokedEvent>, ApiTokenEventHandlers>();
+
+        services.AddScoped<IEventStoreRepository, EventStoreRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
         services.AddScoped<ICertificateRepository, CertificateRepository>();
@@ -64,7 +65,9 @@ public static class ServiceRegistration
     {
         using var scope = serviceProvider.CreateScope();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationDbContext>>();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var contextOptions = scope.ServiceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
+        using var context = new ApplicationDbContext(contextOptions, domainEventDispatcher: null);
 
         try
         {
@@ -72,7 +75,6 @@ public static class ServiceRegistration
             await context.Database.MigrateAsync();
             logger.LogInformation("Database migration completed successfully.");
 
-            // Seed data in development
             var environment = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
             if (environment.IsDevelopment())
             {
@@ -98,52 +100,54 @@ public static class DatabaseSeeder
             return;
         }
 
-        using var transaction = await context.Database.BeginTransactionAsync();
-
-        try
+        var strategy = context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            var defaultUser = User.Create(
-                "admin@certval.dev",
-                BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-                "Admin",
-                "User"
-            );
-            defaultUser.ConfirmEmail();
-
-            await context.Users.AddAsync(defaultUser);
-            await context.SaveChangesAsync();
-
-            var demoUser = User.Create(
-                "demo@certval.dev",
-                BCrypt.Net.BCrypt.HashPassword("Demo123!"),
-                "Demo",
-                "User"
-            );
-            demoUser.ConfirmEmail();
-
-            await context.Users.AddAsync(demoUser);
-            await context.SaveChangesAsync();
-
-            var defaultWorkspace = Workspace.Create(
-                "Production Environment",
-                defaultUser.Id,
-                "Main production workspace for certificate monitoring"
-            );
-
-            await context.Workspaces.AddAsync(defaultWorkspace);
-
-            var demoWorkspace = Workspace.Create(
-                "Demo Workspace",
-                demoUser.Id,
-                "Demo workspace for testing"
-            );
-
-            await context.Workspaces.AddAsync(demoWorkspace);
-            await context.SaveChangesAsync();
-
-            // Create notification rules for default workspace
-            var notificationRules = new[]
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
             {
+                var defaultUser = User.Create(
+                    "admin@certval.dev",
+                    BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+                    "Admin",
+                    "User"
+                );
+                defaultUser.ConfirmEmail();
+
+                await context.Users.AddAsync(defaultUser);
+                await context.SaveChangesAsync();
+
+                var demoUser = User.Create(
+                    "demo@certval.dev",
+                    BCrypt.Net.BCrypt.HashPassword("Demo123!"),
+                    "Demo",
+                    "User"
+                );
+                demoUser.ConfirmEmail();
+
+                await context.Users.AddAsync(demoUser);
+                await context.SaveChangesAsync();
+
+                var defaultWorkspace = Workspace.Create(
+                    "Production Environment",
+                    defaultUser.Id,
+                    "Main production workspace for certificate monitoring"
+                );
+
+                await context.Workspaces.AddAsync(defaultWorkspace);
+
+                var demoWorkspace = Workspace.Create(
+                    "Demo Workspace",
+                    demoUser.Id,
+                    "Demo workspace for testing"
+                );
+
+                await context.Workspaces.AddAsync(demoWorkspace);
+                await context.SaveChangesAsync();
+
+                // Create notification rules for default workspace
+                var notificationRules = new[]
+                {
                 NotificationRule.Create(
                     defaultWorkspace.Id,
                     "Critical - 7 days",
@@ -167,39 +171,40 @@ public static class DatabaseSeeder
                 )
             };
 
-            await context.NotificationRules.AddRangeAsync(notificationRules);
+                await context.NotificationRules.AddRangeAsync(notificationRules);
 
-            // Create notification rules for demo workspace
-            var demoNotificationRule = NotificationRule.Create(
-                demoWorkspace.Id,
-                "Demo notifications",
-                15,
-                Core.Enums.NotificationChannelType.Email,
-                $"{{\"email\":\"{demoUser.Email}\"}}"
-            );
+                // Create notification rules for demo workspace
+                var demoNotificationRule = NotificationRule.Create(
+                    demoWorkspace.Id,
+                    "Demo notifications",
+                    15,
+                    Core.Enums.NotificationChannelType.Email,
+                    $"{{\"email\":\"{demoUser.Email}\"}}"
+                );
 
-            await context.NotificationRules.AddAsync(demoNotificationRule);
+                await context.NotificationRules.AddAsync(demoNotificationRule);
 
-            var workspaceMember = WorkspaceMember.Create(
-                defaultWorkspace.Id,
-                demoUser.Id,
-                Core.Enums.WorkspaceRole.Viewer,
-                defaultUser.Id
-            );
-            workspaceMember.AcceptInvitation();
+                var workspaceMember = WorkspaceMember.Create(
+                    defaultWorkspace.Id,
+                    demoUser.Id,
+                    Core.Enums.WorkspaceRole.Viewer,
+                    defaultUser.Id
+                );
+                workspaceMember.AcceptInvitation();
 
-            await context.WorkspaceMembers.AddAsync(workspaceMember);
+                await context.WorkspaceMembers.AddAsync(workspaceMember);
 
-            await SeedSampleCertificatesAsync(context, defaultWorkspace.Id, demoWorkspace.Id);
+                await SeedSampleCertificatesAsync(context, defaultWorkspace.Id, demoWorkspace.Id);
 
-            await context.SaveChangesAsync();
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
     }
 
     private static async Task SeedSampleCertificatesAsync(ApplicationDbContext context, Guid defaultWorkspaceId, Guid demoWorkspaceId)
