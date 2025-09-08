@@ -39,6 +39,17 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasConversion<int>();
 
+        builder.Property(u => u.TimeZone)
+            .HasMaxLength(50)
+            .HasDefaultValue("UTC");
+
+        builder.Property(u => u.Language)
+            .HasMaxLength(10)
+            .HasDefaultValue("en");
+
+        builder.Property(u => u.EmailNotificationsEnabled)
+            .HasDefaultValue(true);
+
         // Indexes
         builder.HasIndex(u => u.Email)
             .IsUnique()
@@ -51,6 +62,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.PasswordResetToken)
             .HasDatabaseName("IX_Users_PasswordResetToken")
             .HasFilter("[PasswordResetToken] IS NOT NULL");
+
+        builder.HasIndex(u => u.Status)
+            .HasDatabaseName("IX_Users_Status");
 
         // Relationships
         builder.HasMany(u => u.OwnedWorkspaces)

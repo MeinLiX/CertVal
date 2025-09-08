@@ -43,6 +43,9 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
             .IsRequired()
             .HasConversion<int>();
 
+        builder.Property(c => c.IsBundle)
+            .HasDefaultValue(false);
+
         // Indexes
         builder.HasIndex(c => c.WorkspaceId)
             .HasDatabaseName("IX_Certificates_WorkspaceId");
@@ -59,6 +62,12 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
         builder.HasIndex(c => c.ParentCertificateId)
             .HasDatabaseName("IX_Certificates_ParentId")
             .HasFilter("[ParentCertificateId] IS NOT NULL");
+
+        builder.HasIndex(c => new { c.WorkspaceId, c.Status })
+            .HasDatabaseName("IX_Certificates_Workspace_Status");
+
+        builder.HasIndex(c => new { c.WorkspaceId, c.IsBundle })
+            .HasDatabaseName("IX_Certificates_Workspace_Bundle");
 
         // Relationships
         builder.HasOne(c => c.Workspace)

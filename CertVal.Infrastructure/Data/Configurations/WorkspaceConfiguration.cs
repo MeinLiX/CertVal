@@ -19,6 +19,9 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.Property(w => w.Description)
             .HasMaxLength(1000);
 
+        builder.Property(w => w.OwnerId)
+            .IsRequired();
+
         builder.Property(w => w.MaxCertificates)
             .HasDefaultValue(1000);
 
@@ -35,6 +38,9 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.HasIndex(w => new { w.OwnerId, w.Name })
             .IsUnique()
             .HasDatabaseName("IX_Workspaces_Owner_Name");
+
+        builder.HasIndex(w => w.IsPublic)
+            .HasDatabaseName("IX_Workspaces_IsPublic");
 
         // Relationships
         builder.HasOne(w => w.Owner)
