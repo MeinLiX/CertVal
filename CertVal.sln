@@ -1,0 +1,53 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.AppHost", "CertVal.AppHost\CertVal.AppHost.csproj", "{24195A0C-F989-4FB5-9B5B-C01CF5413815}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.ServiceDefaults", "CertVal.ServiceDefaults\CertVal.ServiceDefaults.csproj", "{1F2E9B89-DCB6-4761-9A5F-E597A90DFED0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.ApiService", "CertVal.ApiService\CertVal.ApiService.csproj", "{22647D49-233C-467C-AFB9-C549CE28B413}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Core", "CertVal.Core\CertVal.Core.csproj", "{4973F920-3D4C-4414-87D2-98A8B326BEC5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Infrastructure", "CertVal.Infrastructure\CertVal.Infrastructure.csproj", "{68BC43B3-91AF-4096-B1E6-2CABF52D1153}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{24195A0C-F989-4FB5-9B5B-C01CF5413815}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24195A0C-F989-4FB5-9B5B-C01CF5413815}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24195A0C-F989-4FB5-9B5B-C01CF5413815}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24195A0C-F989-4FB5-9B5B-C01CF5413815}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F2E9B89-DCB6-4761-9A5F-E597A90DFED0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F2E9B89-DCB6-4761-9A5F-E597A90DFED0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F2E9B89-DCB6-4761-9A5F-E597A90DFED0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F2E9B89-DCB6-4761-9A5F-E597A90DFED0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22647D49-233C-467C-AFB9-C549CE28B413}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22647D49-233C-467C-AFB9-C549CE28B413}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22647D49-233C-467C-AFB9-C549CE28B413}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22647D49-233C-467C-AFB9-C549CE28B413}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4973F920-3D4C-4414-87D2-98A8B326BEC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4973F920-3D4C-4414-87D2-98A8B326BEC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4973F920-3D4C-4414-87D2-98A8B326BEC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4973F920-3D4C-4414-87D2-98A8B326BEC5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68BC43B3-91AF-4096-B1E6-2CABF52D1153}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68BC43B3-91AF-4096-B1E6-2CABF52D1153}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68BC43B3-91AF-4096-B1E6-2CABF52D1153}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68BC43B3-91AF-4096-B1E6-2CABF52D1153}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6A16BAAD-26AF-4B0A-9DFC-A8241B059B68}
+	EndGlobalSection
+EndGlobal
