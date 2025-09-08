@@ -20,6 +20,10 @@ public class User
     public DateTime LastLoginAt { get; private set; } = DateTime.UtcNow;
     public UserStatus Status { get; private set; } = UserStatus.Active;
 
+    public string? TimeZone { get; private set; } = "UTC";
+    public string? Language { get; private set; } = "en";
+    public bool EmailNotificationsEnabled { get; private set; } = true;
+
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
 
@@ -77,10 +81,24 @@ public class User
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void UpdateProfile(string firstName, string lastName)
+    public void UpdateProfile(string firstName, string lastName, string? timeZone = null, string? language = null)
     {
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
+        if (!string.IsNullOrWhiteSpace(timeZone)) TimeZone = timeZone;
+        if (!string.IsNullOrWhiteSpace(language)) Language = language;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateNotificationPreferences(bool emailNotificationsEnabled)
+    {
+        EmailNotificationsEnabled = emailNotificationsEnabled;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ChangeStatus(UserStatus newStatus)
+    {
+        Status = newStatus;
         UpdatedAt = DateTime.UtcNow;
     }
 
