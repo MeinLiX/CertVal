@@ -1,14 +1,11 @@
 ﻿using CertVal.Core.Entities;
 using CertVal.Core.Events;
-using CertVal.Infrastructure.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace CertVal.Infrastructure.Data;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IDomainEventDispatcher? domainEventDispatcher = null) : DbContext(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    private readonly IDomainEventDispatcher? _domainEventDispatcher = domainEventDispatcher;
-
     public DbSet<User> Users => Set<User>();
     public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
@@ -64,40 +61,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasDatabaseName("IX_Certificates_Subject_Issuer");
     }
 
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        UpdateTimestamps();
-
-        var domainEvents = await CollectDomainEventsAsync();
-
-        var result = await base.SaveChangesAsync(cancellationToken);
-
-        if (_domainEventDispatcher != null && domainEvents.Any())
-        {
-            await _domainEventDispatcher.PublishAsync(domainEvents, cancellationToken);
-        }
-
-        return result;
-    }
-
-    private Task<List<DomainEvent>> CollectDomainEventsAsync()
-    {
-        var domainEvents = new List<DomainEvent>();
-
-        var entitiesWithEvents = ChangeTracker
-            .Entries<IHasDomainEvents>()
-            .Where(e => e.Entity.DomainEvents.Any())
-            .ToList();
-
-        foreach (var entity in entitiesWithEvents)
-        {
-            domainEvents.AddRange(entity.Entity.DomainEvents);
-            entity.Entity.ClearDomainEvents();
-        }
-
-        return Task.FromResult(domainEvents);
-    }
-
     private void UpdateTimestamps()
     {
         var entries = ChangeTracker
@@ -109,6 +72,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entityEntry.Property("UpdatedAt").CurrentValue = DateTime.UtcNow;
         }
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        UpdateTimestamps();
+        return await base.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<User?> FindUserByEmailAsync(string email, CancellationToken cancellationToken = default)

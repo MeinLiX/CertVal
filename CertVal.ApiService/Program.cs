@@ -15,7 +15,6 @@ builder.Services.AddOpenApi("api", o =>
 
 builder.Services.AddHttpContextAccessor();
 
-//TOdo bug with worker and reg IDomainEventDispatcher
 builder.AddSqlServerDbContext<ApplicationDbContext>(
     connectionName: "CertVal-database",
     configureDbContextOptions: options =>

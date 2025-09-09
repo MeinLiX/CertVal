@@ -1,5 +1,7 @@
 ﻿using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Data;
+using CertVal.Infrastructure.Events;
+using CertVal.Core.Events;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CertVal.Infrastructure.Repositories;
@@ -7,6 +9,7 @@ namespace CertVal.Infrastructure.Repositories;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
+    private readonly IDomainEventDispatcher? _domainEventDispatcher;
     private IDbContextTransaction? _transaction;
 
     // Lazy initialization of repositories
@@ -19,9 +22,10 @@ public class UnitOfWork : IUnitOfWork
     private IApiTokenRepository? _apiTokens;
     private IEventStoreRepository? _eventStore;
 
-    public UnitOfWork(ApplicationDbContext context)
+    public UnitOfWork(ApplicationDbContext context, IDomainEventDispatcher? domainEventDispatcher = null)
     {
         _context = context;
+        _domainEventDispatcher = domainEventDispatcher;
     }
 
     public IUserRepository Users =>
@@ -50,7 +54,34 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.SaveChangesAsync(cancellationToken);
+        var domainEvents = CollectDomainEvents();
+
+        var result = await _context.SaveChangesAsync(cancellationToken);
+
+        if (_domainEventDispatcher != null && domainEvents.Any())
+        {
+            await _domainEventDispatcher.PublishAsync(domainEvents, cancellationToken);
+        }
+
+        return result;
+    }
+
+    private List<DomainEvent> CollectDomainEvents()
+    {
+        var domainEvents = new List<DomainEvent>();
+
+        var entitiesWithEvents = _context.ChangeTracker
+            .Entries<IHasDomainEvents>()
+            .Where(e => e.Entity.DomainEvents.Any())
+            .ToList();
+
+        foreach (var entity in entitiesWithEvents)
+        {
+            domainEvents.AddRange(entity.Entity.DomainEvents);
+            entity.Entity.ClearDomainEvents();
+        }
+
+        return domainEvents;
     }
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
@@ -72,7 +103,7 @@ public class UnitOfWork : IUnitOfWork
 
         try
         {
-            await _context.SaveChangesAsync(cancellationToken);
+            await SaveChangesAsync(cancellationToken);
             await _transaction.CommitAsync(cancellationToken);
         }
         catch

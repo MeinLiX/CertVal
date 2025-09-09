@@ -20,7 +20,6 @@ public static class ServiceRegistration
     {
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
-
         services.AddScoped<IDomainEventHandler<UserRegisteredEvent>, UserEventHandlers>();
         services.AddScoped<IDomainEventHandler<UserEmailConfirmedEvent>, UserEventHandlers>();
         services.AddScoped<IDomainEventHandler<UserPasswordChangedEvent>, UserEventHandlers>();
@@ -67,7 +66,7 @@ public static class ServiceRegistration
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationDbContext>>();
 
         var contextOptions = scope.ServiceProvider.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
-        using var context = new ApplicationDbContext(contextOptions, domainEventDispatcher: null);
+        using var context = new ApplicationDbContext(contextOptions);
 
         try
         {
