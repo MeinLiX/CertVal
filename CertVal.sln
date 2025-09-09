@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Infrastructure", "CertVal.Infrastructure\CertVal.Infrastructure.csproj", "{68BC43B3-91AF-4096-B1E6-2CABF52D1153}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Application", "CertVal.Application\CertVal.Application.csproj", "{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,10 @@ Global
 		{68BC43B3-91AF-4096-B1E6-2CABF52D1153}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68BC43B3-91AF-4096-B1E6-2CABF52D1153}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68BC43B3-91AF-4096-B1E6-2CABF52D1153}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

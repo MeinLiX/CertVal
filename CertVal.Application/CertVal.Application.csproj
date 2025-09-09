@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" />
+    <PackageReference Include="Mapster" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Features" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="System.ComponentModel.Annotations" />
+    <PackageReference Include="System.Security.Cryptography.X509Certificates" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CertVal.Core\CertVal.Core.csproj" />
+  </ItemGroup>
+
+</Project>
