@@ -6,7 +6,6 @@ using CertVal.Core.Enums;
 using CertVal.Core.Repositories;
 using Mapster;
 using Microsoft.AspNetCore.Http;
-using System.Security.Cryptography.X509Certificates;
 
 namespace CertVal.Application.Services;
 
@@ -14,11 +13,16 @@ public class CertificateService : ICertificateService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
+    private readonly ICertificateProcessorService _certificateProcessor;
 
-    public CertificateService(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public CertificateService(
+        IUnitOfWork unitOfWork,
+        ICurrentUserService currentUser,
+        ICertificateProcessorService certificateProcessor)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
+        _certificateProcessor = certificateProcessor;
     }
 
     public async Task<Result<PagedResult<CertificateDto>>> GetCertificatesAsync(CertificateFilterRequest request, CancellationToken cancellationToken = default)
@@ -105,44 +109,104 @@ public class CertificateService : ICertificateService
 
         try
         {
-            // Read and parse certificate
+            // Read file data
             using var stream = new MemoryStream();
             await request.File.CopyToAsync(stream, cancellationToken);
             var certificateData = stream.ToArray();
 
-            var parseResult = ParseCertificate(certificateData, request.File.FileName);
+            // Process certificate using the processor service
+            var parseResult = await _certificateProcessor.ProcessCertificateAsync(
+                certificateData,
+                request.File.FileName,
+                cancellationToken);
+
             if (!parseResult.IsSuccess)
                 return Result.Failure<CertificateDto>(parseResult.Error);
 
-            var parsedCert = parseResult.Value;
+            var parsedCertificates = parseResult.Value.ToList();
+            var mainCertificate = parsedCertificates.First();
 
             // Check for duplicates
-            var existingCert = await _unitOfWork.Certificates.GetByThumbprintAsync(parsedCert.Thumbprint, cancellationToken);
+            var existingCert = await _unitOfWork.Certificates.GetByThumbprintAsync(mainCertificate.Thumbprint, cancellationToken);
             if (existingCert != null)
                 return Result.Failure<CertificateDto>("Certificate with this thumbprint already exists");
 
-            // Save file to storage (implement file storage service)
+            // Save file to storage
             var filePath = await SaveCertificateFile(certificateData, request.File.FileName);
 
-            // Create certificate entity
-            var certificate = Certificate.Create(
-                request.WorkspaceId,
-                parsedCert.Subject,
-                parsedCert.Issuer,
-                parsedCert.Thumbprint,
-                parsedCert.NotBefore,
-                parsedCert.NotAfter,
-                request.File.FileName,
-                filePath,
-                parsedCert.Format,
-                request.File.Length,
-                parsedCert.SerialNumber
-            );
+            Certificate? parentCertificate = null;
 
-            await _unitOfWork.Certificates.AddAsync(certificate, cancellationToken);
+            // Create certificates
+            if (parsedCertificates.Count > 1)
+            {
+                // This is a bundle - create parent certificate
+                parentCertificate = Certificate.Create(
+                    request.WorkspaceId,
+                    $"Bundle: {request.File.FileName}",
+                    "Certificate Bundle",
+                    $"BUNDLE_{Guid.NewGuid():N}",
+                    parsedCertificates.Min(c => c.NotBefore),
+                    parsedCertificates.Max(c => c.NotAfter),
+                    request.File.FileName,
+                    filePath,
+                    mainCertificate.Format,
+                    request.File.Length,
+                    null,
+                    null,
+                    true
+                );
+
+                await _unitOfWork.Certificates.AddAsync(parentCertificate, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                // Create child certificates
+                var childCertificates = new List<Certificate>();
+                foreach (var parsedCert in parsedCertificates)
+                {
+                    var childCert = Certificate.Create(
+                        request.WorkspaceId,
+                        parsedCert.Subject,
+                        parsedCert.Issuer,
+                        parsedCert.Thumbprint,
+                        parsedCert.NotBefore,
+                        parsedCert.NotAfter,
+                        request.File.FileName,
+                        filePath,
+                        parsedCert.Format,
+                        request.File.Length,
+                        parsedCert.SerialNumber,
+                        parentCertificate.Id
+                    );
+
+                    childCertificates.Add(childCert);
+                    await _unitOfWork.Certificates.AddAsync(childCert, cancellationToken);
+                }
+
+                Certificate.CreateBundle(parentCertificate.Id, request.WorkspaceId, childCertificates);
+            }
+            else
+            {
+                // Single certificate
+                parentCertificate = Certificate.Create(
+                    request.WorkspaceId,
+                    mainCertificate.Subject,
+                    mainCertificate.Issuer,
+                    mainCertificate.Thumbprint,
+                    mainCertificate.NotBefore,
+                    mainCertificate.NotAfter,
+                    request.File.FileName,
+                    filePath,
+                    mainCertificate.Format,
+                    request.File.Length,
+                    mainCertificate.SerialNumber
+                );
+
+                await _unitOfWork.Certificates.AddAsync(parentCertificate, cancellationToken);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return Result.Success(MapToCertificateDto(certificate));
+            return Result.Success(MapToCertificateDto(parentCertificate));
         }
         catch (Exception ex)
         {
@@ -266,69 +330,8 @@ public class CertificateService : ICertificateService
         return Result.Success();
     }
 
-    private Result<ParsedCertificateInfo> ParseCertificate(byte[] certificateData, string fileName)
-    {
-        try
-        {
-            var extension = Path.GetExtension(fileName).ToLowerInvariant();
-            var format = DetermineFormat(extension);
-
-            X509Certificate2 cert;
-
-            if (extension == ".p7b" || extension == ".p7c")
-            {
-                // Handle PKCS#7 bundles
-                var collection = new X509Certificate2Collection();
-                collection.Import(certificateData);
-
-                if (collection.Count == 0)
-                    return Result.Failure<ParsedCertificateInfo>("No certificates found in bundle");
-
-                cert = collection[0]!; // Use first certificate for metadata
-            }
-            else
-            {
-                cert = new X509Certificate2(certificateData);
-            }
-
-            var parsedInfo = new ParsedCertificateInfo
-            {
-                Subject = cert.Subject,
-                Issuer = cert.Issuer,
-                SerialNumber = cert.SerialNumber,
-                Thumbprint = cert.Thumbprint,
-                NotBefore = cert.NotBefore.ToUniversalTime(),
-                NotAfter = cert.NotAfter.ToUniversalTime(),
-                Format = format
-            };
-
-            return Result.Success(parsedInfo);
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure<ParsedCertificateInfo>($"Failed to parse certificate: {ex.Message}");
-        }
-    }
-
-    private CertificateFormat DetermineFormat(string extension)
-    {
-        return extension switch
-        {
-            ".cer" => CertificateFormat.CER,
-            ".crt" => CertificateFormat.CRT,
-            ".pem" => CertificateFormat.PEM,
-            ".der" => CertificateFormat.DER,
-            ".p7b" => CertificateFormat.P7B,
-            ".p7c" => CertificateFormat.P7C,
-            ".pfx" => CertificateFormat.PFX,
-            ".p12" => CertificateFormat.P12,
-            _ => CertificateFormat.Unknown
-        };
-    }
-
     private async Task<string> SaveCertificateFile(byte[] data, string fileName)
     {
-        // TODO: Implement proper file storage service (local storage, Azure Blob, AWS S3, etc.)
         var uploadsDir = Path.Combine("wwwroot", "uploads", "certificates");
         Directory.CreateDirectory(uploadsDir);
 

@@ -12,22 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddControllers();
-/*builder.Services.AddApiVersioning(options =>
-{
-    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
-    options.AssumeDefaultVersionWhenUnspecified = true;
-    options.ApiVersionReader = Microsoft.AspNetCore.Mvc.ApiVersionReader.Combine(
-        new Microsoft.AspNetCore.Mvc.QueryStringApiVersionReader("version"),
-        new Microsoft.AspNetCore.Mvc.HeaderApiVersionReader("X-Version"),
-        new Microsoft.AspNetCore.Mvc.UrlSegmentApiVersionReader()
-    );
-});
-
-builder.Services.AddVersionedApiExplorer(setup =>
-{
-    setup.GroupNameFormat = "'v'VVV";
-    setup.SubstituteApiVersionInUrl = true;
-});*/
 
 builder.Services.AddProblemDetails();
 
@@ -40,7 +24,7 @@ builder.Services.AddOpenApi("v1", options =>
             Title = "CertVal API",
             Version = "v1",
             Description = "Certificate monitoring and management API",
-            Contact = new() { Name = "CertVal Support", Email = "support@certval.dev" }
+            Contact = new() { Name = "CertVal Support", Email = "support@certval.halerka.dev" }
         };
 
         document.Components ??= new();
@@ -90,10 +74,13 @@ builder.AddSqlServerDbContext<ApplicationDbContext>(
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Register application services
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddScoped<ICertificateService, CertificateService>();
+builder.Services.AddScoped<ICertificateProcessorService, CertificateProcessorService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddCustomAuthentication(builder.Configuration);
 
@@ -110,7 +97,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("DefaultPolicy", policy =>
     {
         policy.WithOrigins(
-                builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()?? throw new Exception("Cors:AllowedOrigins not configured")
+                builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? throw new Exception("Cors:AllowedOrigins not configured")
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -118,7 +105,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Register background services
 builder.Services.AddHostedService<CertificateExpiryCheckerService>();
+builder.Services.AddHostedService<NotificationBackgroundService>();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("database");
@@ -152,7 +141,7 @@ if (app.Environment.IsDevelopment())
         return Results.Ok("Database created successfully");
     }).WithDescription("Create database (Development only)");
 
-    dbGroup.MapPost("/delete", async (ApplicationDbContext db) =>
+    dbGroup.MapPost("/delete", (ApplicationDbContext db) =>
     {
         if (!db.EnsureDelete()) return Results.BadRequest("Failed to delete database");
         return Results.Ok("Database deleted successfully");
