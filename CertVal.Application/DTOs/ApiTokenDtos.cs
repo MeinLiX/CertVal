@@ -31,7 +31,7 @@ public record CreateApiTokenResponse
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
-    public string Token { get; init; } = string.Empty; // Full token only shown on creation
+    public string Token { get; init; } = string.Empty;
     public string TokenPrefix { get; init; } = string.Empty;
     public string Scope { get; init; } = string.Empty;
     public DateTime? ExpiresAt { get; init; }

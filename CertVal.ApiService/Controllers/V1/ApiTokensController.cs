@@ -57,19 +57,18 @@ public class ApiTokensController : ControllerBase
         if (!_currentUser.UserId.HasValue)
             return Unauthorized();
 
-        // Generate secure API token
         var tokenBytes = new byte[32];
         using (var rng = RandomNumberGenerator.Create())
         {
             rng.GetBytes(tokenBytes);
         }
         var token = Convert.ToBase64String(tokenBytes);
-        var tokenPrefix = token[..8]; // First 8 characters for display
+        var tokenPrefix = token[..8];
 
         var apiToken = ApiToken.Create(
             _currentUser.UserId.Value,
             request.Name,
-            token, // In production, store this hashed
+            token,
             tokenPrefix,
             request.Scope,
             request.ExpiresAt
@@ -82,7 +81,7 @@ public class ApiTokensController : ControllerBase
         {
             Id = apiToken.Id,
             Name = apiToken.Name,
-            Token = token, // Only return the actual token on creation
+            Token = token,
             TokenPrefix = tokenPrefix,
             Scope = apiToken.Scope.ToString(),
             ExpiresAt = apiToken.ExpiresAt,

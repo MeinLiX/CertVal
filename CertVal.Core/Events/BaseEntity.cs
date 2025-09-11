@@ -1,6 +1,5 @@
 ﻿namespace CertVal.Core.Events;
 
-// Base entity with domain events support
 public abstract class BaseEntity : IHasDomainEvents
 {
     private readonly List<DomainEvent> _domainEvents = [];

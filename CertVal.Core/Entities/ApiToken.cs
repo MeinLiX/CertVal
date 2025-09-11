@@ -9,7 +9,7 @@ public class ApiToken : BaseEntity
     public Guid UserId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string TokenHash { get; private set; } = string.Empty;
-    public string TokenPrefix { get; private set; } = string.Empty; // First 8 chars for display
+    public string TokenPrefix { get; private set; } = string.Empty;
 
     public ApiTokenScope Scope { get; private set; } = ApiTokenScope.ReadOnly;
     public bool IsActive { get; private set; } = true;

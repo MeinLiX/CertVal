@@ -10,7 +10,6 @@ public static class AuthenticationExtensions
 {
     public static IServiceCollection AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        // Add JWT Authentication
         var jwtSettings = configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
         var key = Encoding.ASCII.GetBytes(secretKey);

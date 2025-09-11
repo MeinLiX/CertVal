@@ -72,7 +72,7 @@ builder.AddSqlServerDbContext<ApplicationDbContext>(
     }
 );
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure();
 
 // Register application services
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -165,6 +165,10 @@ app.MapControllers();
 
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready");
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live")
+});
 
 app.MapDefaultEndpoints();
 

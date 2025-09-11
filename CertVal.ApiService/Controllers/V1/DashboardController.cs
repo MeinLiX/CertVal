@@ -29,11 +29,9 @@ public class DashboardController : ControllerBase
         if (!_currentUser.UserId.HasValue)
             return Unauthorized();
 
-        // Get user's workspaces
         var workspaces = await _unitOfWork.Workspaces.GetUserWorkspacesAsync(_currentUser.UserId.Value);
         var workspaceIds = workspaces.Select(w => w.Id).ToList();
 
-        // Get all certificates from user's workspaces
         var allCertificates = new List<Core.Entities.Certificate>();
         foreach (var workspaceId in workspaceIds)
         {
@@ -64,7 +62,6 @@ public class DashboardController : ControllerBase
         if (!_currentUser.UserId.HasValue)
             return Unauthorized();
 
-        // Get recent events from event store
         var recentEvents = await _unitOfWork.EventStore.GetEventsByUserAsync(
             _currentUser.UserId.Value.ToString(),
             DateTime.UtcNow.AddDays(-30),
@@ -94,11 +91,9 @@ public class DashboardController : ControllerBase
         if (!_currentUser.UserId.HasValue)
             return Unauthorized();
 
-        // Get user's workspaces
         var workspaces = await _unitOfWork.Workspaces.GetUserWorkspacesAsync(_currentUser.UserId.Value);
         var workspaceIds = workspaces.Select(w => w.Id).ToList();
 
-        // Get expiring certificates from all accessible workspaces
         var expiringCertificates = new List<Core.Entities.Certificate>();
         var cutoffDate = DateTime.UtcNow.AddDays(daysAhead);
 

@@ -46,7 +46,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             using var scope = _serviceProvider.CreateScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-            // In a real implementation, you would:
+            // In a real implementation:
             // 1. Hash the incoming API key with the same algorithm used during creation
             // 2. Look up the token by the hash
             // For this example, we'll store and compare the raw token (NOT SECURE for production)
@@ -58,11 +58,9 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
                 return AuthenticateResult.Fail("Invalid API key");
             }
 
-            // Update last used information
             apiToken.UpdateLastUsed(GetClientIpAddress());
             await unitOfWork.SaveChangesAsync();
 
-            // Create claims
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, apiToken.UserId.ToString()),

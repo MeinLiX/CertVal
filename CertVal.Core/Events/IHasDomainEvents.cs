@@ -1,6 +1,5 @@
 ﻿namespace CertVal.Core.Events;
 
-// Interface for entities that can raise domain events
 public interface IHasDomainEvents
 {
     IReadOnlyList<DomainEvent> DomainEvents { get; }

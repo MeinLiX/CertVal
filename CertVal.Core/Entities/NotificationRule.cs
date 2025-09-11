@@ -3,7 +3,6 @@ using CertVal.Core.Events;
 
 namespace CertVal.Core.Entities;
 
-// NotificationRule with events
 public class NotificationRule : BaseEntity
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
@@ -55,10 +54,35 @@ public class NotificationRule : BaseEntity
         return rule;
     }
 
-    public void Toggle() => IsEnabled = !IsEnabled;
+    public void Toggle()
+    {
+        IsEnabled = !IsEnabled;
+        UpdatedAt = DateTime.UtcNow;
+    }
 
     public void UpdateConfig(string channelConfig)
     {
+        ChannelConfig = channelConfig;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Update(string name, int daysBeforeExpiry, NotificationFrequency frequency)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name cannot be empty", nameof(name));
+
+        if (daysBeforeExpiry < 0)
+            throw new ArgumentException("Days before expiry cannot be negative", nameof(daysBeforeExpiry));
+
+        Name = name.Trim();
+        DaysBeforeExpiry = daysBeforeExpiry;
+        Frequency = frequency;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ChangeChannel(NotificationChannelType channelType, string channelConfig)
+    {
+        ChannelType = channelType;
         ChannelConfig = channelConfig;
         UpdatedAt = DateTime.UtcNow;
     }

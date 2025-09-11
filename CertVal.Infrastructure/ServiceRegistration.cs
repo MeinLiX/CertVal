@@ -1,6 +1,4 @@
 ﻿using CertVal.Application.Common.Interfaces;
-using CertVal.Application.Services;
-using CertVal.Core.Entities;
 using CertVal.Core.Events;
 using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Authentication;
@@ -8,9 +6,7 @@ using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Events;
 using CertVal.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace CertVal.Infrastructure;
@@ -18,19 +14,13 @@ namespace CertVal.Infrastructure;
 public static class ServiceRegistration
 {
     public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services,
-        IConfiguration configuration)
+        this IServiceCollection services)
     {
-        // Add domain event dispatcher and handlers
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
-        // Add all domain event handlers
         AddDomainEventHandlers(services);
-
-        // Add repositories
         AddRepositories(services);
 
-        // Add authentication services
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         return services;
@@ -93,14 +83,6 @@ public static class ServiceRegistration
             logger.LogInformation("Starting database migration...");
             await context.Database.MigrateAsync();
             logger.LogInformation("Database migration completed successfully.");
-
-            var environment = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
-            if (environment.IsDevelopment())
-            {
-                //logger.LogInformation("Seeding development data...");
-                //await context.SeedDevelopmentDataAsync();
-                //logger.LogInformation("Development data seeding completed.");
-            }
         }
         catch (Exception ex)
         {

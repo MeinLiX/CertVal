@@ -70,12 +70,10 @@ public class WorkspaceMembersController : ControllerBase
         if (!await CanManageWorkspace(workspaceId))
             return Forbid();
 
-        // Check if user exists
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
         if (user == null)
             return BadRequest(new { message = "User with this email does not exist" });
 
-        // Check if user is already a member
         var existingMember = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, user.Id);
         if (existingMember != null)
             return BadRequest(new { message = "User is already a member of this workspace" });
@@ -137,7 +135,6 @@ public class WorkspaceMembersController : ControllerBase
         await _unitOfWork.WorkspaceMembers.UpdateAsync(member);
         await _unitOfWork.SaveChangesAsync();
 
-        // Reload with user information
         member = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, member.UserId);
 
         var memberDto = new WorkspaceMemberDto
@@ -180,10 +177,8 @@ public class WorkspaceMembersController : ControllerBase
         var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
         if (workspace == null) return false;
 
-        // Check if user is owner
         if (workspace.OwnerId == _currentUser.UserId.Value) return true;
 
-        // Check if user is admin member
         var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value);
         return membership?.CanManageWorkspace ?? false;
     }

@@ -99,7 +99,6 @@ public class NotificationService : INotificationService
 
         if (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(username))
         {
-            // For development, just log the email
             _logger.LogInformation("Email would be sent to {Recipient}: {Subject}",
                 notification.Recipient, notification.Subject);
             return Result.Success();

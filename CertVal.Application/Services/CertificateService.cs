@@ -34,7 +34,6 @@ public class CertificateService : ICertificateService
 
         if (request.WorkspaceId.HasValue)
         {
-            // Check workspace access
             if (!await CanAccessWorkspace(request.WorkspaceId.Value, cancellationToken))
                 return Result.Failure<PagedResult<CertificateDto>>("Access denied to this workspace");
 
@@ -42,7 +41,6 @@ public class CertificateService : ICertificateService
         }
         else
         {
-            // Get all certificates from user's accessible workspaces
             var workspaces = await _unitOfWork.Workspaces.GetUserWorkspacesAsync(_currentUser.UserId.Value, cancellationToken);
             var workspaceIds = workspaces.Select(w => w.Id).ToList();
 
@@ -54,15 +52,12 @@ public class CertificateService : ICertificateService
             }
         }
 
-        // Apply filters
         var filteredCertificates = ApplyFilters(certificates, request);
 
-        // Apply sorting
         filteredCertificates = ApplySorting(filteredCertificates, request.SortBy, request.SortDescending);
 
         var totalCount = filteredCertificates.Count();
 
-        // Apply pagination
         var pagedCertificates = filteredCertificates
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
@@ -83,7 +78,6 @@ public class CertificateService : ICertificateService
         if (certificate == null)
             return Result.Failure<CertificateDto>("Certificate not found");
 
-        // Check workspace access
         if (!await CanAccessWorkspace(certificate.WorkspaceId, cancellationToken))
             return Result.Failure<CertificateDto>("Access denied to this certificate");
 
@@ -95,11 +89,9 @@ public class CertificateService : ICertificateService
         if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
             return Result.Failure<CertificateDto>("User not authenticated");
 
-        // Check workspace access
         if (!await CanAccessWorkspace(request.WorkspaceId, cancellationToken))
             return Result.Failure<CertificateDto>("Access denied to this workspace");
 
-        // Validate file
         if (request.File == null || request.File.Length == 0)
             return Result.Failure<CertificateDto>("No file provided");
 
@@ -109,12 +101,10 @@ public class CertificateService : ICertificateService
 
         try
         {
-            // Read file data
             using var stream = new MemoryStream();
             await request.File.CopyToAsync(stream, cancellationToken);
             var certificateData = stream.ToArray();
 
-            // Process certificate using the processor service
             var parseResult = await _certificateProcessor.ProcessCertificateAsync(
                 certificateData,
                 request.File.FileName,
@@ -126,20 +116,16 @@ public class CertificateService : ICertificateService
             var parsedCertificates = parseResult.Value.ToList();
             var mainCertificate = parsedCertificates.First();
 
-            // Check for duplicates
             var existingCert = await _unitOfWork.Certificates.GetByThumbprintAsync(mainCertificate.Thumbprint, cancellationToken);
             if (existingCert != null)
                 return Result.Failure<CertificateDto>("Certificate with this thumbprint already exists");
 
-            // Save file to storage
             var filePath = await SaveCertificateFile(certificateData, request.File.FileName);
 
             Certificate? parentCertificate = null;
 
-            // Create certificates
             if (parsedCertificates.Count > 1)
             {
-                // This is a bundle - create parent certificate
                 parentCertificate = Certificate.Create(
                     request.WorkspaceId,
                     $"Bundle: {request.File.FileName}",
@@ -159,7 +145,6 @@ public class CertificateService : ICertificateService
                 await _unitOfWork.Certificates.AddAsync(parentCertificate, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                // Create child certificates
                 var childCertificates = new List<Certificate>();
                 foreach (var parsedCert in parsedCertificates)
                 {
@@ -186,7 +171,6 @@ public class CertificateService : ICertificateService
             }
             else
             {
-                // Single certificate
                 parentCertificate = Certificate.Create(
                     request.WorkspaceId,
                     mainCertificate.Subject,
@@ -223,7 +207,6 @@ public class CertificateService : ICertificateService
         if (certificate == null)
             return Result.Failure("Certificate not found");
 
-        // Check workspace access and permissions
         if (!await CanManageCertificates(certificate.WorkspaceId, cancellationToken))
             return Result.Failure("Access denied - insufficient permissions");
 
@@ -240,7 +223,6 @@ public class CertificateService : ICertificateService
 
         var certificates = await _unitOfWork.Certificates.GetExpiringAsync(daysAhead, cancellationToken);
 
-        // Filter to only certificates from accessible workspaces
         var accessibleCertificates = new List<Certificate>();
         foreach (var cert in certificates)
         {
@@ -352,18 +334,15 @@ public class CertificateService : ICertificateService
     {
         if (!_currentUser.UserId.HasValue) return false;
 
-        // API tokens with write access can manage certificates
         if (_currentUser.IsApiClient &&
             (_currentUser.ApiTokenScope == Core.Enums.ApiTokenScope.ReadWrite ||
              _currentUser.ApiTokenScope == Core.Enums.ApiTokenScope.Admin))
             return await CanAccessWorkspace(workspaceId, cancellationToken);
 
-        // Check workspace membership with appropriate role
         var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
         if (membership != null)
             return membership.CanManageCertificates;
 
-        // Check if user is workspace owner
         var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId, cancellationToken);
         return workspace?.OwnerId == _currentUser.UserId.Value;
     }

@@ -57,7 +57,6 @@ public class WorkspaceService : IWorkspaceService
         if (workspace == null)
             return Result.Failure<WorkspaceDto>("Workspace not found");
 
-        // Check access rights
         if (!await CanAccessWorkspace(workspaceId, cancellationToken))
             return Result.Failure<WorkspaceDto>("Access denied to this workspace");
 
@@ -87,7 +86,6 @@ public class WorkspaceService : IWorkspaceService
         await _unitOfWork.Workspaces.AddAsync(workspace, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Reload with navigation properties
         var createdWorkspace = await _unitOfWork.Workspaces.GetByIdAsync(workspace.Id, cancellationToken);
         var dto = createdWorkspace!.Adapt<WorkspaceDto>() with
         {
@@ -107,7 +105,6 @@ public class WorkspaceService : IWorkspaceService
         if (workspace == null)
             return Result.Failure<WorkspaceDto>("Workspace not found");
 
-        // Check if user is owner or admin
         if (workspace.OwnerId != _currentUser.UserId.Value && !IsAdminUser())
             return Result.Failure<WorkspaceDto>("Access denied - only workspace owner can update settings");
 
@@ -135,7 +132,6 @@ public class WorkspaceService : IWorkspaceService
         if (workspace == null)
             return Result.Failure("Workspace not found");
 
-        // Check if user is owner or admin
         if (workspace.OwnerId != _currentUser.UserId.Value && !IsAdminUser())
             return Result.Failure("Access denied - only workspace owner can delete workspace");
 

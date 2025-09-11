@@ -43,7 +43,6 @@ public class UserService : IUserService
 
     public async Task<Result<UserDto>> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
-        // Check if email already exists
         if (await _unitOfWork.Users.IsEmailTakenAsync(request.Email, cancellationToken: cancellationToken))
             return Result.Failure<UserDto>("Email is already registered");
 
@@ -71,7 +70,6 @@ public class UserService : IUserService
         if (user == null)
             return Result.Failure<UserDto>("User not found");
 
-        // Authorization check
         if (_currentUser.UserId != userId && !IsAdminUser())
             return Result.Failure<UserDto>("Unauthorized to update this user");
 
@@ -90,11 +88,9 @@ public class UserService : IUserService
         if (user == null)
             return Result.Failure("User not found");
 
-        // Authorization check
         if (_currentUser.UserId != userId)
             return Result.Failure("Unauthorized to change password for this user");
 
-        // Verify current password
         if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             return Result.Failure("Current password is incorrect");
 
@@ -124,7 +120,7 @@ public class UserService : IUserService
     {
         var user = await _unitOfWork.Users.GetByEmailAsync(email, cancellationToken);
         if (user == null)
-            return Result.Success(); // Don't reveal if email exists
+            return Result.Success();
 
         var resetToken = Guid.NewGuid().ToString();
         var expiresAt = DateTime.UtcNow.AddHours(24);

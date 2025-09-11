@@ -62,7 +62,6 @@ public class NotificationBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-        // Get all active notification rules
         var activeRules = await unitOfWork.NotificationRules.GetActiveRulesAsync(cancellationToken);
 
         foreach (var rule in activeRules)
@@ -85,7 +84,6 @@ public class NotificationBackgroundService : BackgroundService
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        // Get certificates that match the rule criteria
         var targetDate = DateTime.UtcNow.AddDays(rule.DaysBeforeExpiry);
         var certificates = await unitOfWork.Certificates.GetByWorkspaceAsync(rule.WorkspaceId, cancellationToken);
 
@@ -95,7 +93,6 @@ public class NotificationBackgroundService : BackgroundService
 
         foreach (var certificate in expiringCertificates)
         {
-            // Check if notification already sent for this certificate/rule combination
             var lastNotification = await unitOfWork.NotificationHistory
                 .GetLastNotificationAsync(certificate.Id, rule.Id, cancellationToken);
 
@@ -108,7 +105,7 @@ public class NotificationBackgroundService : BackgroundService
         }
     }
 
-    private bool ShouldSendNotification(NotificationHistory? lastNotification, NotificationFrequency frequency)
+    private static bool ShouldSendNotification(NotificationHistory? lastNotification, NotificationFrequency frequency)
     {
         if (lastNotification == null)
             return true;
@@ -161,7 +158,7 @@ public class NotificationBackgroundService : BackgroundService
             certificate.Id, daysUntilExpiry);
     }
 
-    private string GetRecipientFromChannelConfig(string channelConfig, string defaultEmail)
+    private static string GetRecipientFromChannelConfig(string channelConfig, string defaultEmail)
     {
         try
         {
@@ -177,7 +174,7 @@ public class NotificationBackgroundService : BackgroundService
         return defaultEmail;
     }
 
-    private string GenerateSubject(Certificate certificate, int daysUntilExpiry)
+    private static string GenerateSubject(Certificate certificate, int daysUntilExpiry)
     {
         var urgencyLevel = daysUntilExpiry switch
         {
@@ -190,7 +187,7 @@ public class NotificationBackgroundService : BackgroundService
         return $"{urgencyLevel} Certificate Alert: {certificate.Subject} expires in {daysUntilExpiry} days";
     }
 
-    private string GenerateMessage(Certificate certificate, Workspace workspace, int daysUntilExpiry)
+    private static string GenerateMessage(Certificate certificate, Workspace workspace, int daysUntilExpiry)
     {
         var status = daysUntilExpiry <= 0 ? "has expired" : $"expires in {daysUntilExpiry} day(s)";
 
