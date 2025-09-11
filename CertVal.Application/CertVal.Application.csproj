@@ -10,7 +10,6 @@
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="Mapster" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Features" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="System.ComponentModel.Annotations" />
