@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net;
-using System.Net.Http;
 using System.Text.Json;
 
 namespace CertVal.Application.Middleware;

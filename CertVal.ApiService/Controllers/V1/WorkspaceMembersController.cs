@@ -1,7 +1,6 @@
 ﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Application.DTOs;
 using CertVal.Core.Entities;
-using CertVal.Core.Enums;
 using CertVal.Core.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

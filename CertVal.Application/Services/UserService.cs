@@ -1,6 +1,4 @@
-﻿using BCrypt.Net;
-using CertVal.Application.Common.Exceptions;
-using CertVal.Application.Common.Interfaces;
+﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
 using CertVal.Core.Entities;

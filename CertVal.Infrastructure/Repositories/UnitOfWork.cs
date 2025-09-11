@@ -1,7 +1,7 @@
-﻿using CertVal.Core.Repositories;
+﻿using CertVal.Core.Events;
+using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Events;
-using CertVal.Core.Events;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CertVal.Infrastructure.Repositories;

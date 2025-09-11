@@ -1,7 +1,7 @@
-﻿using System.Security.Claims;
-using CertVal.Application.Common.Interfaces;
+﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Core.Enums;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace CertVal.Infrastructure.Authentication;
 

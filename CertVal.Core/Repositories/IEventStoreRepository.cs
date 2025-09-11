@@ -1,5 +1,4 @@
 ﻿using CertVal.Core.Entities;
-using CertVal.Core.Events;
 
 namespace CertVal.Core.Repositories;
 
