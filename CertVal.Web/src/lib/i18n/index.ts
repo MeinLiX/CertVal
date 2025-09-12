@@ -12,6 +12,7 @@ export const translations = {
             confirm: 'Підтвердити',
             back: 'Назад',
             next: 'Далі',
+            previous: 'Попередня',
             search: 'Пошук',
             filter: 'Фільтр',
             export: 'Експорт',
@@ -39,7 +40,11 @@ export const translations = {
             joined: 'Приєднався',
             invited: 'Запрошено',
             role: 'Роль',
-            quickActions: 'Швидкі дії'
+            quickActions: 'Швидкі дії',
+            workspace: 'Робочий простір',
+            of: 'з',
+            to: 'до',
+            actions: 'Дії'
         },
         nav: {
             dashboard: 'Панель керування',
@@ -139,6 +144,7 @@ export const translations = {
             manageNotifications: 'Керування сповіщеннями',
             exportData: 'Експорт даних',
             allowMemberInvites: 'Дозволити запрошення учасників',
+            unknownWorkspace: 'Невідомий робочий простір',
             roles: {
                 viewer: 'Глядач',
                 editor: 'Редактор',
@@ -147,6 +153,7 @@ export const translations = {
         },
         certificates: {
             title: 'Сертифікати',
+            subtitle: 'Моніторинг та управління SSL/TLS сертифікатами',
             upload: 'Завантажити сертифікат',
             subject: 'Суб\'єкт',
             issuer: 'Видавець',
@@ -154,6 +161,7 @@ export const translations = {
             status: 'Статус',
             expired: 'Прострочений',
             expiring: 'Закінчується',
+            expiring30: 'Закінчується (30 днів)',
             valid: 'Дійсний',
             days: 'днів',
             empty: 'Немає сертифікатів',
@@ -168,7 +176,59 @@ export const translations = {
             selectFile: 'Оберіть файл',
             supportedFormats: 'Підтримувані формати',
             viewDetails: 'Переглянути деталі',
-            downloadCert: 'Скачати сертифікат'
+            downloadCert: 'Скачати сертифікат',
+            clearAll: 'Очистити все',
+            allWorkspaces: 'Всі робочі простори',
+            searchPlaceholder: 'Пошук за суб\'єктом...',
+            allStatuses: 'Всі статуси',
+            allFormats: 'Всі формати',
+            sortBy: 'Сортувати за',
+            expiryDate: 'Дата закінчення',
+            createdDate: 'Дата створення',
+            activeFilters: 'Активні фільтри',
+            noMatches: 'Жодних сертифікатів не знайдено',
+            adjustFilters: 'Спробуйте скорегувати критерії пошуку',
+            clearFilters: 'Очистити фільтри',
+            showing: 'Показано',
+            page: 'сторінка',
+            sort: 'Сортування',
+            expiry: 'Закінчення',
+            created: 'Створено',
+            format: 'Формат',
+            results: 'результатів',
+            selectWorkspace: 'Оберіть робочий простір',
+            certificateFile: 'Файл сертифіката',
+            details: 'Деталі сертифіката',
+            bundle: 'Пакет сертифікатів',
+            file: 'Файл',
+            size: 'Розмір',
+            daysLeft: 'днів залишилось',
+            expiresToday: 'Закінчується сьогодні',
+            expiredAgo: 'Минуло {days} днів після закінчення',
+            download: 'Завантажити',
+            information: 'Інформація про сертифікат',
+            copyToClipboard: 'Копіювати в буфер обміну',
+            validFrom: 'Дійсний з',
+            validUntil: 'Дійсний до',
+            bundleContents: 'Вміст пакету',
+            bundleContainsCount: 'Цей пакет містить {count} сертифікатів',
+            issuedBy: 'Видано',
+            quickStats: 'Швидка статистика',
+            daysUntilExpiry: 'Днів до закінчення',
+            bundleSize: 'Розмір пакету',
+            certificatesCount: '{count} сертифікатів',
+            fileInformation: 'Інформація про файл',
+            originalFilename: 'Оригінальна назва файлу',
+            uploaded: 'Завантажено',
+            lastUpdated: 'Останнє оновлення',
+            deleteCertificate: 'Видалити сертифікат',
+            confirmDeletion: 'Підтвердити видалення',
+            deletionWarning: 'Ця дія не може бути скасована. Файл сертифіката буде назавжди видалений.',
+            failedToLoad: 'Помилка завантаження сертифіката',
+            failedToDelete: 'Помилка видалення сертифіката',
+            errorLoading: 'Помилка завантаження сертифіката',
+            downloadNotImplemented: 'Функція завантаження буде реалізована пізніше',
+            expiredDaysAgo: 'Прострочений {days} днів тому'
         },
         notifications: {
             title: 'Сповіщення',
@@ -250,6 +310,7 @@ export const translations = {
             confirm: 'Confirm',
             back: 'Back',
             next: 'Next',
+            previous: 'Previous',
             search: 'Search',
             filter: 'Filter',
             export: 'Export',
@@ -277,7 +338,11 @@ export const translations = {
             joined: 'Joined',
             invited: 'Invited',
             role: 'Role',
-            quickActions: 'Quick Actions'
+            quickActions: 'Quick Actions',
+            workspace: 'Workspace',
+            of: 'of',
+            to: 'to',
+            actions: 'Actions'
         },
         nav: {
             dashboard: 'Dashboard',
@@ -377,6 +442,7 @@ export const translations = {
             manageNotifications: 'Manage Notifications',
             exportData: 'Export Data',
             allowMemberInvites: 'Allow member invites',
+            unknownWorkspace: 'Unknown Workspace',
             roles: {
                 viewer: 'Viewer',
                 editor: 'Editor',
@@ -385,14 +451,16 @@ export const translations = {
         },
         certificates: {
             title: 'Certificates',
+            subtitle: 'Monitor and manage your SSL/TLS certificates',
             upload: 'Upload Certificate',
             subject: 'Subject',
             issuer: 'Issuer',
             expires: 'Expires',
             status: 'Status',
             expired: 'Expired',
-            expiring: 'Expiring',
-            valid: 'Valid',
+            expiring: 'Expiring Soon',
+            expiring30: 'Expiring (within 30 days)',
+            valid: 'Valid (over 30 days)',
             days: 'days',
             empty: 'No certificates',
             uploadFirst: 'Upload your first certificate',
@@ -406,7 +474,59 @@ export const translations = {
             selectFile: 'Select File',
             supportedFormats: 'Supported Formats',
             viewDetails: 'View Details',
-            downloadCert: 'Download Certificate'
+            downloadCert: 'Download Certificate',
+            clearAll: 'Clear All',
+            allWorkspaces: 'All Workspaces',
+            searchPlaceholder: 'Search by subject...',
+            allStatuses: 'All Statuses',
+            allFormats: 'All Formats',
+            sortBy: 'Sort By',
+            expiryDate: 'Expiry Date',
+            createdDate: 'Created Date',
+            activeFilters: 'Active filters',
+            noMatches: 'No certificates match your filters',
+            adjustFilters: 'Try adjusting your search criteria',
+            clearFilters: 'Clear Filters',
+            showing: 'Showing',
+            page: 'page',
+            sort: 'Sort',
+            expiry: 'Expiry',
+            created: 'Created',
+            format: 'Format',
+            results: 'results',
+            selectWorkspace: 'Select a workspace',
+            certificateFile: 'Certificate File',
+            details: 'Certificate Details',
+            bundle: 'Certificate Bundle',
+            file: 'File',
+            size: 'Size',
+            daysLeft: 'days left',
+            expiresToday: 'Expires today',
+            expiredAgo: 'Expired {days} days ago',
+            download: 'Download',
+            information: 'Certificate Information',
+            copyToClipboard: 'Copy to clipboard',
+            validFrom: 'Valid From',
+            validUntil: 'Valid Until',
+            bundleContents: 'Bundle Contents',
+            bundleContainsCount: 'This bundle contains {count} certificates',
+            issuedBy: 'Issued by',
+            quickStats: 'Quick Stats',
+            daysUntilExpiry: 'Days until expiry',
+            bundleSize: 'Bundle Size',
+            certificatesCount: '{count} certificates',
+            fileInformation: 'File Information',
+            originalFilename: 'Original Filename',
+            uploaded: 'Uploaded',
+            lastUpdated: 'Last Updated',
+            deleteCertificate: 'Delete Certificate',
+            confirmDeletion: 'Confirm Deletion',
+            deletionWarning: 'This action cannot be undone. The certificate file will be permanently removed.',
+            failedToLoad: 'Failed to load certificate',
+            failedToDelete: 'Failed to delete certificate',
+            errorLoading: 'Error Loading Certificate',
+            downloadNotImplemented: 'Download functionality would be implemented here',
+            expiredDaysAgo: 'Expired {days} days ago'
         },
         notifications: {
             title: 'Notifications',
@@ -479,7 +599,7 @@ export const translations = {
     }
 };
 
-export function t(key: string, lang: Language = 'uk'): string {
+export function t(key: string, lang: Language = 'uk', params?: Record<string, any>): string {
     const keys = key.split('.');
     let value: any = translations[lang];
 
@@ -492,5 +612,14 @@ export function t(key: string, lang: Language = 'uk'): string {
         }
     }
 
-    return typeof value === 'string' ? value : key;
+    if (typeof value === 'string') {
+        if (params) {
+            return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
+                return params[paramKey] !== undefined ? String(params[paramKey]) : match;
+            });
+        }
+        return value;
+    }
+
+    return key;
 }

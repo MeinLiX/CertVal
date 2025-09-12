@@ -35,9 +35,64 @@
 	let currentPage = $state<number>(1);
 	let pageSize = $state<number>(20);
 	let totalCount = $state<number>(0);
-	let totalPages = $derived(Math.ceil(totalCount / pageSize));
 
-	const workspaceFilter = $derived($page.url.searchParams.get('workspace'));
+	const currentParams = $derived($page.url.searchParams);
+	const workspaceFilter = $derived(currentParams.get('workspace'));
+
+	const totalPages = $derived(Math.ceil(totalCount / pageSize));
+
+	$effect(() => {
+		const urlParams = currentParams;
+		searchTerm = urlParams.get('search') || '';
+		statusFilter = urlParams.get('status') || '';
+		formatFilter = urlParams.get('format') || '';
+		sortBy = urlParams.get('sortBy') || 'notAfter';
+		sortDescending = urlParams.get('sortDesc') === 'true';
+		currentPage = parseInt(urlParams.get('page') || '1');
+	});
+
+	$effect(() => {
+		const deps = [
+			searchTerm,
+			statusFilter,
+			formatFilter,
+			sortBy,
+			sortDescending,
+			currentPage,
+			workspaceFilter
+		];
+
+		if (!isLoading && workspaceList.length > 0) {
+			loadCertificates();
+		}
+	});
+
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			const url = new URL(window.location.href);
+
+			// Update search params
+			if (searchTerm) url.searchParams.set('search', searchTerm);
+			else url.searchParams.delete('search');
+
+			if (statusFilter) url.searchParams.set('status', statusFilter);
+			else url.searchParams.delete('status');
+
+			if (formatFilter) url.searchParams.set('format', formatFilter);
+			else url.searchParams.delete('format');
+
+			if (sortBy !== 'notAfter') url.searchParams.set('sortBy', sortBy);
+			else url.searchParams.delete('sortBy');
+
+			if (sortDescending) url.searchParams.set('sortDesc', 'true');
+			else url.searchParams.delete('sortDesc');
+
+			if (currentPage > 1) url.searchParams.set('page', currentPage.toString());
+			else url.searchParams.delete('page');
+
+			window.history.replaceState({}, '', url.pathname + url.search);
+		}
+	});
 
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
@@ -45,57 +100,8 @@
 			return;
 		}
 
-		// Initialize filters from URL params
-		const urlParams = $page.url.searchParams;
-		searchTerm = urlParams.get('search') || '';
-		statusFilter = urlParams.get('status') || '';
-		formatFilter = urlParams.get('format') || '';
-		sortBy = urlParams.get('sortBy') || 'notAfter';
-		sortDescending = urlParams.get('sortDesc') === 'true';
-		currentPage = parseInt(urlParams.get('page') || '1');
-
 		await Promise.all([loadWorkspaces(), loadCertificates()]);
-	});
-
-	// Update URL when filters change
-	$effect(() => {
-		const url = new URL(window.location.href);
-		
-		// Update search params
-		if (searchTerm) url.searchParams.set('search', searchTerm);
-		else url.searchParams.delete('search');
-		
-		if (statusFilter) url.searchParams.set('status', statusFilter);
-		else url.searchParams.delete('status');
-		
-		if (formatFilter) url.searchParams.set('format', formatFilter);
-		else url.searchParams.delete('format');
-		
-		if (sortBy !== 'notAfter') url.searchParams.set('sortBy', sortBy);
-		else url.searchParams.delete('sortBy');
-		
-		if (sortDescending) url.searchParams.set('sortDesc', 'true');
-		else url.searchParams.delete('sortDesc');
-		
-		if (currentPage > 1) url.searchParams.set('page', currentPage.toString());
-		else url.searchParams.delete('page');
-
-		// Update URL without causing navigation
-		if (typeof window !== 'undefined') {
-			window.history.replaceState({}, '', url.pathname + url.search);
-		}
-	});
-
-	// Reload certificates when filters change
-	let filterChangeTimeout: any;
-	$effect(() => {
-		if (!isLoading) {
-			clearTimeout(filterChangeTimeout);
-			filterChangeTimeout = setTimeout(() => {
-				currentPage = 1; // Reset to first page when filters change
-				loadCertificates();
-			}, 300);
-		}
+		isLoading = false;
 	});
 
 	async function loadWorkspaces() {
@@ -113,27 +119,27 @@
 	async function loadCertificates() {
 		try {
 			const params = new URLSearchParams();
-			
+
 			if (workspaceFilter) params.set('workspaceId', workspaceFilter);
 			if (searchTerm) params.set('subject', searchTerm);
 			if (statusFilter === 'expired') params.set('isExpired', 'true');
 			else if (statusFilter === 'valid') params.set('isExpired', 'false');
 			if (formatFilter) params.set('status', formatFilter);
-			
+
 			params.set('sortBy', sortBy);
 			params.set('sortDescending', sortDescending.toString());
 			params.set('pageNumber', currentPage.toString());
 			params.set('pageSize', pageSize.toString());
 
-			const response = await api.get<PagedResult<Certificate>>(`/v1/certificates?${params.toString()}`);
+			const response = await api.get<PagedResult<Certificate>>(
+				`/v1/certificates?${params.toString()}`
+			);
 			if (response.data) {
 				certificates = response.data.items;
 				totalCount = response.data.totalCount;
 			}
 		} catch (error) {
 			console.error('Failed to load certificates:', error);
-		} finally {
-			isLoading = false;
 		}
 	}
 
@@ -142,7 +148,7 @@
 		errors = {};
 
 		if (!selectedFile || !selectedWorkspaceId) {
-			errors.general = 'Please select a file and workspace';
+			errors.general = t('errors.required', $language);
 			return;
 		}
 
@@ -218,7 +224,7 @@
 
 	function getWorkspaceName(workspaceId: string): string {
 		const workspace = workspaceList.find((w) => w.id === workspaceId);
-		return workspace?.name || 'Unknown Workspace';
+		return workspace?.name || t('workspaces.unknownWorkspace', $language);
 	}
 
 	function handleWorkspaceFilterChange(event: Event) {
@@ -229,6 +235,7 @@
 		} else {
 			url.searchParams.delete('workspace');
 		}
+		url.searchParams.delete('page');
 		goto(url.pathname + url.search);
 	}
 
@@ -244,7 +251,7 @@
 
 	function changePage(page: number) {
 		currentPage = page;
-		loadCertificates();
+		// URL and reload will be handled by $effect
 	}
 
 	function handleSort(field: string) {
@@ -254,6 +261,11 @@
 			sortBy = field;
 			sortDescending = false;
 		}
+		currentPage = 1;
+	}
+
+	function handleFilterChange() {
+		currentPage = 1;
 	}
 
 	// Format file size
@@ -266,12 +278,16 @@
 	}
 
 	// Get unique formats for filter dropdown
-	const availableFormats = $derived([...new Set(certificates.map(c => c.fileFormat))].sort());
+	const availableFormats = $derived([...new Set(certificates.map((c) => c.fileFormat))].sort());
 
 	// Show upload modal with pre-selected workspace
 	function showUploadModalWithWorkspace() {
 		selectedWorkspaceId = workspaceFilter || (workspaceList.length > 0 ? workspaceList[0].id : '');
 		showUploadModal = true;
+	}
+
+	function handleBackNavigation() {
+		window.history.back();
 	}
 </script>
 
@@ -284,7 +300,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-2xl font-bold text-gray-900">{t('certificates.title', $language)}</h1>
-			<p class="text-gray-600">Monitor and manage your SSL/TLS certificates</p>
+			<p class="text-gray-600">{t('certificates.subtitle', $language)}</p>
 		</div>
 		<Button onclick={showUploadModalWithWorkspace}>
 			<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,127 +312,175 @@
 
 	<!-- Filters Card -->
 	<Card>
-	<div class="space-y-4">
-		<div class="flex items-center justify-between">
-			<h3 class="text-lg font-medium text-gray-900">Filters</h3>
-			<Button variant="outline" size="sm" onclick={clearFilters}>
-				<svg class="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-				</svg>
-				Clear All
-			</Button>
-		</div>
+		<div class="space-y-4">
+			<div class="flex items-center justify-between">
+				<h3 class="text-lg font-medium text-gray-900">{t('common.filter', $language)}</h3>
+				<Button variant="outline" size="sm" onclick={clearFilters}>
+					<svg class="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+					{t('certificates.clearAll', $language)}
+				</Button>
+			</div>
 
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-			<!-- Workspace Filter -->
-			{#if workspaceList.length > 1}
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+				<!-- Workspace Filter -->
+				{#if workspaceList.length > 1}
+					<div>
+						<label for="workspace-filter" class="mb-1 block text-sm font-medium text-gray-700"
+							>{t('common.workspace', $language)}</label
+						>
+						<select
+							id="workspace-filter"
+							class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+							value={workspaceFilter || ''}
+							onchange={handleWorkspaceFilterChange}
+						>
+							<option value="">{t('certificates.allWorkspaces', $language)}</option>
+							{#each workspaceList as workspace}
+								<option value={workspace.id}>{workspace.name}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+
+				<!-- Search -->
 				<div>
-					<label for="workspace-filter" class="mb-1 block text-sm font-medium text-gray-700">Workspace</label>
-					<select
-						id="workspace-filter"
-						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-						value={workspaceFilter || ''}
-						onchange={handleWorkspaceFilterChange}
-					>
-						<option value="">All Workspaces</option>
-						{#each workspaceList as workspace}
-							<option value={workspace.id}>{workspace.name}</option>
-						{/each}
-					</select>
+					<Input
+						id="search-filter"
+						label={t('common.search', $language)}
+						type="search"
+						bind:value={searchTerm}
+						placeholder={t('certificates.searchPlaceholder', $language)}
+						oninput={handleFilterChange}
+					/>
 				</div>
-			{/if}
 
-			<!-- Search -->
-			<div>
-				<Input
-					id="search-filter"
-					label="Search"
-					type="search"
-					bind:value={searchTerm}
-					placeholder="Search by subject..."
-				/>
-			</div>
-
-			<!-- Status Filter -->
-			<div>
-				<label for="status-filter" class="mb-1 block text-sm font-medium text-gray-700">Status</label>
-				<select
-					id="status-filter"
-					bind:value={statusFilter}
-					class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-				>
-					<option value="">All Statuses</option>
-					<option value="valid">Valid</option>
-					<option value="expiring">Expiring (30 days)</option>
-					<option value="expired">Expired</option>
-				</select>
-			</div>
-
-			<!-- Format Filter -->
-			{#if availableFormats.length > 1}
+				<!-- Status Filter -->
 				<div>
-					<label for="format-filter" class="mb-1 block text-sm font-medium text-gray-700">Format</label>
+					<label for="status-filter" class="mb-1 block text-sm font-medium text-gray-700"
+						>{t('certificates.status', $language)}</label
+					>
 					<select
-						id="format-filter"
-						bind:value={formatFilter}
+						id="status-filter"
+						bind:value={statusFilter}
+						onchange={handleFilterChange}
 						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
 					>
-						<option value="">All Formats</option>
-						{#each availableFormats as format}
-							<option value={format}>{format}</option>
-						{/each}
+						<option value="">{t('certificates.allStatuses', $language)}</option>
+						<option value="valid">{t('certificates.valid', $language)}</option>
+						<option value="expiring">{t('certificates.expiring30', $language)}</option>
+						<option value="expired">{t('certificates.expired', $language)}</option>
 					</select>
 				</div>
+
+				<!-- Format Filter -->
+				{#if availableFormats.length > 1}
+					<div>
+						<label for="format-filter" class="mb-1 block text-sm font-medium text-gray-700"
+							>{t('certificates.format', $language)}</label
+						>
+						<select
+							id="format-filter"
+							bind:value={formatFilter}
+							onchange={handleFilterChange}
+							class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+						>
+							<option value="">{t('certificates.allFormats', $language)}</option>
+							{#each availableFormats as format}
+								<option value={format}>{format}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+
+				<!-- Sort -->
+				<div>
+					<label for="sort-filter" class="mb-1 block text-sm font-medium text-gray-700"
+						>{t('certificates.sortBy', $language)}</label
+					>
+					<select
+						id="sort-filter"
+						bind:value={sortBy}
+						onchange={handleFilterChange}
+						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+					>
+						<option value="notAfter">{t('certificates.expiryDate', $language)}</option>
+						<option value="subject">{t('certificates.subject', $language)}</option>
+						<option value="issuer">{t('certificates.issuer', $language)}</option>
+						<option value="createdAt">{t('certificates.createdDate', $language)}</option>
+					</select>
+				</div>
+			</div>
+
+			<!-- Active Filters Display -->
+			{#if searchTerm || statusFilter || formatFilter || workspaceFilter}
+				<div class="flex flex-wrap gap-2 pt-2">
+					<span class="text-sm font-medium text-gray-700"
+						>{t('certificates.activeFilters', $language)}:</span
+					>
+					{#if searchTerm}
+						<span
+							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+						>
+							{t('common.search', $language)}: {searchTerm}
+							<button
+								onclick={() => {
+									searchTerm = '';
+									handleFilterChange();
+								}}
+								class="ml-1 text-blue-600 hover:text-blue-800">×</button
+							>
+						</span>
+					{/if}
+					{#if statusFilter}
+						<span
+							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+						>
+							{t('certificates.status', $language)}: {t(`certificates.${statusFilter}`, $language)}
+							<button
+								onclick={() => {
+									statusFilter = '';
+									handleFilterChange();
+								}}
+								class="ml-1 text-blue-600 hover:text-blue-800">×</button
+							>
+						</span>
+					{/if}
+					{#if formatFilter}
+						<span
+							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+						>
+							{t('certificates.format', $language)}: {formatFilter}
+							<button
+								onclick={() => {
+									formatFilter = '';
+									handleFilterChange();
+								}}
+								class="ml-1 text-blue-600 hover:text-blue-800">×</button
+							>
+						</span>
+					{/if}
+					{#if workspaceFilter}
+						<span
+							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+						>
+							{t('common.workspace', $language)}: {getWorkspaceName(workspaceFilter)}
+							<button
+								onclick={() => goto('/certificates')}
+								class="ml-1 text-blue-600 hover:text-blue-800">×</button
+							>
+						</span>
+					{/if}
+				</div>
 			{/if}
-
-			<!-- Sort -->
-			<div>
-				<label for="sort-filter" class="mb-1 block text-sm font-medium text-gray-700">Sort By</label>
-				<select
-					id="sort-filter"
-					bind:value={sortBy}
-					class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-				>
-					<option value="notAfter">Expiry Date</option>
-					<option value="subject">Subject</option>
-					<option value="issuer">Issuer</option>
-					<option value="createdAt">Created Date</option>
-				</select>
-			</div>
 		</div>
-
-		<!-- Active Filters Display -->
-		{#if searchTerm || statusFilter || formatFilter || workspaceFilter}
-			<div class="flex flex-wrap gap-2 pt-2">
-				<span class="text-sm font-medium text-gray-700">Active filters:</span>
-				{#if searchTerm}
-					<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-						Search: {searchTerm}
-						<button onclick={() => searchTerm = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-					</span>
-				{/if}
-				{#if statusFilter}
-					<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-						Status: {statusFilter}
-						<button onclick={() => statusFilter = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-					</span>
-				{/if}
-				{#if formatFilter}
-					<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-						Format: {formatFilter}
-						<button onclick={() => formatFilter = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-					</span>
-				{/if}
-				{#if workspaceFilter}
-					<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-						Workspace: {getWorkspaceName(workspaceFilter)}
-						<button onclick={() => goto('/certificates')} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-					</span>
-				{/if}
-			</div>
-		{/if}
-	</div>
-</Card>
+	</Card>
 
 	{#if isLoading}
 		<div class="flex h-64 items-center justify-center">
@@ -439,14 +503,20 @@
 					/>
 				</svg>
 				<h3 class="mt-2 text-sm font-medium text-gray-900">
-					{searchTerm || statusFilter || formatFilter ? 'No certificates match your filters' : t('certificates.empty', $language)}
+					{searchTerm || statusFilter || formatFilter
+						? t('certificates.noMatches', $language)
+						: t('certificates.empty', $language)}
 				</h3>
 				<p class="mt-1 text-sm text-gray-500">
-					{searchTerm || statusFilter || formatFilter ? 'Try adjusting your search criteria' : t('certificates.uploadFirst', $language)}
+					{searchTerm || statusFilter || formatFilter
+						? t('certificates.adjustFilters', $language)
+						: t('certificates.uploadFirst', $language)}
 				</p>
 				<div class="mt-6 flex justify-center space-x-3">
 					{#if searchTerm || statusFilter || formatFilter}
-						<Button variant="outline" onclick={clearFilters}>Clear Filters</Button>
+						<Button variant="outline" onclick={clearFilters}
+							>{t('certificates.clearFilters', $language)}</Button
+						>
 					{/if}
 					<Button onclick={showUploadModalWithWorkspace}>
 						{t('certificates.upload', $language)}
@@ -458,18 +528,42 @@
 		<!-- Results Summary -->
 		<div class="flex items-center justify-between text-sm text-gray-600">
 			<span>
-				Showing {certificates.length} of {totalCount} certificates
-				{#if currentPage > 1} (page {currentPage} of {totalPages}){/if}
+				{t('certificates.showing', $language)}
+				{certificates.length}
+				{t('common.of', $language)}
+				{totalCount}
+				{t('certificates.title', $language).toLowerCase()}
+				{#if currentPage > 1}
+					({t('certificates.page', $language)}
+					{currentPage}
+					{t('common.of', $language)}
+					{totalPages}){/if}
 			</span>
 			<div class="flex items-center space-x-2">
-				<span>Sort:</span>
+				<span>{t('certificates.sort', $language)}:</span>
 				<button
 					onclick={() => handleSort(sortBy)}
 					class="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
 				>
-					<span>{sortBy === 'notAfter' ? 'Expiry' : sortBy === 'createdAt' ? 'Created' : sortBy}</span>
-					<svg class="h-4 w-4 {sortDescending ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+					<span
+						>{sortBy === 'notAfter'
+							? t('certificates.expiry', $language)
+							: sortBy === 'createdAt'
+								? t('certificates.created', $language)
+								: t(`certificates.${sortBy}`, $language)}</span
+					>
+					<svg
+						class="h-4 w-4 {sortDescending ? 'rotate-180' : ''}"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M5 15l7-7 7 7"
+						/>
 					</svg>
 				</button>
 			</div>
@@ -481,43 +575,100 @@
 				<table class="min-w-full divide-y divide-gray-200">
 					<thead class="bg-gray-50">
 						<tr>
-							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-								<button onclick={() => handleSort('subject')} class="group flex items-center space-x-1 hover:text-gray-700">
+							<th
+								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								<button
+									onclick={() => handleSort('subject')}
+									class="group flex items-center space-x-1 hover:text-gray-700"
+								>
 									<span>{t('certificates.subject', $language)}</span>
-									<svg class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'subject' ? 'opacity-100' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+									<svg
+										class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'subject'
+											? 'opacity-100'
+											: ''}"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+										/>
 									</svg>
 								</button>
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-								<button onclick={() => handleSort('issuer')} class="group flex items-center space-x-1 hover:text-gray-700">
+							<th
+								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								<button
+									onclick={() => handleSort('issuer')}
+									class="group flex items-center space-x-1 hover:text-gray-700"
+								>
 									<span>{t('certificates.issuer', $language)}</span>
-									<svg class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'issuer' ? 'opacity-100' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+									<svg
+										class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'issuer'
+											? 'opacity-100'
+											: ''}"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+										/>
 									</svg>
 								</button>
 							</th>
 							{#if !workspaceFilter}
-								<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-									Workspace
+								<th
+									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+								>
+									{t('common.workspace', $language)}
 								</th>
 							{/if}
-							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-								Format
+							<th
+								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								{t('certificates.format', $language)}
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-								<button onclick={() => handleSort('notAfter')} class="group flex items-center space-x-1 hover:text-gray-700">
+							<th
+								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								<button
+									onclick={() => handleSort('notAfter')}
+									class="group flex items-center space-x-1 hover:text-gray-700"
+								>
 									<span>{t('certificates.expires', $language)}</span>
-									<svg class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'notAfter' ? 'opacity-100' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+									<svg
+										class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'notAfter'
+											? 'opacity-100'
+											: ''}"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+										/>
 									</svg>
 								</button>
 							</th>
-							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+							<th
+								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
 								{t('certificates.status', $language)}
 							</th>
 							<th class="relative px-6 py-3">
-								<span class="sr-only">Actions</span>
+								<span class="sr-only">{t('common.actions', $language)}</span>
 							</th>
 						</tr>
 					</thead>
@@ -528,19 +679,35 @@
 								<td class="px-6 py-4 whitespace-nowrap">
 									<div class="flex items-center">
 										{#if certificate.isBundle}
-											<svg class="mr-2 h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6" />
+											<svg
+												class="mr-2 h-4 w-4 text-blue-500"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6"
+												/>
 											</svg>
 										{/if}
 										<div>
-											<div class="text-sm font-medium text-gray-900 max-w-xs truncate" title={certificate.subject}>
+											<div
+												class="max-w-xs truncate text-sm font-medium text-gray-900"
+												title={certificate.subject}
+											>
 												{certificate.subject}
 											</div>
 											<div class="text-sm text-gray-500">{certificate.originalFileName}</div>
 										</div>
 									</div>
 								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900 max-w-xs truncate" title={certificate.issuer}>
+								<td
+									class="max-w-xs truncate px-6 py-4 text-sm whitespace-nowrap text-gray-900"
+									title={certificate.issuer}
+								>
 									{certificate.issuer}
 								</td>
 								{#if !workspaceFilter}
@@ -549,16 +716,22 @@
 									</td>
 								{/if}
 								<td class="px-6 py-4 whitespace-nowrap">
-									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+									<span
+										class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800"
+									>
 										{certificate.fileFormat}
 									</span>
 								</td>
 								<td class="px-6 py-4 text-sm whitespace-nowrap">
 									<div class="text-gray-900">{formatDate(certificate.notAfter)}</div>
-									<div class="text-gray-500 text-xs">{formatFileSize(certificate.fileSize)}</div>
+									<div class="text-xs text-gray-500">{formatFileSize(certificate.fileSize)}</div>
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap">
-									<span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {getStatusColor(status)}">
+									<span
+										class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {getStatusColor(
+											status
+										)}"
+									>
 										{getStatusText(status)}
 										{#if certificate.daysUntilExpiry > 0}
 											({certificate.daysUntilExpiry} {t('certificates.days', $language)})
@@ -566,7 +739,11 @@
 									</span>
 								</td>
 								<td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-									<Button variant="outline" size="sm" onclick={() => goto(`/certificates/${certificate.id}`)}>
+									<Button
+										variant="outline"
+										size="sm"
+										onclick={() => goto(`/certificates/${certificate.id}`)}
+									>
 										{t('certificates.viewDetails', $language)}
 									</Button>
 								</td>
@@ -582,10 +759,16 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center space-x-2 text-sm text-gray-700">
 					<span>
-						Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} results
+						{t('certificates.showing', $language)}
+						{(currentPage - 1) * pageSize + 1}
+						{t('common.to', $language)}
+						{Math.min(currentPage * pageSize, totalCount)}
+						{t('common.of', $language)}
+						{totalCount}
+						{t('certificates.results', $language)}
 					</span>
 				</div>
-				
+
 				<div class="flex items-center space-x-1">
 					<Button
 						variant="outline"
@@ -593,9 +776,9 @@
 						disabled={currentPage === 1}
 						onclick={() => changePage(currentPage - 1)}
 					>
-						Previous
+						{t('common.previous', $language)}
 					</Button>
-					
+
 					{#if totalPages <= 7}
 						{#each Array(totalPages) as _, i}
 							<Button
@@ -615,11 +798,11 @@
 						>
 							1
 						</Button>
-						
+
 						{#if currentPage > 3}
 							<span class="px-2 text-gray-500">...</span>
 						{/if}
-						
+
 						<!-- Show pages around current -->
 						{#each [Math.max(2, currentPage - 1), currentPage, Math.min(totalPages - 1, currentPage + 1)] as page}
 							{#if page > 1 && page < totalPages}
@@ -632,11 +815,11 @@
 								</Button>
 							{/if}
 						{/each}
-						
+
 						{#if currentPage < totalPages - 2}
 							<span class="px-2 text-gray-500">...</span>
 						{/if}
-						
+
 						<!-- Show last page -->
 						<Button
 							variant={currentPage === totalPages ? 'primary' : 'outline'}
@@ -646,14 +829,14 @@
 							{totalPages}
 						</Button>
 					{/if}
-					
+
 					<Button
 						variant="outline"
 						size="sm"
 						disabled={currentPage === totalPages}
 						onclick={() => changePage(currentPage + 1)}
 					>
-						Next
+						{t('common.next', $language)}
 					</Button>
 				</div>
 			</div>
@@ -672,7 +855,11 @@
 			<div class="rounded-md border border-red-200 bg-red-50 p-4">
 				<div class="flex">
 					<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-						<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+						<path
+							fill-rule="evenodd"
+							d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+							clip-rule="evenodd"
+						/>
 					</svg>
 					<div class="ml-3">
 						<p class="text-sm text-red-600">{errors.general}</p>
@@ -683,7 +870,7 @@
 
 		<div class="space-y-1">
 			<label for="workspace-select" class="block text-sm font-medium text-gray-700">
-				Workspace <span class="text-red-500">*</span>
+				{t('common.workspace', $language)} <span class="text-red-500">*</span>
 			</label>
 			<select
 				id="workspace-select"
@@ -691,7 +878,7 @@
 				required
 				class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
 			>
-				<option value="">Select a workspace</option>
+				<option value="">{t('certificates.selectWorkspace', $language)}</option>
 				{#each workspaceList as workspace}
 					<option value={workspace.id}>{workspace.name}</option>
 				{/each}
@@ -700,7 +887,7 @@
 
 		<Input
 			type="file"
-			label="Certificate File"
+			label={t('certificates.certificateFile', $language)}
 			accept=".cer,.crt,.pem,.der,.p7b,.p7c,.pfx,.p12"
 			required
 			onchange={handleFileSelect}
@@ -710,8 +897,18 @@
 		{#if selectedFile}
 			<div class="rounded-md border border-blue-200 bg-blue-50 p-4">
 				<div class="flex items-center">
-					<svg class="mr-2 h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+					<svg
+						class="mr-2 h-5 w-5 text-blue-600"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+						/>
 					</svg>
 					<div>
 						<p class="text-sm font-medium text-blue-800">{selectedFile.name}</p>
@@ -722,7 +919,9 @@
 		{/if}
 
 		<div class="rounded-md border border-gray-200 bg-gray-50 p-4">
-			<h4 class="text-sm font-medium text-gray-900 mb-2">{t('certificates.supportedFormats', $language)}:</h4>
+			<h4 class="mb-2 text-sm font-medium text-gray-900">
+				{t('certificates.supportedFormats', $language)}:
+			</h4>
 			<div class="grid grid-cols-4 gap-2 text-xs text-gray-600">
 				<span>• .cer, .crt</span>
 				<span>• .pem</span>
@@ -738,7 +937,12 @@
 			</Button>
 			<Button type="submit" loading={isUploading} disabled={!selectedFile || !selectedWorkspaceId}>
 				<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+					/>
 				</svg>
 				{t('common.upload', $language)}
 			</Button>
