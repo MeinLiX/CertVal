@@ -6,12 +6,20 @@ using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Services;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new CertVal.Infrastructure.Converters.FlexibleEnumConverterFactory());
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.WriteIndented = false;
+    });
 
 builder.Services.AddProblemDetails();
 
