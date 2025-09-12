@@ -87,14 +87,6 @@ public class CertificateService : ICertificateService
 
         query = ApplyStatusFilter(query, request.StatusFilter);
 
-        if (request.StatusFilter == CertificateStatusFilter.All && request.IsExpired.HasValue)
-        {
-            if (request.IsExpired.Value)
-                query = query.Where(c => c.NotAfter <= DateTime.UtcNow);
-            else
-                query = query.Where(c => c.NotAfter > DateTime.UtcNow);
-        }
-
         if (request.IsBundle.HasValue)
             query = query.Where(c => c.IsBundle == request.IsBundle.Value);
 
@@ -107,7 +99,7 @@ public class CertificateService : ICertificateService
     private static IQueryable<Certificate> ApplyStatusFilter(IQueryable<Certificate> query, CertificateStatusFilter statusFilter)
     {
         var now = DateTime.UtcNow;
-        var expiringThreshold = now.AddDays(30); // Certificates expiring within 30 days
+        var expiringThreshold = now.AddDays(30);
 
         return statusFilter switch
         {
@@ -118,8 +110,6 @@ public class CertificateService : ICertificateService
             _ => query
         };
     }
-
-    // ... rest of the methods remain unchanged ...
 
     public async Task<Result<CertificateDto>> GetCertificateByIdAsync(Guid certificateId, CancellationToken cancellationToken = default)
     {
@@ -309,7 +299,6 @@ public class CertificateService : ICertificateService
         var dto = certificate.Adapt<CertificateDto>();
         return dto with
         {
-            IsExpired = certificate.IsExpired,
             DaysUntilExpiry = (certificate.NotAfter - DateTime.UtcNow).Days,
             Status = certificate.Status.ToString(),
             FileFormat = certificate.FileFormat.ToString(),

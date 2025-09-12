@@ -48,9 +48,6 @@ public record CertificateFilterRequest
 
     public CertificateStatusFilter StatusFilter { get; init; } = CertificateStatusFilter.All;
 
-    [Obsolete("Use StatusFilter instead")]
-    public bool? IsExpired { get; init; }
-
     public bool? IsBundle { get; init; }
     public string? Status { get; init; }
 

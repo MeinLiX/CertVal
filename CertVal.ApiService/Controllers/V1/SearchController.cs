@@ -28,13 +28,13 @@ public class SearchController : ControllerBase
     public async Task<ActionResult<PagedResult<CertificateDto>>> SearchCertificates(
         [FromQuery] string? query = null,
         [FromQuery] Guid? workspaceId = null,
-        [FromQuery] bool? isExpired = null,
+        [FromQuery] Core.Enums.CertificateStatusFilter statusFilter = Core.Enums.CertificateStatusFilter.All,
         [FromQuery] int? daysUntilExpiry = null,
         [FromQuery] string? format = null,
         [FromQuery] int pageSize = 20,
         [FromQuery] int pageNumber = 1)
     {
-        if (!_currentUser.UserId.HasValue)
+        if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
             return Unauthorized();
 
         var userWorkspaces = await _unitOfWork.Workspaces.GetUserWorkspacesAsync(_currentUser.UserId.Value);
@@ -67,13 +67,7 @@ public class SearchController : ControllerBase
                 (c.SerialNumber != null && c.SerialNumber.ToLowerInvariant().Contains(searchTerm)));
         }
 
-        if (isExpired.HasValue)
-        {
-            if (isExpired.Value)
-                filteredCertificates = filteredCertificates.Where(c => c.NotAfter <= DateTime.UtcNow);
-            else
-                filteredCertificates = filteredCertificates.Where(c => c.NotAfter > DateTime.UtcNow);
-        }
+        filteredCertificates = ApplyStatusFilter(filteredCertificates, statusFilter);
 
         if (daysUntilExpiry.HasValue)
         {
@@ -111,7 +105,6 @@ public class SearchController : ControllerBase
             IsBundle = c.IsBundle,
             ParentCertificateId = c.ParentCertificateId,
             Status = c.Status.ToString(),
-            IsExpired = c.IsExpired,
             DaysUntilExpiry = (c.NotAfter - DateTime.UtcNow).Days,
             CreatedAt = c.CreatedAt,
             UpdatedAt = c.UpdatedAt
@@ -119,6 +112,23 @@ public class SearchController : ControllerBase
 
         var result = new PagedResult<CertificateDto>(certificateDtos, totalCount, pageNumber, pageSize);
         return Ok(result);
+    }
+
+    private static IQueryable<Core.Entities.Certificate> ApplyStatusFilter(
+        IQueryable<Core.Entities.Certificate> query,
+        Core.Enums.CertificateStatusFilter statusFilter)
+    {
+        var now = DateTime.UtcNow;
+        var expiringThreshold = now.AddDays(30);
+
+        return statusFilter switch
+        {
+            Core.Enums.CertificateStatusFilter.All => query,
+            Core.Enums.CertificateStatusFilter.Valid => query.Where(c => c.NotAfter > expiringThreshold),
+            Core.Enums.CertificateStatusFilter.Expiring => query.Where(c => c.NotAfter > now && c.NotAfter <= expiringThreshold),
+            Core.Enums.CertificateStatusFilter.Expired => query.Where(c => c.NotAfter <= now),
+            _ => query
+        };
     }
 
     [HttpGet("workspaces")]
