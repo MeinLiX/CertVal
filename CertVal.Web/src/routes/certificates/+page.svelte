@@ -26,7 +26,7 @@
 
 	// Filters
 	let searchTerm = $state<string>('');
-	let statusFilter = $state<string>('');
+	let statusFilter = $state<'All' | 'Valid' | 'Expiring' | 'Expired'>('All');
 	let formatFilter = $state<string>('');
 	let sortBy = $state<string>('notAfter');
 	let sortDescending = $state<boolean>(false);
@@ -44,7 +44,8 @@
 	$effect(() => {
 		const urlParams = currentParams;
 		searchTerm = urlParams.get('search') || '';
-		statusFilter = urlParams.get('status') || '';
+		const statusParam = urlParams.get('status');
+		statusFilter = (statusParam as 'All' | 'Valid' | 'Expiring' | 'Expired') || 'All';
 		formatFilter = urlParams.get('format') || '';
 		sortBy = urlParams.get('sortBy') || 'notAfter';
 		sortDescending = urlParams.get('sortDesc') === 'true';
@@ -75,7 +76,7 @@
 			if (searchTerm) url.searchParams.set('search', searchTerm);
 			else url.searchParams.delete('search');
 
-			if (statusFilter) url.searchParams.set('status', statusFilter);
+			if (statusFilter && statusFilter !== 'All') url.searchParams.set('status', statusFilter);
 			else url.searchParams.delete('status');
 
 			if (formatFilter) url.searchParams.set('format', formatFilter);
@@ -118,22 +119,17 @@
 
 	async function loadCertificates() {
 		try {
-			const params = new URLSearchParams();
+			const searchParams = {
+				query: searchTerm || undefined,
+				workspaceId: workspaceFilter || undefined,
+				statusFilter: statusFilter,
+				format: formatFilter || undefined,
+				pageSize: pageSize,
+				pageNumber: currentPage
+			};
 
-			if (workspaceFilter) params.set('workspaceId', workspaceFilter);
-			if (searchTerm) params.set('subject', searchTerm);
-			if (statusFilter === 'expired') params.set('isExpired', 'true');
-			else if (statusFilter === 'valid') params.set('isExpired', 'false');
-			if (formatFilter) params.set('status', formatFilter);
+			const response = await api.searchCertificates<PagedResult<Certificate>>(searchParams);
 
-			params.set('sortBy', sortBy);
-			params.set('sortDescending', sortDescending.toString());
-			params.set('pageNumber', currentPage.toString());
-			params.set('pageSize', pageSize.toString());
-
-			const response = await api.get<PagedResult<Certificate>>(
-				`/v1/certificates?${params.toString()}`
-			);
 			if (response.data) {
 				certificates = response.data.items;
 				totalCount = response.data.totalCount;
@@ -241,7 +237,7 @@
 
 	function clearFilters() {
 		searchTerm = '';
-		statusFilter = '';
+		statusFilter = 'All';
 		formatFilter = '';
 		sortBy = 'notAfter';
 		sortDescending = false;
@@ -288,6 +284,21 @@
 
 	function handleBackNavigation() {
 		window.history.back();
+	}
+
+	function getStatusFilterText(filter: 'All' | 'Valid' | 'Expiring' | 'Expired'): string {
+		switch (filter) {
+			case 'All':
+				return t('certificates.allStatuses', $language);
+			case 'Valid':
+				return t('certificates.valid', $language);
+			case 'Expiring':
+				return t('certificates.expiring30', $language);
+			case 'Expired':
+				return t('certificates.expired', $language);
+			default:
+				return filter;
+		}
 	}
 </script>
 
@@ -372,10 +383,10 @@
 						onchange={handleFilterChange}
 						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
 					>
-						<option value="">{t('certificates.allStatuses', $language)}</option>
-						<option value="valid">{t('certificates.valid', $language)}</option>
-						<option value="expiring">{t('certificates.expiring30', $language)}</option>
-						<option value="expired">{t('certificates.expired', $language)}</option>
+						<option value="All">{t('certificates.allStatuses', $language)}</option>
+						<option value="Valid">{t('certificates.valid', $language)}</option>
+						<option value="Expiring">{t('certificates.expiring30', $language)}</option>
+						<option value="Expired">{t('certificates.expired', $language)}</option>
 					</select>
 				</div>
 
@@ -419,7 +430,7 @@
 			</div>
 
 			<!-- Active Filters Display -->
-			{#if searchTerm || statusFilter || formatFilter || workspaceFilter}
+			{#if searchTerm || statusFilter !== 'All' || formatFilter || workspaceFilter}
 				<div class="flex flex-wrap gap-2 pt-2">
 					<span class="text-sm font-medium text-gray-700"
 						>{t('certificates.activeFilters', $language)}:</span
@@ -438,14 +449,14 @@
 							>
 						</span>
 					{/if}
-					{#if statusFilter}
+					{#if statusFilter !== 'All'}
 						<span
 							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
 						>
-							{t('certificates.status', $language)}: {t(`certificates.${statusFilter}`, $language)}
+							{t('certificates.status', $language)}: {getStatusFilterText(statusFilter)}
 							<button
 								onclick={() => {
-									statusFilter = '';
+									statusFilter = 'All';
 									handleFilterChange();
 								}}
 								class="ml-1 text-blue-600 hover:text-blue-800">×</button
@@ -503,17 +514,17 @@
 					/>
 				</svg>
 				<h3 class="mt-2 text-sm font-medium text-gray-900">
-					{searchTerm || statusFilter || formatFilter
+					{searchTerm || statusFilter !== 'All' || formatFilter
 						? t('certificates.noMatches', $language)
 						: t('certificates.empty', $language)}
 				</h3>
 				<p class="mt-1 text-sm text-gray-500">
-					{searchTerm || statusFilter || formatFilter
+					{searchTerm || statusFilter !== 'All' || formatFilter
 						? t('certificates.adjustFilters', $language)
 						: t('certificates.uploadFirst', $language)}
 				</p>
 				<div class="mt-6 flex justify-center space-x-3">
-					{#if searchTerm || statusFilter || formatFilter}
+					{#if searchTerm || statusFilter !== 'All' || formatFilter}
 						<Button variant="outline" onclick={clearFilters}
 							>{t('certificates.clearFilters', $language)}</Button
 						>
@@ -533,6 +544,9 @@
 				{t('common.of', $language)}
 				{totalCount}
 				{t('certificates.title', $language).toLowerCase()}
+				{#if statusFilter !== 'All'}
+					({getStatusFilterText(statusFilter)})
+				{/if}
 				{#if currentPage > 1}
 					({t('certificates.page', $language)}
 					{currentPage}

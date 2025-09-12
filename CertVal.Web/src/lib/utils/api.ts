@@ -163,6 +163,30 @@ class ApiClient {
 
         return response;
     }
+
+    async searchCertificates<T>(params: {
+        query?: string;
+        workspaceId?: string;
+        statusFilter?: 'All' | 'Valid' | 'Expiring' | 'Expired';
+        daysUntilExpiry?: number;
+        format?: string;
+        pageSize?: number;
+        pageNumber?: number;
+    }) {
+        const searchParams = new URLSearchParams();
+        
+        if (params.query) searchParams.set('query', params.query);
+        if (params.workspaceId) searchParams.set('workspaceId', params.workspaceId);
+        if (params.statusFilter && params.statusFilter !== 'All') {
+            searchParams.set('statusFilter', params.statusFilter);
+        }
+        if (params.daysUntilExpiry) searchParams.set('daysUntilExpiry', params.daysUntilExpiry.toString());
+        if (params.format) searchParams.set('format', params.format);
+        if (params.pageSize) searchParams.set('pageSize', params.pageSize.toString());
+        if (params.pageNumber) searchParams.set('pageNumber', params.pageNumber.toString());
+
+        return this.request<T>(`/v1/search/certificates?${searchParams.toString()}`);
+    }
 }
 
 export const api = new ApiClient();
