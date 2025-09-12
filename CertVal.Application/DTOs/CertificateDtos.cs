@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
+using CertVal.Core.Enums;
 
 namespace CertVal.Application.DTOs;
 
@@ -44,7 +45,12 @@ public record CertificateFilterRequest
     public string? Issuer { get; init; }
     public DateTime? ExpiringBefore { get; init; }
     public DateTime? ExpiringAfter { get; init; }
+
+    public CertificateStatusFilter StatusFilter { get; init; } = CertificateStatusFilter.All;
+
+    [Obsolete("Use StatusFilter instead")]
     public bool? IsExpired { get; init; }
+
     public bool? IsBundle { get; init; }
     public string? Status { get; init; }
 

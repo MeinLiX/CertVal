@@ -69,6 +69,58 @@ public class CertificateService : ICertificateService
         return Result.Success(pagedResult);
     }
 
+    private IEnumerable<Certificate> ApplyFilters(IEnumerable<Certificate> certificates, CertificateFilterRequest request)
+    {
+        var query = certificates.AsQueryable();
+
+        if (!string.IsNullOrEmpty(request.Subject))
+            query = query.Where(c => c.Subject.Contains(request.Subject, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrEmpty(request.Issuer))
+            query = query.Where(c => c.Issuer.Contains(request.Issuer, StringComparison.OrdinalIgnoreCase));
+
+        if (request.ExpiringBefore.HasValue)
+            query = query.Where(c => c.NotAfter <= request.ExpiringBefore.Value);
+
+        if (request.ExpiringAfter.HasValue)
+            query = query.Where(c => c.NotAfter >= request.ExpiringAfter.Value);
+
+        query = ApplyStatusFilter(query, request.StatusFilter);
+
+        if (request.StatusFilter == CertificateStatusFilter.All && request.IsExpired.HasValue)
+        {
+            if (request.IsExpired.Value)
+                query = query.Where(c => c.NotAfter <= DateTime.UtcNow);
+            else
+                query = query.Where(c => c.NotAfter > DateTime.UtcNow);
+        }
+
+        if (request.IsBundle.HasValue)
+            query = query.Where(c => c.IsBundle == request.IsBundle.Value);
+
+        if (!string.IsNullOrEmpty(request.Status) && Enum.TryParse<CertificateStatus>(request.Status, out var status))
+            query = query.Where(c => c.Status == status);
+
+        return query;
+    }
+
+    private static IQueryable<Certificate> ApplyStatusFilter(IQueryable<Certificate> query, CertificateStatusFilter statusFilter)
+    {
+        var now = DateTime.UtcNow;
+        var expiringThreshold = now.AddDays(30); // Certificates expiring within 30 days
+
+        return statusFilter switch
+        {
+            CertificateStatusFilter.All => query,
+            CertificateStatusFilter.Valid => query.Where(c => c.NotAfter > expiringThreshold),
+            CertificateStatusFilter.Expiring => query.Where(c => c.NotAfter > now && c.NotAfter <= expiringThreshold),
+            CertificateStatusFilter.Expired => query.Where(c => c.NotAfter <= now),
+            _ => query
+        };
+    }
+
+    // ... rest of the methods remain unchanged ...
+
     public async Task<Result<CertificateDto>> GetCertificateByIdAsync(Guid certificateId, CancellationToken cancellationToken = default)
     {
         if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
@@ -234,39 +286,6 @@ public class CertificateService : ICertificateService
 
         var certificateDtos = accessibleCertificates.Select(MapToCertificateDto);
         return Result.Success(certificateDtos);
-    }
-
-    private IEnumerable<Certificate> ApplyFilters(IEnumerable<Certificate> certificates, CertificateFilterRequest request)
-    {
-        var query = certificates.AsQueryable();
-
-        if (!string.IsNullOrEmpty(request.Subject))
-            query = query.Where(c => c.Subject.Contains(request.Subject, StringComparison.OrdinalIgnoreCase));
-
-        if (!string.IsNullOrEmpty(request.Issuer))
-            query = query.Where(c => c.Issuer.Contains(request.Issuer, StringComparison.OrdinalIgnoreCase));
-
-        if (request.ExpiringBefore.HasValue)
-            query = query.Where(c => c.NotAfter <= request.ExpiringBefore.Value);
-
-        if (request.ExpiringAfter.HasValue)
-            query = query.Where(c => c.NotAfter >= request.ExpiringAfter.Value);
-
-        if (request.IsExpired.HasValue)
-        {
-            if (request.IsExpired.Value)
-                query = query.Where(c => c.NotAfter <= DateTime.UtcNow);
-            else
-                query = query.Where(c => c.NotAfter > DateTime.UtcNow);
-        }
-
-        if (request.IsBundle.HasValue)
-            query = query.Where(c => c.IsBundle == request.IsBundle.Value);
-
-        if (!string.IsNullOrEmpty(request.Status) && Enum.TryParse<CertificateStatus>(request.Status, out var status))
-            query = query.Where(c => c.Status == status);
-
-        return query;
     }
 
     private IEnumerable<Certificate> ApplySorting(IEnumerable<Certificate> certificates, string? sortBy, bool sortDescending)
