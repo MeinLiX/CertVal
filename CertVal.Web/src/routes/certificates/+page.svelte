@@ -24,7 +24,19 @@
 	let selectedFile = $state<File | null>(null);
 	let errors = $state<Record<string, string>>({});
 
-	// Get workspace filter from URL
+	// Filters
+	let searchTerm = $state<string>('');
+	let statusFilter = $state<string>('');
+	let formatFilter = $state<string>('');
+	let sortBy = $state<string>('notAfter');
+	let sortDescending = $state<boolean>(false);
+
+	// Pagination
+	let currentPage = $state<number>(1);
+	let pageSize = $state<number>(20);
+	let totalCount = $state<number>(0);
+	let totalPages = $derived(Math.ceil(totalCount / pageSize));
+
 	const workspaceFilter = $derived($page.url.searchParams.get('workspace'));
 
 	onMount(async () => {
@@ -33,13 +45,56 @@
 			return;
 		}
 
+		// Initialize filters from URL params
+		const urlParams = $page.url.searchParams;
+		searchTerm = urlParams.get('search') || '';
+		statusFilter = urlParams.get('status') || '';
+		formatFilter = urlParams.get('format') || '';
+		sortBy = urlParams.get('sortBy') || 'notAfter';
+		sortDescending = urlParams.get('sortDesc') === 'true';
+		currentPage = parseInt(urlParams.get('page') || '1');
+
 		await Promise.all([loadWorkspaces(), loadCertificates()]);
 	});
 
-	// Reload certificates when workspace filter changes
+	// Update URL when filters change
+	$effect(() => {
+		const url = new URL(window.location.href);
+		
+		// Update search params
+		if (searchTerm) url.searchParams.set('search', searchTerm);
+		else url.searchParams.delete('search');
+		
+		if (statusFilter) url.searchParams.set('status', statusFilter);
+		else url.searchParams.delete('status');
+		
+		if (formatFilter) url.searchParams.set('format', formatFilter);
+		else url.searchParams.delete('format');
+		
+		if (sortBy !== 'notAfter') url.searchParams.set('sortBy', sortBy);
+		else url.searchParams.delete('sortBy');
+		
+		if (sortDescending) url.searchParams.set('sortDesc', 'true');
+		else url.searchParams.delete('sortDesc');
+		
+		if (currentPage > 1) url.searchParams.set('page', currentPage.toString());
+		else url.searchParams.delete('page');
+
+		// Update URL without causing navigation
+		if (typeof window !== 'undefined') {
+			window.history.replaceState({}, '', url.pathname + url.search);
+		}
+	});
+
+	// Reload certificates when filters change
+	let filterChangeTimeout: any;
 	$effect(() => {
 		if (!isLoading) {
-			loadCertificates();
+			clearTimeout(filterChangeTimeout);
+			filterChangeTimeout = setTimeout(() => {
+				currentPage = 1; // Reset to first page when filters change
+				loadCertificates();
+			}, 300);
 		}
 	});
 
@@ -57,14 +112,23 @@
 
 	async function loadCertificates() {
 		try {
-			let endpoint = '/v1/certificates';
-			if (workspaceFilter) {
-				endpoint += `?workspaceId=${workspaceFilter}`;
-			}
+			const params = new URLSearchParams();
+			
+			if (workspaceFilter) params.set('workspaceId', workspaceFilter);
+			if (searchTerm) params.set('subject', searchTerm);
+			if (statusFilter === 'expired') params.set('isExpired', 'true');
+			else if (statusFilter === 'valid') params.set('isExpired', 'false');
+			if (formatFilter) params.set('status', formatFilter);
+			
+			params.set('sortBy', sortBy);
+			params.set('sortDescending', sortDescending.toString());
+			params.set('pageNumber', currentPage.toString());
+			params.set('pageSize', pageSize.toString());
 
-			const response = await api.get<PagedResult<Certificate>>(endpoint);
+			const response = await api.get<PagedResult<Certificate>>(`/v1/certificates?${params.toString()}`);
 			if (response.data) {
 				certificates = response.data.items;
+				totalCount = response.data.totalCount;
 			}
 		} catch (error) {
 			console.error('Failed to load certificates:', error);
@@ -91,9 +155,9 @@
 
 			const response = await api.upload<Certificate>('/v1/certificates/upload', formData);
 			if (response.data) {
-				certificates = [response.data, ...certificates];
 				showUploadModal = false;
 				resetUploadForm();
+				await loadCertificates(); // Reload list
 			} else if (response.message) {
 				errors.general = response.message;
 			}
@@ -106,21 +170,16 @@
 
 	function resetUploadForm() {
 		selectedFile = null;
-		selectedWorkspaceId = '';
+		selectedWorkspaceId = workspaceFilter || '';
 		errors = {};
 	}
 
 	function handleFileSelect(eventOrFile: Event | File | FileList | null | undefined) {
-		// Support three cases:
-		// 1. Native input change Event -> extract from event.target.files
-		// 2. A FileList (e.g., from a custom component) -> take first file
-		// 3. A single File directly
 		if (!eventOrFile) {
 			selectedFile = null;
 			return;
 		}
 
-		// If it's an Event, try to extract files from the target
 		if ((eventOrFile as Event).type) {
 			const evt = eventOrFile as Event;
 			const target = evt.target as HTMLInputElement | null;
@@ -128,14 +187,12 @@
 			return;
 		}
 
-		// If it's a FileList, use first file
 		if ((eventOrFile as FileList).item !== undefined) {
 			const files = eventOrFile as FileList;
 			selectedFile = files.item(0) ?? null;
 			return;
 		}
 
-		// Otherwise assume it's a File
 		selectedFile = eventOrFile as File;
 	}
 
@@ -174,6 +231,48 @@
 		}
 		goto(url.pathname + url.search);
 	}
+
+	function clearFilters() {
+		searchTerm = '';
+		statusFilter = '';
+		formatFilter = '';
+		sortBy = 'notAfter';
+		sortDescending = false;
+		currentPage = 1;
+		goto('/certificates' + (workspaceFilter ? `?workspace=${workspaceFilter}` : ''));
+	}
+
+	function changePage(page: number) {
+		currentPage = page;
+		loadCertificates();
+	}
+
+	function handleSort(field: string) {
+		if (sortBy === field) {
+			sortDescending = !sortDescending;
+		} else {
+			sortBy = field;
+			sortDescending = false;
+		}
+	}
+
+	// Format file size
+	function formatFileSize(bytes: number): string {
+		if (bytes === 0) return '0 B';
+		const k = 1024;
+		const sizes = ['B', 'KB', 'MB', 'GB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+	}
+
+	// Get unique formats for filter dropdown
+	const availableFormats = $derived([...new Set(certificates.map(c => c.fileFormat))].sort());
+
+	// Show upload modal with pre-selected workspace
+	function showUploadModalWithWorkspace() {
+		selectedWorkspaceId = workspaceFilter || (workspaceList.length > 0 ? workspaceList[0].id : '');
+		showUploadModal = true;
+	}
 </script>
 
 <svelte:head>
@@ -187,38 +286,132 @@
 			<h1 class="text-2xl font-bold text-gray-900">{t('certificates.title', $language)}</h1>
 			<p class="text-gray-600">Monitor and manage your SSL/TLS certificates</p>
 		</div>
-		<Button onclick={() => (showUploadModal = true)}>
+		<Button onclick={showUploadModalWithWorkspace}>
+			<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+			</svg>
 			{t('certificates.upload', $language)}
 		</Button>
 	</div>
 
-	<!-- Filters -->
-	{#if workspaceList.length > 1}
-		<Card padding={false}>
-			<div class="p-4">
-				<div class="flex items-center space-x-4">
-					<select
-						class="block w-48 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
-						value={workspaceFilter || ''}
-						onchange={handleWorkspaceFilterChange}
-					>
-						<option value="">All Workspaces</option>
-						{#each workspaceList as workspace}
-							<option value={workspace.id}>
-								{workspace.name}
-							</option>
-						{/each}
-					</select>
+	<!-- Filters Card -->
+	<Card>
+		<div class="space-y-4">
+			<div class="flex items-center justify-between">
+				<h3 class="text-lg font-medium text-gray-900">Filters</h3>
+				<Button variant="outline" size="sm" onclick={clearFilters}>
+					<svg class="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+					Clear All
+				</Button>
+			</div>
 
-					{#if workspaceFilter}
-						<Button variant="outline" size="sm" onclick={() => goto('/certificates')}>
-							Clear Filter
-						</Button>
-					{/if}
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+				<!-- Workspace Filter -->
+				{#if workspaceList.length > 1}
+					<div>
+						<label class="mb-1 block text-sm font-medium text-gray-700">Workspace</label>
+						<select
+							class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+							value={workspaceFilter || ''}
+							onchange={handleWorkspaceFilterChange}
+						>
+							<option value="">All Workspaces</option>
+							{#each workspaceList as workspace}
+								<option value={workspace.id}>{workspace.name}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+
+				<!-- Search -->
+				<div>
+					<label class="mb-1 block text-sm font-medium text-gray-700">Search</label>
+					<Input
+						type="search"
+						bind:value={searchTerm}
+						placeholder="Search by subject..."
+					/>
+				</div>
+
+				<!-- Status Filter -->
+				<div>
+					<label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
+					<select
+						bind:value={statusFilter}
+						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+					>
+						<option value="">All Statuses</option>
+						<option value="valid">Valid</option>
+						<option value="expiring">Expiring (30 days)</option>
+						<option value="expired">Expired</option>
+					</select>
+				</div>
+
+				<!-- Format Filter -->
+				{#if availableFormats.length > 1}
+					<div>
+						<label class="mb-1 block text-sm font-medium text-gray-700">Format</label>
+						<select
+							bind:value={formatFilter}
+							class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+						>
+							<option value="">All Formats</option>
+							{#each availableFormats as format}
+								<option value={format}>{format}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+
+				<!-- Sort -->
+				<div>
+					<label class="mb-1 block text-sm font-medium text-gray-700">Sort By</label>
+					<select
+						bind:value={sortBy}
+						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+					>
+						<option value="notAfter">Expiry Date</option>
+						<option value="subject">Subject</option>
+						<option value="issuer">Issuer</option>
+						<option value="createdAt">Created Date</option>
+					</select>
 				</div>
 			</div>
-		</Card>
-	{/if}
+
+			<!-- Active Filters Display -->
+			{#if searchTerm || statusFilter || formatFilter || workspaceFilter}
+				<div class="flex flex-wrap gap-2 pt-2">
+					<span class="text-sm font-medium text-gray-700">Active filters:</span>
+					{#if searchTerm}
+						<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+							Search: {searchTerm}
+							<button onclick={() => searchTerm = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+						</span>
+					{/if}
+					{#if statusFilter}
+						<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+							Status: {statusFilter}
+							<button onclick={() => statusFilter = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+						</span>
+					{/if}
+					{#if formatFilter}
+						<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+							Format: {formatFilter}
+							<button onclick={() => formatFilter = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+						</span>
+					{/if}
+					{#if workspaceFilter}
+						<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+							Workspace: {getWorkspaceName(workspaceFilter)}
+							<button onclick={() => goto('/certificates')} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+						</span>
+					{/if}
+				</div>
+			{/if}
+		</div>
+	</Card>
 
 	{#if isLoading}
 		<div class="flex h-64 items-center justify-center">
@@ -240,44 +433,82 @@
 						d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
 					/>
 				</svg>
-				<h3 class="mt-2 text-sm font-medium text-gray-900">{t('certificates.empty', $language)}</h3>
-				<p class="mt-1 text-sm text-gray-500">{t('certificates.uploadFirst', $language)}</p>
-				<div class="mt-6">
-					<Button onclick={() => (showUploadModal = true)}>
+				<h3 class="mt-2 text-sm font-medium text-gray-900">
+					{searchTerm || statusFilter || formatFilter ? 'No certificates match your filters' : t('certificates.empty', $language)}
+				</h3>
+				<p class="mt-1 text-sm text-gray-500">
+					{searchTerm || statusFilter || formatFilter ? 'Try adjusting your search criteria' : t('certificates.uploadFirst', $language)}
+				</p>
+				<div class="mt-6 flex justify-center space-x-3">
+					{#if searchTerm || statusFilter || formatFilter}
+						<Button variant="outline" onclick={clearFilters}>Clear Filters</Button>
+					{/if}
+					<Button onclick={showUploadModalWithWorkspace}>
 						{t('certificates.upload', $language)}
 					</Button>
 				</div>
 			</div>
 		</Card>
 	{:else}
-		<Card>
+		<!-- Results Summary -->
+		<div class="flex items-center justify-between text-sm text-gray-600">
+			<span>
+				Showing {certificates.length} of {totalCount} certificates
+				{#if currentPage > 1} (page {currentPage} of {totalPages}){/if}
+			</span>
+			<div class="flex items-center space-x-2">
+				<span>Sort:</span>
+				<button
+					onclick={() => handleSort(sortBy)}
+					class="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
+				>
+					<span>{sortBy === 'notAfter' ? 'Expiry' : sortBy === 'createdAt' ? 'Created' : sortBy}</span>
+					<svg class="h-4 w-4 {sortDescending ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+					</svg>
+				</button>
+			</div>
+		</div>
+
+		<!-- Certificates Table -->
+		<Card padding={false}>
 			<div class="overflow-hidden">
 				<table class="min-w-full divide-y divide-gray-200">
 					<thead class="bg-gray-50">
 						<tr>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								{t('certificates.subject', $language)}
+							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+								<button onclick={() => handleSort('subject')} class="group flex items-center space-x-1 hover:text-gray-700">
+									<span>{t('certificates.subject', $language)}</span>
+									<svg class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'subject' ? 'opacity-100' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+									</svg>
+								</button>
 							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								{t('certificates.issuer', $language)}
+							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+								<button onclick={() => handleSort('issuer')} class="group flex items-center space-x-1 hover:text-gray-700">
+									<span>{t('certificates.issuer', $language)}</span>
+									<svg class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'issuer' ? 'opacity-100' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+									</svg>
+								</button>
 							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								Workspace
+							{#if !workspaceFilter}
+								<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+									Workspace
+								</th>
+							{/if}
+							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+								Format
 							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								{t('certificates.expires', $language)}
+							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+								<button onclick={() => handleSort('notAfter')} class="group flex items-center space-x-1 hover:text-gray-700">
+									<span>{t('certificates.expires', $language)}</span>
+									<svg class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'notAfter' ? 'opacity-100' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+									</svg>
+								</button>
 							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
+							<th class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
 								{t('certificates.status', $language)}
 							</th>
 							<th class="relative px-6 py-3">
@@ -290,28 +521,39 @@
 							{@const status = getCertificateStatus(certificate.notAfter)}
 							<tr class="hover:bg-gray-50">
 								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm font-medium text-gray-900">
-										{certificate.subject}
-									</div>
-									<div class="text-sm text-gray-500">
-										{certificate.originalFileName}
+									<div class="flex items-center">
+										{#if certificate.isBundle}
+											<svg class="mr-2 h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6" />
+											</svg>
+										{/if}
+										<div>
+											<div class="text-sm font-medium text-gray-900 max-w-xs truncate" title={certificate.subject}>
+												{certificate.subject}
+											</div>
+											<div class="text-sm text-gray-500">{certificate.originalFileName}</div>
+										</div>
 									</div>
 								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
+								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900 max-w-xs truncate" title={certificate.issuer}>
 									{certificate.issuer}
 								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
-									{getWorkspaceName(certificate.workspaceId)}
+								{#if !workspaceFilter}
+									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+										{getWorkspaceName(certificate.workspaceId)}
+									</td>
+								{/if}
+								<td class="px-6 py-4 whitespace-nowrap">
+									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+										{certificate.fileFormat}
+									</span>
 								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
-									{formatDate(certificate.notAfter)}
+								<td class="px-6 py-4 text-sm whitespace-nowrap">
+									<div class="text-gray-900">{formatDate(certificate.notAfter)}</div>
+									<div class="text-gray-500 text-xs">{formatFileSize(certificate.fileSize)}</div>
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap">
-									<span
-										class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {getStatusColor(
-											status
-										)}"
-									>
+									<span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {getStatusColor(status)}">
 										{getStatusText(status)}
 										{#if certificate.daysUntilExpiry > 0}
 											({certificate.daysUntilExpiry} {t('certificates.days', $language)})
@@ -319,12 +561,9 @@
 									</span>
 								</td>
 								<td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-									<button
-										class="text-blue-600 hover:text-blue-900"
-										onclick={() => goto(`/certificates/${certificate.id}`)}
-									>
-										View Details
-									</button>
+									<Button variant="outline" size="sm" onclick={() => goto(`/certificates/${certificate.id}`)}>
+										{t('certificates.viewDetails', $language)}
+									</Button>
 								</td>
 							</tr>
 						{/each}
@@ -332,6 +571,88 @@
 				</table>
 			</div>
 		</Card>
+
+		<!-- Pagination -->
+		{#if totalPages > 1}
+			<div class="flex items-center justify-between">
+				<div class="flex items-center space-x-2 text-sm text-gray-700">
+					<span>
+						Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} results
+					</span>
+				</div>
+				
+				<div class="flex items-center space-x-1">
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={currentPage === 1}
+						onclick={() => changePage(currentPage - 1)}
+					>
+						Previous
+					</Button>
+					
+					{#if totalPages <= 7}
+						{#each Array(totalPages) as _, i}
+							<Button
+								variant={currentPage === i + 1 ? 'primary' : 'outline'}
+								size="sm"
+								onclick={() => changePage(i + 1)}
+							>
+								{i + 1}
+							</Button>
+						{/each}
+					{:else}
+						<!-- Show first page -->
+						<Button
+							variant={currentPage === 1 ? 'primary' : 'outline'}
+							size="sm"
+							onclick={() => changePage(1)}
+						>
+							1
+						</Button>
+						
+						{#if currentPage > 3}
+							<span class="px-2 text-gray-500">...</span>
+						{/if}
+						
+						<!-- Show pages around current -->
+						{#each [Math.max(2, currentPage - 1), currentPage, Math.min(totalPages - 1, currentPage + 1)] as page}
+							{#if page > 1 && page < totalPages}
+								<Button
+									variant={currentPage === page ? 'primary' : 'outline'}
+									size="sm"
+									onclick={() => changePage(page)}
+								>
+									{page}
+								</Button>
+							{/if}
+						{/each}
+						
+						{#if currentPage < totalPages - 2}
+							<span class="px-2 text-gray-500">...</span>
+						{/if}
+						
+						<!-- Show last page -->
+						<Button
+							variant={currentPage === totalPages ? 'primary' : 'outline'}
+							size="sm"
+							onclick={() => changePage(totalPages)}
+						>
+							{totalPages}
+						</Button>
+					{/if}
+					
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={currentPage === totalPages}
+						onclick={() => changePage(currentPage + 1)}
+					>
+						Next
+					</Button>
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -344,7 +665,14 @@
 	<form onsubmit={handleUploadCertificate} class="space-y-4">
 		{#if errors.general}
 			<div class="rounded-md border border-red-200 bg-red-50 p-4">
-				<p class="text-sm text-red-600">{errors.general}</p>
+				<div class="flex">
+					<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+						<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+					</svg>
+					<div class="ml-3">
+						<p class="text-sm text-red-600">{errors.general}</p>
+					</div>
+				</div>
 			</div>
 		{/if}
 
@@ -376,17 +704,37 @@
 
 		{#if selectedFile}
 			<div class="rounded-md border border-blue-200 bg-blue-50 p-4">
-				<p class="text-sm text-blue-600">
-					Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-				</p>
+				<div class="flex items-center">
+					<svg class="mr-2 h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+					</svg>
+					<div>
+						<p class="text-sm font-medium text-blue-800">{selectedFile.name}</p>
+						<p class="text-xs text-blue-600">{formatFileSize(selectedFile.size)}</p>
+					</div>
+				</div>
 			</div>
 		{/if}
+
+		<div class="rounded-md border border-gray-200 bg-gray-50 p-4">
+			<h4 class="text-sm font-medium text-gray-900 mb-2">{t('certificates.supportedFormats', $language)}:</h4>
+			<div class="grid grid-cols-4 gap-2 text-xs text-gray-600">
+				<span>• .cer, .crt</span>
+				<span>• .pem</span>
+				<span>• .der</span>
+				<span>• .p7b, .p7c</span>
+				<span>• .pfx, .p12</span>
+			</div>
+		</div>
 
 		<div class="flex justify-end space-x-3 pt-4">
 			<Button variant="outline" onclick={handleCloseModal} type="button">
 				{t('common.cancel', $language)}
 			</Button>
-			<Button type="submit" loading={isUploading}>
+			<Button type="submit" loading={isUploading} disabled={!selectedFile || !selectedWorkspaceId}>
+				<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+				</svg>
 				{t('common.upload', $language)}
 			</Button>
 		</div>
