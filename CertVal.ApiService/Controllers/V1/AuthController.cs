@@ -49,8 +49,9 @@ public class AuthController : ControllerBase
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return Unauthorized(new { message = "Invalid email or password" });
 
-        if (!user.IsEmailConfirmed)
-            return BadRequest(new { message = "Email not confirmed" });
+        // temp disable email confirmation requirement
+        //if (!user.IsEmailConfirmed)
+        //    return BadRequest(new { message = "Email not confirmed" });
 
         user.UpdateLastLogin();
         await _unitOfWork.Users.UpdateAsync(user);
