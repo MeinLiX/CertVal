@@ -14,7 +14,7 @@
 		language.initialize();
 	});
 
-	$: isAuthPage = $page.url.pathname.startsWith('/auth');
+	const isAuthPage = $derived($page.url.pathname.startsWith('/auth'));
 </script>
 
 {#if !isAuthPage}
@@ -22,7 +22,7 @@
 		<Navbar />
 		<div class="flex">
 			<Sidebar />
-			<main class="ml-64 flex-1 p-6">
+			<main class="ml-64 flex-1 p-6 pt-20">
 				{@render children?.()}
 			</main>
 		</div>

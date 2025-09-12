@@ -88,6 +88,11 @@
 		showCreateModal = false;
 		resetCreateForm();
 	}
+
+	function handleDescriptionChange(event: Event) {
+		const target = event.target as HTMLTextAreaElement;
+		createForm.description = target.value;
+	}
 </script>
 
 <svelte:head>
@@ -142,11 +147,13 @@
 					<div class="space-y-4">
 						<div class="flex items-start justify-between">
 							<h3 class="text-lg font-medium text-gray-900">{workspace.name}</h3>
-							<span class="text-xs text-gray-500">{workspace.isPublic ? 'Public' : 'Private'}</span>
+							<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {workspace.isPublic ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+								{workspace.isPublic ? 'Public' : 'Private'}
+							</span>
 						</div>
 
 						{#if workspace.description}
-							<p class="text-sm text-gray-600">{workspace.description}</p>
+							<p class="text-sm text-gray-600 line-clamp-2">{workspace.description}</p>
 						{/if}
 
 						<div class="flex justify-between text-sm text-gray-500">
@@ -199,6 +206,7 @@
 			bind:value={createForm.name}
 			required
 			error={errors.name}
+			placeholder="Enter workspace name"
 		/>
 
 		<div class="space-y-1">
@@ -206,8 +214,9 @@
 				{t('workspaces.description', $language)}
 			</label>
 			<textarea
-				bind:value={createForm.description}
-				rows="3"
+				value={createForm.description}
+				oninput={handleDescriptionChange}
+				rows={3}
 				class="block w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
 				placeholder="Optional description for this workspace"
 			></textarea>
@@ -219,6 +228,7 @@
 			bind:value={createForm.maxCertificates}
 			required
 			error={errors.maxCertificates}
+			placeholder="1000"
 		/>
 
 		<div class="flex items-center space-x-4">

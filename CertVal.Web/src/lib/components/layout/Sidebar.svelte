@@ -26,7 +26,7 @@
 		}
 	];
 
-	$: currentPath = $page.url.pathname;
+	const currentPath = $derived($page.url.pathname);
 </script>
 
 <aside class="fixed top-16 left-0 z-40 h-full w-64 border-r border-gray-200 bg-white shadow-sm">
@@ -41,7 +41,10 @@
 							? 'border-r-2 border-blue-700 bg-blue-50 text-blue-700'
 							: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}"
 					>
-						{item.label}
+						<svg class="mr-3 h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={item.icon} />
+						</svg>
+						{t(item.label, $language)}
 					</a>
 				</li>
 			{/each}

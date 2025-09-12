@@ -58,6 +58,8 @@
 	function getStatusText(status: 'expired' | 'expiring' | 'valid'): string {
 		return t(`certificates.${status}`, $language);
 	}
+
+	const userFirstName = $derived($auth.user?.firstName || '');
 </script>
 
 <svelte:head>
@@ -68,7 +70,7 @@
 	<!-- Header -->
 	<div>
 		<h1 class="text-2xl font-bold text-gray-900">
-			{t('dashboard.welcome', $language)}, {$auth.user?.firstName}!
+			{t('dashboard.welcome', $language)}, {userFirstName}!
 		</h1>
 		<p class="text-gray-600">{t('dashboard.title', $language)}</p>
 	</div>
@@ -252,6 +254,7 @@
 				</Card>
 			</div>
 		{/if}
+
 		<!-- Expiring Certificates -->
 		{#if expiringCertificates.length > 0}
 			<Card title={t('dashboard.expiringCertificates', $language)}>

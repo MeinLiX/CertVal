@@ -7,13 +7,17 @@ function createLanguageStore() {
     return {
         subscribe,
         setLanguage: (lang: Language) => {
-            localStorage.setItem('language', lang);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('language', lang);
+            }
             set(lang);
         },
         initialize: () => {
-            const saved = localStorage.getItem('language') as Language;
-            if (saved && ['uk', 'en'].includes(saved)) {
-                set(saved);
+            if (typeof window !== 'undefined') {
+                const saved = localStorage.getItem('language') as Language;
+                if (saved && ['uk', 'en'].includes(saved)) {
+                    set(saved);
+                }
             }
         }
     };

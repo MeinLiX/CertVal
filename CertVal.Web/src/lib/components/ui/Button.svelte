@@ -8,6 +8,7 @@
 		disabled?: boolean;
 		loading?: boolean;
 		type?: 'button' | 'submit' | 'reset';
+		class?: string;
 		onclick?: () => void;
 		children?: any;
 	}
@@ -18,6 +19,7 @@
 		disabled = false,
 		loading = false,
 		type = 'button',
+		class: className = '',
 		onclick,
 		children
 	}: Props = $props();
@@ -39,7 +41,7 @@
 		lg: 'px-6 py-3 text-base'
 	};
 
-	$: classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]}`;
+	const classes = $derived(`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`);
 </script>
 
 <button {type} {disabled} class={classes} {onclick}>

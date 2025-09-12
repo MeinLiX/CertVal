@@ -25,7 +25,7 @@
 	let errors = $state<Record<string, string>>({});
 
 	// Get workspace filter from URL
-	$: workspaceFilter = $page.url.searchParams.get('workspace');
+	const workspaceFilter = $derived($page.url.searchParams.get('workspace'));
 
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
@@ -34,6 +34,13 @@
 		}
 
 		await Promise.all([loadWorkspaces(), loadCertificates()]);
+	});
+
+	// Reload certificates when workspace filter changes
+	$effect(() => {
+		if (!isLoading) {
+			loadCertificates();
+		}
 	});
 
 	async function loadWorkspaces() {
@@ -103,9 +110,33 @@
 		errors = {};
 	}
 
-	function handleFileSelect(event: Event) {
-		const target = event.target as HTMLInputElement;
-		selectedFile = target.files?.[0] || null;
+	function handleFileSelect(eventOrFile: Event | File | FileList | null | undefined) {
+		// Support three cases:
+		// 1. Native input change Event -> extract from event.target.files
+		// 2. A FileList (e.g., from a custom component) -> take first file
+		// 3. A single File directly
+		if (!eventOrFile) {
+			selectedFile = null;
+			return;
+		}
+
+		// If it's an Event, try to extract files from the target
+		if ((eventOrFile as Event).type) {
+			const evt = eventOrFile as Event;
+			const target = evt.target as HTMLInputElement | null;
+			selectedFile = target?.files?.[0] ?? null;
+			return;
+		}
+
+		// If it's a FileList, use first file
+		if ((eventOrFile as FileList).item !== undefined) {
+			const files = eventOrFile as FileList;
+			selectedFile = files.item(0) ?? null;
+			return;
+		}
+
+		// Otherwise assume it's a File
+		selectedFile = eventOrFile as File;
 	}
 
 	function handleCloseModal() {
@@ -132,6 +163,17 @@
 		const workspace = workspaceList.find((w) => w.id === workspaceId);
 		return workspace?.name || 'Unknown Workspace';
 	}
+
+	function handleWorkspaceFilterChange(event: Event) {
+		const target = event.target as HTMLSelectElement;
+		const url = new URL(window.location.href);
+		if (target.value) {
+			url.searchParams.set('workspace', target.value);
+		} else {
+			url.searchParams.delete('workspace');
+		}
+		goto(url.pathname + url.search);
+	}
 </script>
 
 <svelte:head>
@@ -157,20 +199,12 @@
 				<div class="flex items-center space-x-4">
 					<select
 						class="block w-48 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
-						onchange={(e) => {
-							const target = e.target as HTMLSelectElement;
-							const url = new URL(window.location.href);
-							if (target.value) {
-								url.searchParams.set('workspace', target.value);
-							} else {
-								url.searchParams.delete('workspace');
-							}
-							goto(url.pathname + url.search);
-						}}
+						value={workspaceFilter || ''}
+						onchange={handleWorkspaceFilterChange}
 					>
 						<option value="">All Workspaces</option>
 						{#each workspaceList as workspace}
-							<option value={workspace.id} selected={workspaceFilter === workspace.id}>
+							<option value={workspace.id}>
 								{workspace.name}
 							</option>
 						{/each}
@@ -315,10 +349,11 @@
 		{/if}
 
 		<div class="space-y-1">
-			<label class="block text-sm font-medium text-gray-700">
+			<label for="workspace-select" class="block text-sm font-medium text-gray-700">
 				Workspace <span class="text-red-500">*</span>
 			</label>
 			<select
+				id="workspace-select"
 				bind:value={selectedWorkspaceId}
 				required
 				class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"

@@ -265,7 +265,7 @@
 		}
 	}
 
-	$: selectedWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId);
+	const selectedWorkspace = $derived(workspaces.find((w) => w.id === selectedWorkspaceId));
 </script>
 
 <svelte:head>

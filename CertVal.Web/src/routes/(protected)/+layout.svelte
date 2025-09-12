@@ -18,9 +18,11 @@
 			goto('/auth/login');
 		}
 	});
+
+	const isAuthenticated = $derived($auth.isAuthenticated);
 </script>
 
-{#if $auth.isAuthenticated}
+{#if isAuthenticated}
 	{@render children?.()}
 {:else}
 	<div class="flex min-h-screen items-center justify-center">

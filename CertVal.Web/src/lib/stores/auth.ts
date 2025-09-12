@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import type { User } from '$lib/types';
+import { browser } from '$app/environment';
 
 interface AuthState {
     user: User | null;
@@ -19,8 +20,10 @@ function createAuthStore() {
     return {
         subscribe,
         login: (token: string, user: User) => {
-            localStorage.setItem('auth_token', token);
-            localStorage.setItem('user', JSON.stringify(user));
+            if (browser) {
+                localStorage.setItem('auth_token', token);
+                localStorage.setItem('user', JSON.stringify(user));
+            }
             set({
                 user,
                 token,
@@ -29,8 +32,10 @@ function createAuthStore() {
             });
         },
         logout: () => {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user');
+            if (browser) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user');
+            }
             set({
                 user: null,
                 token: null,
@@ -42,6 +47,8 @@ function createAuthStore() {
             update(state => ({ ...state, isLoading: loading }));
         },
         initialize: () => {
+            if (!browser) return;
+            
             const token = localStorage.getItem('auth_token');
             const userStr = localStorage.getItem('user');
 

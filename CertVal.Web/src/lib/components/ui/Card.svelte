@@ -8,7 +8,7 @@
 
 	let { title, children, padding = true, shadow = true }: Props = $props();
 
-	$: classes = `bg-white rounded-lg ${shadow ? 'shadow' : ''} ${padding ? 'p-6' : ''}`;
+	const classes = $derived(`bg-white rounded-lg ${shadow ? 'shadow' : ''} ${padding ? 'p-6' : ''}`);
 </script>
 
 <div class={classes}>

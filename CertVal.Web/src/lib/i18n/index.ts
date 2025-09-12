@@ -19,7 +19,12 @@ export const translations = {
             upload: 'Завантажити',
             download: 'Скачати',
             refresh: 'Оновити',
-            language: 'Мова'
+            language: 'Мова',
+            create: 'Створити',
+            update: 'Оновити',
+            view: 'Переглянути',
+            details: 'Деталі',
+            settings: 'Налаштування'
         },
         nav: {
             dashboard: 'Панель керування',
@@ -40,7 +45,8 @@ export const translations = {
                 submit: 'Увійти',
                 forgot: 'Забули пароль?',
                 noAccount: 'Немає акаунту?',
-                registerLink: 'Зареєструватися'
+                registerLink: 'Зареєструватися',
+                rememberMe: 'Запам\'ятати мене'
             },
             register: {
                 title: 'Реєстрація в CertVal',
@@ -51,7 +57,16 @@ export const translations = {
                 confirmPassword: 'Підтвердження пароля',
                 submit: 'Зареєструватися',
                 hasAccount: 'Вже є акаунт?',
-                loginLink: 'Увійти'
+                loginLink: 'Увійти',
+                terms: 'Умови використання',
+                privacy: 'Політика конфіденційності',
+                agreeToTerms: 'Я погоджуюся з'
+            },
+            forgot: {
+                title: 'Відновлення пароля',
+                subtitle: 'Введіть свою електронну пошту для відновлення',
+                submit: 'Надіслати посилання',
+                backToLogin: 'Повернутися до входу'
             }
         },
         dashboard: {
@@ -66,7 +81,9 @@ export const translations = {
                 validCertificates: 'Дійсні сертифікати'
             },
             recentCertificates: 'Нещодавні сертифікати',
-            expiringCertificates: 'Сертифікати, що закінчуються'
+            expiringCertificates: 'Сертифікати, що закінчуються',
+            quickActions: 'Швидкі дії',
+            viewAll: 'Переглянути все'
         },
         workspaces: {
             title: 'Робочі простори',
@@ -74,16 +91,21 @@ export const translations = {
             name: 'Назва',
             description: 'Опис',
             owner: 'Власник',
-            certificates: 'Сертифікати',
-            members: 'Учасники',
+            certificates: 'сертифікатів',
+            members: 'учасників',
             settings: 'Налаштування',
             empty: 'Немає робочих просторів',
-            createFirst: 'Створіть свій перший робочий простір'
+            createFirst: 'Створіть свій перший робочий простір',
+            maxCertificates: 'Максимум сертифікатів',
+            isPublic: 'Публічний простір',
+            allowInvites: 'Дозволити запрошення',
+            created: 'Створено',
+            updated: 'Оновлено'
         },
         certificates: {
             title: 'Сертифікати',
             upload: 'Завантажити сертифікат',
-            subject: 'Суб`єкт',
+            subject: 'Суб\'єкт',
             issuer: 'Видавець',
             expires: 'Закінчується',
             status: 'Статус',
@@ -92,15 +114,86 @@ export const translations = {
             valid: 'Дійсний',
             days: 'днів',
             empty: 'Немає сертифікатів',
-            uploadFirst: 'Завантажте ваш перший сертифікат'
+            uploadFirst: 'Завантажте ваш перший сертифікат',
+            fileFormat: 'Формат файлу',
+            fileSize: 'Розмір файлу',
+            serialNumber: 'Серійний номер',
+            thumbprint: 'Відбиток',
+            notBefore: 'Дійсний з',
+            notAfter: 'Дійсний до',
+            isBundle: 'Пакет сертифікатів',
+            selectFile: 'Оберіть файл',
+            supportedFormats: 'Підтримувані формати',
+            viewDetails: 'Переглянути деталі',
+            downloadCert: 'Скачати сертифікат'
+        },
+        notifications: {
+            title: 'Сповіщення',
+            rules: 'Правила сповіщень',
+            history: 'Історія сповіщень',
+            createRule: 'Створити правило',
+            editRule: 'Редагувати правило',
+            deleteRule: 'Видалити правило',
+            ruleName: 'Назва правила',
+            daysBeforeExpiry: 'Днів до закінчення',
+            frequency: 'Частота',
+            channelType: 'Тип каналу',
+            enabled: 'Увімкнено',
+            disabled: 'Вимкнено',
+            email: 'Електронна пошта',
+            webhook: 'Вебхук',
+            slack: 'Slack',
+            telegram: 'Telegram',
+            once: 'Одноразово',
+            daily: 'Щодня',
+            weekly: 'Щотижня',
+            monthly: 'Щомісяця',
+            sent: 'Надіслано',
+            failed: 'Помилка',
+            pending: 'В очікуванні',
+            noRules: 'Немає правил сповіщень',
+            createFirstRule: 'Створіть перше правило сповіщень',
+            noHistory: 'Немає історії сповіщень'
+        },
+        profile: {
+            title: 'Профіль користувача',
+            personalInfo: 'Особиста інформація',
+            accountSettings: 'Налаштування акаунту',
+            preferences: 'Налаштування',
+            security: 'Безпека',
+            changePassword: 'Змінити пароль',
+            currentPassword: 'Поточний пароль',
+            newPassword: 'Новий пароль',
+            confirmNewPassword: 'Підтвердити новий пароль',
+            timezone: 'Часовий пояс',
+            emailNotifications: 'Email сповіщення',
+            language: 'Мова інтерфейсу',
+            accountCreated: 'Акаунт створено',
+            lastLogin: 'Останній вхід'
         },
         errors: {
             general: 'Виникла помилка. Спробуйте знову.',
-            network: 'Помилка мережі. Перевірте з`єднання.',
+            network: 'Помилка мережі. Перевірте з\'єднання.',
             unauthorized: 'Необхідна авторизація',
             forbidden: 'Доступ заборонено',
             notFound: 'Не знайдено',
-            validation: 'Помилка валідації'
+            validation: 'Помилка валідації',
+            required: 'Обов\'язкове поле',
+            invalidEmail: 'Невірний формат електронної пошти',
+            passwordTooShort: 'Пароль занадто короткий',
+            passwordsNotMatch: 'Паролі не співпадають',
+            fileTooBig: 'Файл занадто великий',
+            invalidFileFormat: 'Невірний формат файлу',
+            uploadFailed: 'Помилка завантаження файлу'
+        },
+        success: {
+            saved: 'Збережено успішно',
+            updated: 'Оновлено успішно',
+            deleted: 'Видалено успішно',
+            uploaded: 'Завантажено успішно',
+            passwordChanged: 'Пароль змінено успішно',
+            emailSent: 'Email надіслано',
+            profileUpdated: 'Профіль оновлено'
         }
     },
     en: {
@@ -121,7 +214,12 @@ export const translations = {
             upload: 'Upload',
             download: 'Download',
             refresh: 'Refresh',
-            language: 'Language'
+            language: 'Language',
+            create: 'Create',
+            update: 'Update',
+            view: 'View',
+            details: 'Details',
+            settings: 'Settings'
         },
         nav: {
             dashboard: 'Dashboard',
@@ -142,7 +240,8 @@ export const translations = {
                 submit: 'Sign In',
                 forgot: 'Forgot password?',
                 noAccount: "Don't have an account?",
-                registerLink: 'Sign up'
+                registerLink: 'Sign up',
+                rememberMe: 'Remember me'
             },
             register: {
                 title: 'Register for CertVal',
@@ -153,7 +252,16 @@ export const translations = {
                 confirmPassword: 'Confirm Password',
                 submit: 'Sign Up',
                 hasAccount: 'Already have an account?',
-                loginLink: 'Sign in'
+                loginLink: 'Sign in',
+                terms: 'Terms of Service',
+                privacy: 'Privacy Policy',
+                agreeToTerms: 'I agree to the'
+            },
+            forgot: {
+                title: 'Reset Password',
+                subtitle: 'Enter your email to receive reset instructions',
+                submit: 'Send Reset Link',
+                backToLogin: 'Back to Login'
             }
         },
         dashboard: {
@@ -168,7 +276,9 @@ export const translations = {
                 validCertificates: 'Valid Certificates'
             },
             recentCertificates: 'Recent Certificates',
-            expiringCertificates: 'Expiring Certificates'
+            expiringCertificates: 'Expiring Certificates',
+            quickActions: 'Quick Actions',
+            viewAll: 'View All'
         },
         workspaces: {
             title: 'Workspaces',
@@ -176,11 +286,16 @@ export const translations = {
             name: 'Name',
             description: 'Description',
             owner: 'Owner',
-            certificates: 'Certificates',
-            members: 'Members',
+            certificates: 'certificates',
+            members: 'members',
             settings: 'Settings',
             empty: 'No workspaces',
-            createFirst: 'Create your first workspace'
+            createFirst: 'Create your first workspace',
+            maxCertificates: 'Max Certificates',
+            isPublic: 'Public workspace',
+            allowInvites: 'Allow member invites',
+            created: 'Created',
+            updated: 'Updated'
         },
         certificates: {
             title: 'Certificates',
@@ -194,7 +309,62 @@ export const translations = {
             valid: 'Valid',
             days: 'days',
             empty: 'No certificates',
-            uploadFirst: 'Upload your first certificate'
+            uploadFirst: 'Upload your first certificate',
+            fileFormat: 'File Format',
+            fileSize: 'File Size',
+            serialNumber: 'Serial Number',
+            thumbprint: 'Thumbprint',
+            notBefore: 'Valid From',
+            notAfter: 'Valid Until',
+            isBundle: 'Certificate Bundle',
+            selectFile: 'Select File',
+            supportedFormats: 'Supported Formats',
+            viewDetails: 'View Details',
+            downloadCert: 'Download Certificate'
+        },
+        notifications: {
+            title: 'Notifications',
+            rules: 'Notification Rules',
+            history: 'Notification History',
+            createRule: 'Create Rule',
+            editRule: 'Edit Rule',
+            deleteRule: 'Delete Rule',
+            ruleName: 'Rule Name',
+            daysBeforeExpiry: 'Days Before Expiry',
+            frequency: 'Frequency',
+            channelType: 'Channel Type',
+            enabled: 'Enabled',
+            disabled: 'Disabled',
+            email: 'Email',
+            webhook: 'Webhook',
+            slack: 'Slack',
+            telegram: 'Telegram',
+            once: 'Once',
+            daily: 'Daily',
+            weekly: 'Weekly',
+            monthly: 'Monthly',
+            sent: 'Sent',
+            failed: 'Failed',
+            pending: 'Pending',
+            noRules: 'No notification rules',
+            createFirstRule: 'Create your first notification rule',
+            noHistory: 'No notification history'
+        },
+        profile: {
+            title: 'User Profile',
+            personalInfo: 'Personal Information',
+            accountSettings: 'Account Settings',
+            preferences: 'Preferences',
+            security: 'Security',
+            changePassword: 'Change Password',
+            currentPassword: 'Current Password',
+            newPassword: 'New Password',
+            confirmNewPassword: 'Confirm New Password',
+            timezone: 'Timezone',
+            emailNotifications: 'Email Notifications',
+            language: 'Interface Language',
+            accountCreated: 'Account Created',
+            lastLogin: 'Last Login'
         },
         errors: {
             general: 'An error occurred. Please try again.',
@@ -202,7 +372,23 @@ export const translations = {
             unauthorized: 'Authorization required',
             forbidden: 'Access denied',
             notFound: 'Not found',
-            validation: 'Validation error'
+            validation: 'Validation error',
+            required: 'Required field',
+            invalidEmail: 'Invalid email format',
+            passwordTooShort: 'Password too short',
+            passwordsNotMatch: 'Passwords do not match',
+            fileTooBig: 'File too large',
+            invalidFileFormat: 'Invalid file format',
+            uploadFailed: 'File upload failed'
+        },
+        success: {
+            saved: 'Saved successfully',
+            updated: 'Updated successfully',
+            deleted: 'Deleted successfully',
+            uploaded: 'Uploaded successfully',
+            passwordChanged: 'Password changed successfully',
+            emailSent: 'Email sent',
+            profileUpdated: 'Profile updated'
         }
     }
 };
@@ -215,6 +401,7 @@ export function t(key: string, lang: Language = 'uk'): string {
         if (value && typeof value === 'object' && k in value) {
             value = value[k];
         } else {
+            console.warn(`Translation key "${key}" not found for language "${lang}"`);
             return key;
         }
     }
