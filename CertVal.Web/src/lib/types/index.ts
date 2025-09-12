@@ -94,6 +94,32 @@ export interface CreateWorkspaceRequest {
     allowMemberInvites: boolean;
 }
 
+export interface InviteMemberRequest {
+    request: {
+        email: string;
+        role: WorkspaceRole;
+    };
+}
+
+export interface DirectInviteMemberRequest {
+    email: string;
+    role: WorkspaceRole;
+}
+
+export type WorkspaceRole = 'Viewer' | 'Editor' | 'Administrator';
+
+export interface WorkspaceMember {
+    id: string;
+    userId: string;
+    workspaceId: string;
+    role: WorkspaceRole;
+    status: 'Pending' | 'Active' | 'Inactive';
+    user: User;
+    joinedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface DashboardStats {
     totalWorkspaces: number;
     totalCertificates: number;

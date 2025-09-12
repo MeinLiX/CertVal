@@ -30,10 +30,30 @@ class ApiClient {
                 throw new Error('Unauthorized');
             }
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = text ? { message: text } : {};
+            }
 
             if (!response.ok) {
-                throw new Error(data.message || 'Request failed');
+                if (response.status === 400 && data.errors) {
+                    const errorMessages = [];
+                    for (const [field, messages] of Object.entries(data.errors)) {
+                        if (Array.isArray(messages)) {
+                            errorMessages.push(...messages);
+                        } else {
+                            errorMessages.push(messages);
+                        }
+                    }
+                    throw new Error(errorMessages.join(', ') || 'Validation error');
+                }
+                
+                throw new Error(data.message || data.title || 'Request failed');
             }
 
             return { data };
@@ -84,10 +104,30 @@ class ApiClient {
                 throw new Error('Unauthorized');
             }
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = text ? { message: text } : {};
+            }
 
             if (!response.ok) {
-                throw new Error(data.message || 'Upload failed');
+                if (response.status === 400 && data.errors) {
+                    const errorMessages = [];
+                    for (const [field, messages] of Object.entries(data.errors)) {
+                        if (Array.isArray(messages)) {
+                            errorMessages.push(...messages);
+                        } else {
+                            errorMessages.push(messages);
+                        }
+                    }
+                    throw new Error(errorMessages.join(', ') || 'Upload failed');
+                }
+                
+                throw new Error(data.message || data.title || 'Upload failed');
             }
 
             return { data };
@@ -97,6 +137,31 @@ class ApiClient {
                 message: error instanceof Error ? error.message : 'Upload failed'
             };
         }
+    }
+
+    async inviteMember<T>(workspaceId: string, email: string, role: string) {
+        let requestData = {
+            request: {
+                email: email,
+                role: role
+            }
+        };
+
+        console.log('Trying nested request structure:', requestData);
+        
+        let response = await this.post<T>(`/v1/workspaces/${workspaceId}/members/invite`, requestData);
+        
+        if (response.message && response.message.includes('validation')) {
+            console.log('Nested structure failed, trying flat structure');
+            requestData = {
+                email: email,
+                role: role
+            } as any;
+            
+            response = await this.post<T>(`/v1/workspaces/${workspaceId}/members/invite`, requestData);
+        }
+
+        return response;
     }
 }
 
