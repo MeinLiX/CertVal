@@ -73,6 +73,10 @@
 
 	let errors = $state<Record<string, string>>({});
 
+	const workspaceSelectId = 'workspace-select-' + Math.random().toString(36).substr(2, 9);
+	const channelTypeSelectId = 'channel-type-select-' + Math.random().toString(36).substr(2, 9);
+	const frequencySelectId = 'frequency-select-' + Math.random().toString(36).substr(2, 9);
+
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -342,8 +346,9 @@
 		<Card>
 			<div class="flex items-center justify-between">
 				<div>
-					<label class="mb-2 block text-sm font-medium text-gray-700"> Select Workspace </label>
+					<label for={workspaceSelectId} class="mb-2 block text-sm font-medium text-gray-700"> Select Workspace </label>
 					<select
+						id={workspaceSelectId}
 						bind:value={selectedWorkspaceId}
 						onchange={handleWorkspaceChange}
 						class="block w-64 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
@@ -504,10 +509,11 @@
 		/>
 
 		<div class="space-y-1">
-			<label class="block text-sm font-medium text-gray-700">
+			<label for={channelTypeSelectId} class="block text-sm font-medium text-gray-700">
 				Channel Type <span class="text-red-500">*</span>
 			</label>
 			<select
+				id={channelTypeSelectId}
 				bind:value={createRuleForm.channelType}
 				required
 				class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
@@ -520,10 +526,11 @@
 		</div>
 
 		<div class="space-y-1">
-			<label class="block text-sm font-medium text-gray-700">
+			<label for={frequencySelectId} class="block text-sm font-medium text-gray-700">
 				Frequency <span class="text-red-500">*</span>
 			</label>
 			<select
+				id={frequencySelectId}
 				bind:value={createRuleForm.frequency}
 				required
 				class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"

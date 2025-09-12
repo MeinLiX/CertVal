@@ -13,6 +13,8 @@
 		children
 	}: Props = $props();
 
+	let modalRef = $state<HTMLDivElement>();
+
 	function handleBackdropClick(event: MouseEvent) {
 		if (event.target === event.currentTarget) {
 			onClose?.();
@@ -26,8 +28,6 @@
 	}
 
 	// Focus management
-	let modalRef: HTMLDivElement;
-	
 	$effect(() => {
 		if (isOpen && modalRef) {
 			const focusableElements = modalRef.querySelectorAll(
@@ -48,6 +48,7 @@
 		class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
 		onclick={handleBackdropClick}
 		role="dialog"
+		tabindex="0"
 		aria-modal="true"
 		aria-labelledby={title ? "modal-title" : undefined}
 	>
@@ -55,6 +56,8 @@
 			bind:this={modalRef}
 			class="relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-full overflow-y-auto"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="document"
 		>
 			<div class="p-6">
 				<div class="flex justify-between items-center mb-4">

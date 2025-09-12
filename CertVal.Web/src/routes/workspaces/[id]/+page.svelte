@@ -485,6 +485,7 @@
 								{/if}
 
 								<Input
+                                    id="invite-email"
 									type="email"
 									label={t('workspaces.emailAddress', $language)}
 									bind:value={inviteForm.email}

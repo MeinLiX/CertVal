@@ -202,6 +202,7 @@
 		{/if}
 
 		<Input
+			id="workspace-name"
 			label={t('workspaces.name', $language)}
 			bind:value={createForm.name}
 			required
@@ -210,10 +211,11 @@
 		/>
 
 		<div class="space-y-1">
-			<label class="block text-sm font-medium text-gray-700">
+			<label for="workspace-description" class="block text-sm font-medium text-gray-700">
 				{t('workspaces.description', $language)}
 			</label>
 			<textarea
+				id="workspace-description"
 				value={createForm.description}
 				oninput={handleDescriptionChange}
 				rows={3}
@@ -223,6 +225,7 @@
 		</div>
 
 		<Input
+			id="max-certificates"
 			type="number"
 			label="Max Certificates"
 			bind:value={createForm.maxCertificates}
@@ -234,6 +237,7 @@
 		<div class="flex items-center space-x-4">
 			<label class="flex items-center">
 				<input
+					id="is-public"
 					type="checkbox"
 					bind:checked={createForm.isPublic}
 					class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -243,6 +247,7 @@
 
 			<label class="flex items-center">
 				<input
+					id="allow-invites"
 					type="checkbox"
 					bind:checked={createForm.allowMemberInvites}
 					class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"

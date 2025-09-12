@@ -296,122 +296,127 @@
 
 	<!-- Filters Card -->
 	<Card>
-		<div class="space-y-4">
-			<div class="flex items-center justify-between">
-				<h3 class="text-lg font-medium text-gray-900">Filters</h3>
-				<Button variant="outline" size="sm" onclick={clearFilters}>
-					<svg class="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-					</svg>
-					Clear All
-				</Button>
-			</div>
+	<div class="space-y-4">
+		<div class="flex items-center justify-between">
+			<h3 class="text-lg font-medium text-gray-900">Filters</h3>
+			<Button variant="outline" size="sm" onclick={clearFilters}>
+				<svg class="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+				Clear All
+			</Button>
+		</div>
 
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-				<!-- Workspace Filter -->
-				{#if workspaceList.length > 1}
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">Workspace</label>
-						<select
-							class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-							value={workspaceFilter || ''}
-							onchange={handleWorkspaceFilterChange}
-						>
-							<option value="">All Workspaces</option>
-							{#each workspaceList as workspace}
-								<option value={workspace.id}>{workspace.name}</option>
-							{/each}
-						</select>
-					</div>
-				{/if}
-
-				<!-- Search -->
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+			<!-- Workspace Filter -->
+			{#if workspaceList.length > 1}
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Search</label>
-					<Input
-						type="search"
-						bind:value={searchTerm}
-						placeholder="Search by subject..."
-					/>
-				</div>
-
-				<!-- Status Filter -->
-				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
+					<label for="workspace-filter" class="mb-1 block text-sm font-medium text-gray-700">Workspace</label>
 					<select
-						bind:value={statusFilter}
+						id="workspace-filter"
 						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+						value={workspaceFilter || ''}
+						onchange={handleWorkspaceFilterChange}
 					>
-						<option value="">All Statuses</option>
-						<option value="valid">Valid</option>
-						<option value="expiring">Expiring (30 days)</option>
-						<option value="expired">Expired</option>
+						<option value="">All Workspaces</option>
+						{#each workspaceList as workspace}
+							<option value={workspace.id}>{workspace.name}</option>
+						{/each}
 					</select>
-				</div>
-
-				<!-- Format Filter -->
-				{#if availableFormats.length > 1}
-					<div>
-						<label class="mb-1 block text-sm font-medium text-gray-700">Format</label>
-						<select
-							bind:value={formatFilter}
-							class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-						>
-							<option value="">All Formats</option>
-							{#each availableFormats as format}
-								<option value={format}>{format}</option>
-							{/each}
-						</select>
-					</div>
-				{/if}
-
-				<!-- Sort -->
-				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Sort By</label>
-					<select
-						bind:value={sortBy}
-						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-					>
-						<option value="notAfter">Expiry Date</option>
-						<option value="subject">Subject</option>
-						<option value="issuer">Issuer</option>
-						<option value="createdAt">Created Date</option>
-					</select>
-				</div>
-			</div>
-
-			<!-- Active Filters Display -->
-			{#if searchTerm || statusFilter || formatFilter || workspaceFilter}
-				<div class="flex flex-wrap gap-2 pt-2">
-					<span class="text-sm font-medium text-gray-700">Active filters:</span>
-					{#if searchTerm}
-						<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-							Search: {searchTerm}
-							<button onclick={() => searchTerm = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-						</span>
-					{/if}
-					{#if statusFilter}
-						<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-							Status: {statusFilter}
-							<button onclick={() => statusFilter = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-						</span>
-					{/if}
-					{#if formatFilter}
-						<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-							Format: {formatFilter}
-							<button onclick={() => formatFilter = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-						</span>
-					{/if}
-					{#if workspaceFilter}
-						<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-							Workspace: {getWorkspaceName(workspaceFilter)}
-							<button onclick={() => goto('/certificates')} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-						</span>
-					{/if}
 				</div>
 			{/if}
+
+			<!-- Search -->
+			<div>
+				<Input
+					id="search-filter"
+					label="Search"
+					type="search"
+					bind:value={searchTerm}
+					placeholder="Search by subject..."
+				/>
+			</div>
+
+			<!-- Status Filter -->
+			<div>
+				<label for="status-filter" class="mb-1 block text-sm font-medium text-gray-700">Status</label>
+				<select
+					id="status-filter"
+					bind:value={statusFilter}
+					class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+				>
+					<option value="">All Statuses</option>
+					<option value="valid">Valid</option>
+					<option value="expiring">Expiring (30 days)</option>
+					<option value="expired">Expired</option>
+				</select>
+			</div>
+
+			<!-- Format Filter -->
+			{#if availableFormats.length > 1}
+				<div>
+					<label for="format-filter" class="mb-1 block text-sm font-medium text-gray-700">Format</label>
+					<select
+						id="format-filter"
+						bind:value={formatFilter}
+						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+					>
+						<option value="">All Formats</option>
+						{#each availableFormats as format}
+							<option value={format}>{format}</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
+
+			<!-- Sort -->
+			<div>
+				<label for="sort-filter" class="mb-1 block text-sm font-medium text-gray-700">Sort By</label>
+				<select
+					id="sort-filter"
+					bind:value={sortBy}
+					class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+				>
+					<option value="notAfter">Expiry Date</option>
+					<option value="subject">Subject</option>
+					<option value="issuer">Issuer</option>
+					<option value="createdAt">Created Date</option>
+				</select>
+			</div>
 		</div>
-	</Card>
+
+		<!-- Active Filters Display -->
+		{#if searchTerm || statusFilter || formatFilter || workspaceFilter}
+			<div class="flex flex-wrap gap-2 pt-2">
+				<span class="text-sm font-medium text-gray-700">Active filters:</span>
+				{#if searchTerm}
+					<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+						Search: {searchTerm}
+						<button onclick={() => searchTerm = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+					</span>
+				{/if}
+				{#if statusFilter}
+					<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+						Status: {statusFilter}
+						<button onclick={() => statusFilter = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+					</span>
+				{/if}
+				{#if formatFilter}
+					<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+						Format: {formatFilter}
+						<button onclick={() => formatFilter = ''} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+					</span>
+				{/if}
+				{#if workspaceFilter}
+					<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+						Workspace: {getWorkspaceName(workspaceFilter)}
+						<button onclick={() => goto('/certificates')} class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+					</span>
+				{/if}
+			</div>
+		{/if}
+	</div>
+</Card>
 
 	{#if isLoading}
 		<div class="flex h-64 items-center justify-center">
