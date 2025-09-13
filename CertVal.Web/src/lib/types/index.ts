@@ -130,3 +130,10 @@ export interface DashboardStats {
 }
 
 export type Language = 'uk' | 'en';
+
+export type Theme = 'light' | 'dark' | 'system';
+
+export interface ThemeState {
+    theme: Theme;
+    resolved: 'light' | 'dark';
+}

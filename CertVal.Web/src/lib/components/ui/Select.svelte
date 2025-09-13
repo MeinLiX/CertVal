@@ -1,71 +1,51 @@
 <script lang="ts">
+	interface Option {
+		value: string;
+		label: string;
+	}
+
 	interface Props {
-		type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'file';
-		value?: string | number;
+		value?: string;
 		placeholder?: string;
 		label?: string;
 		error?: string;
 		disabled?: boolean;
 		required?: boolean;
-		accept?: string;
-		multiple?: boolean;
 		id?: string;
-		icon?: string;
-		onchange?: (value: any) => void;
-		oninput?: (value: any) => void;
+		options: Option[];
+		onchange?: (value: string) => void;
 	}
 
 	let {
-		type = 'text',
 		value = $bindable(''),
 		placeholder = '',
 		label = '',
 		error = '',
 		disabled = false,
 		required = false,
-		accept = '',
-		multiple = false,
 		id = '',
-		icon = '',
-		onchange,
-		oninput
+		options = [],
+		onchange
 	}: Props = $props();
 
-	const inputId = $derived(id || `input-${Math.random().toString(36).substr(2, 9)}`);
-
-	function handleInput(event: Event) {
-		const target = event.target as HTMLInputElement;
-		if (type === 'file') {
-			oninput?.(target.files);
-			return;
-		}
-
-		const newValue = type === 'number' ? parseFloat(target.value) : target.value;
-		value = newValue;
-		oninput?.(newValue);
-	}
+	const selectId = $derived(id || `select-${Math.random().toString(36).substr(2, 9)}`);
 
 	function handleChange(event: Event) {
-		const target = event.target as HTMLInputElement;
-		if (type === 'file') {
-			onchange?.(target.files);
-			return;
-		}
-
-		const newValue = type === 'number' ? parseFloat(target.value) : target.value;
+		const target = event.target as HTMLSelectElement;
+		const newValue = target.value;
 		value = newValue;
 		onchange?.(newValue);
 	}
 
-	const inputClasses = $derived(`
+	const selectClasses = $derived(`
 		block w-full rounded-xl border-0 bg-white dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset 
 		${error 
 			? 'ring-red-300 dark:ring-red-700 focus:ring-2 focus:ring-red-500' 
 			: 'ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500'
 		}
-		${disabled ? 'bg-gray-50 dark:bg-gray-900 cursor-not-allowed opacity-50' : ''} 
-		placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-inset transition-all duration-200
-		${icon ? 'pl-11' : ''}
+		${disabled ? 'bg-gray-50 dark:bg-gray-900 cursor-not-allowed opacity-50' : 'cursor-pointer'} 
+		focus:ring-inset transition-all duration-200 appearance-none
+		bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTUuMjMgNy4yMUExLjc1IDEuNzUgMCAwMTYuMjkgN0wxMCAxMC45NEwxMy43MSA3QTEuNzUgMS43NSAwIDAxMTUuNzcgOC4wNkwxMS41MyAxMi4yOUMxMS4yMSAxMi42MSAxMC43OSAxMi43OCAxMC4zNSAxMi43OEMxMC4wNiAxMi43OCA5LjgxIDEyLjY5IDkuNTcgMTIuNTJMMTAuMzUgMTIuNzhMNi4wNiA4LjQ3QzUuODEgOC4yMSA1Ljc4IDcuOCA1Ljk3IDcuNTNMNi4wNiA4LjQ3TDUuMjMgNy4yMVoiIGZpbGw9IiM2QjcyODAiLz4KPC9zdmc+')] bg-no-repeat bg-[right_1rem_center] bg-[length:1rem] pr-10
 	`.trim().replace(/\s+/g, ' '));
 
 	const labelClasses = $derived(`
@@ -77,7 +57,7 @@
 
 <div class="space-y-2">
 	{#if label}
-		<label for={inputId} class={labelClasses}>
+		<label for={selectId} class={labelClasses}>
 			{label}
 			{#if required}
 				<span class="text-red-500 ml-1">*</span>
@@ -86,30 +66,24 @@
 	{/if}
 
 	<div class="relative">
-		{#if icon}
-			<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-				<svg class="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d={icon} />
-				</svg>
-			</div>
-		{/if}
-		
-		<input
-			{type}
-			{placeholder}
+		<select
 			{disabled}
 			{required}
-			{accept}
-			{multiple}
-			id={inputId}
-			class={inputClasses}
+			id={selectId}
+			class={selectClasses}
 			bind:value
-			oninput={handleInput}
 			onchange={handleChange}
-		/>
+		>
+			{#if placeholder}
+				<option value="" disabled selected>{placeholder}</option>
+			{/if}
+			{#each options as option}
+				<option value={option.value}>{option.label}</option>
+			{/each}
+		</select>
 
 		{#if error}
-			<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+			<div class="pointer-events-none absolute inset-y-0 right-8 flex items-center pr-3">
 				<svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
 					<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
 				</svg>

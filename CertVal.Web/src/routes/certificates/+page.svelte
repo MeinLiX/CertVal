@@ -12,6 +12,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Select from '$lib/components/ui/Select.svelte';
 	import type { Certificate, Workspace, PagedResult } from '$lib/types';
 
 	let certificates = $state<Certificate[]>([]);
@@ -19,6 +20,7 @@
 	let isLoading = $state(true);
 	let showUploadModal = $state(false);
 	let isUploading = $state(false);
+	let mounted = $state(false);
 
 	let selectedWorkspaceId = $state<string>('');
 	let selectedFile = $state<File | null>(null);
@@ -40,6 +42,31 @@
 	const workspaceFilter = $derived(currentParams.get('workspace'));
 
 	const totalPages = $derived(Math.ceil(totalCount / pageSize));
+
+	const workspaceOptions = $derived([
+		{ value: '', label: t('certificates.allWorkspaces', $language) },
+		...workspaceList.map(w => ({ value: w.id, label: w.name }))
+	]);
+
+	const statusOptions = $derived([
+		{ value: 'All', label: t('certificates.allStatuses', $language) },
+		{ value: 'Valid', label: t('certificates.valid', $language) },
+		{ value: 'Expiring', label: t('certificates.expiring30', $language) },
+		{ value: 'Expired', label: t('certificates.expired', $language) }
+	]);
+
+	const availableFormats = $derived([...new Set(certificates.map((c) => c.fileFormat))].sort());
+	const formatOptions = $derived([
+		{ value: '', label: t('certificates.allFormats', $language) },
+		...availableFormats.map(f => ({ value: f, label: f }))
+	]);
+
+	const sortOptions = $derived([
+		{ value: 'notAfter', label: t('certificates.expiryDate', $language) },
+		{ value: 'subject', label: t('certificates.subject', $language) },
+		{ value: 'issuer', label: t('certificates.issuer', $language) },
+		{ value: 'createdAt', label: t('certificates.createdDate', $language) }
+	]);
 
 	$effect(() => {
 		const urlParams = currentParams;
@@ -72,7 +99,6 @@
 		if (typeof window !== 'undefined') {
 			const url = new URL(window.location.href);
 
-			// Update search params
 			if (searchTerm) url.searchParams.set('search', searchTerm);
 			else url.searchParams.delete('search');
 
@@ -103,6 +129,7 @@
 
 		await Promise.all([loadWorkspaces(), loadCertificates()]);
 		isLoading = false;
+		mounted = true;
 	});
 
 	async function loadWorkspaces() {
@@ -159,7 +186,7 @@
 			if (response.data) {
 				showUploadModal = false;
 				resetUploadForm();
-				await loadCertificates(); // Reload list
+				await loadCertificates();
 			} else if (response.message) {
 				errors.general = response.message;
 			}
@@ -206,11 +233,11 @@
 	function getStatusColor(status: 'expired' | 'expiring' | 'valid'): string {
 		switch (status) {
 			case 'expired':
-				return 'text-red-600 bg-red-100';
+				return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
 			case 'expiring':
-				return 'text-yellow-600 bg-yellow-100';
+				return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
 			case 'valid':
-				return 'text-green-600 bg-green-100';
+				return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
 		}
 	}
 
@@ -223,11 +250,10 @@
 		return workspace?.name || t('workspaces.unknownWorkspace', $language);
 	}
 
-	function handleWorkspaceFilterChange(event: Event) {
-		const target = event.target as HTMLSelectElement;
+	function handleWorkspaceFilterChange(value: string) {
 		const url = new URL(window.location.href);
-		if (target.value) {
-			url.searchParams.set('workspace', target.value);
+		if (value) {
+			url.searchParams.set('workspace', value);
 		} else {
 			url.searchParams.delete('workspace');
 		}
@@ -264,7 +290,6 @@
 		currentPage = 1;
 	}
 
-	// Format file size
 	function formatFileSize(bytes: number): string {
 		if (bytes === 0) return '0 B';
 		const k = 1024;
@@ -273,10 +298,6 @@
 		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 	}
 
-	// Get unique formats for filter dropdown
-	const availableFormats = $derived([...new Set(certificates.map((c) => c.fileFormat))].sort());
-
-	// Show upload modal with pre-selected workspace
 	function showUploadModalWithWorkspace() {
 		selectedWorkspaceId = workspaceFilter || (workspaceList.length > 0 ? workspaceList[0].id : '');
 		showUploadModal = true;
@@ -285,35 +306,22 @@
 	function handleBackNavigation() {
 		window.history.back();
 	}
-
-	function getStatusFilterText(filter: 'All' | 'Valid' | 'Expiring' | 'Expired'): string {
-		switch (filter) {
-			case 'All':
-				return t('certificates.allStatuses', $language);
-			case 'Valid':
-				return t('certificates.valid', $language);
-			case 'Expiring':
-				return t('certificates.expiring30', $language);
-			case 'Expired':
-				return t('certificates.expired', $language);
-			default:
-				return filter;
-		}
-	}
 </script>
 
 <svelte:head>
-	<title>{t('certificates.title', $language)}</title>
+	<title>{t('certificates.title', $language)} - CertVal</title>
 </svelte:head>
 
 <div class="space-y-6">
 	<!-- Header -->
-	<div class="flex items-center justify-between">
+	<div class="flex items-center justify-between {mounted ? 'animate-in slide-in-from-top-4 duration-500' : ''}">
 		<div>
-			<h1 class="text-2xl font-bold text-gray-900">{t('certificates.title', $language)}</h1>
-			<p class="text-gray-600">{t('certificates.subtitle', $language)}</p>
+			<h1 class="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+				{t('certificates.title', $language)}
+			</h1>
+			<p class="mt-2 text-gray-600 dark:text-gray-400">{t('certificates.subtitle', $language)}</p>
 		</div>
-		<Button onclick={showUploadModalWithWorkspace}>
+		<Button onclick={showUploadModalWithWorkspace} class="shadow-lg">
 			<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
 			</svg>
@@ -322,18 +330,15 @@
 	</div>
 
 	<!-- Filters Card -->
-	<Card>
-		<div class="space-y-4">
+	<Card glass={true} class={mounted ? 'animate-in slide-in-from-bottom-4 duration-700' : ''}>
+		<div class="space-y-6">
 			<div class="flex items-center justify-between">
-				<h3 class="text-lg font-medium text-gray-900">{t('common.filter', $language)}</h3>
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+					{t('common.filter', $language)}
+				</h3>
 				<Button variant="outline" size="sm" onclick={clearFilters}>
 					<svg class="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
 					{t('certificates.clearAll', $language)}
 				</Button>
@@ -342,150 +347,108 @@
 			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
 				<!-- Workspace Filter -->
 				{#if workspaceList.length > 1}
-					<div>
-						<label for="workspace-filter" class="mb-1 block text-sm font-medium text-gray-700"
-							>{t('common.workspace', $language)}</label
-						>
-						<select
-							id="workspace-filter"
-							class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-							value={workspaceFilter || ''}
-							onchange={handleWorkspaceFilterChange}
-						>
-							<option value="">{t('certificates.allWorkspaces', $language)}</option>
-							{#each workspaceList as workspace}
-								<option value={workspace.id}>{workspace.name}</option>
-							{/each}
-						</select>
-					</div>
+					<Select
+						label={t('common.workspace', $language)}
+						value={workspaceFilter || ''}
+						options={workspaceOptions}
+						onchange={handleWorkspaceFilterChange}
+					/>
 				{/if}
 
 				<!-- Search -->
-				<div>
-					<Input
-						id="search-filter"
-						label={t('common.search', $language)}
-						type="search"
-						bind:value={searchTerm}
-						placeholder={t('certificates.searchPlaceholder', $language)}
-						oninput={handleFilterChange}
-					/>
-				</div>
+				<Input
+					label={t('common.search', $language)}
+					type="search"
+					bind:value={searchTerm}
+					placeholder={t('certificates.searchPlaceholder', $language)}
+					oninput={handleFilterChange}
+					icon="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+				/>
 
 				<!-- Status Filter -->
-				<div>
-					<label for="status-filter" class="mb-1 block text-sm font-medium text-gray-700"
-						>{t('certificates.status', $language)}</label
-					>
-					<select
-						id="status-filter"
-						bind:value={statusFilter}
-						onchange={handleFilterChange}
-						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-					>
-						<option value="All">{t('certificates.allStatuses', $language)}</option>
-						<option value="Valid">{t('certificates.valid', $language)}</option>
-						<option value="Expiring">{t('certificates.expiring30', $language)}</option>
-						<option value="Expired">{t('certificates.expired', $language)}</option>
-					</select>
-				</div>
+				<Select
+					label={t('certificates.status', $language)}
+					bind:value={statusFilter}
+					options={statusOptions}
+					onchange={handleFilterChange}
+				/>
 
 				<!-- Format Filter -->
 				{#if availableFormats.length > 1}
-					<div>
-						<label for="format-filter" class="mb-1 block text-sm font-medium text-gray-700"
-							>{t('certificates.format', $language)}</label
-						>
-						<select
-							id="format-filter"
-							bind:value={formatFilter}
-							onchange={handleFilterChange}
-							class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-						>
-							<option value="">{t('certificates.allFormats', $language)}</option>
-							{#each availableFormats as format}
-								<option value={format}>{format}</option>
-							{/each}
-						</select>
-					</div>
+					<Select
+						label={t('certificates.format', $language)}
+						bind:value={formatFilter}
+						options={formatOptions}
+						onchange={handleFilterChange}
+					/>
 				{/if}
 
 				<!-- Sort -->
-				<div>
-					<label for="sort-filter" class="mb-1 block text-sm font-medium text-gray-700"
-						>{t('certificates.sortBy', $language)}</label
-					>
-					<select
-						id="sort-filter"
-						bind:value={sortBy}
-						onchange={handleFilterChange}
-						class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
-					>
-						<option value="notAfter">{t('certificates.expiryDate', $language)}</option>
-						<option value="subject">{t('certificates.subject', $language)}</option>
-						<option value="issuer">{t('certificates.issuer', $language)}</option>
-						<option value="createdAt">{t('certificates.createdDate', $language)}</option>
-					</select>
-				</div>
+				<Select
+					label={t('certificates.sortBy', $language)}
+					bind:value={sortBy}
+					options={sortOptions}
+					onchange={handleFilterChange}
+				/>
 			</div>
 
 			<!-- Active Filters Display -->
 			{#if searchTerm || statusFilter !== 'All' || formatFilter || workspaceFilter}
-				<div class="flex flex-wrap gap-2 pt-2">
-					<span class="text-sm font-medium text-gray-700"
-						>{t('certificates.activeFilters', $language)}:</span
-					>
+				<div class="flex flex-wrap gap-2 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+					<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+						{t('certificates.activeFilters', $language)}:
+					</span>
 					{#if searchTerm}
-						<span
-							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
-						>
+						<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-300">
 							{t('common.search', $language)}: {searchTerm}
 							<button
 								onclick={() => {
 									searchTerm = '';
 									handleFilterChange();
 								}}
-								class="ml-1 text-blue-600 hover:text-blue-800">×</button
+								class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
 							>
+								×
+							</button>
 						</span>
 					{/if}
 					{#if statusFilter !== 'All'}
-						<span
-							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
-						>
-							{t('certificates.status', $language)}: {getStatusFilterText(statusFilter)}
+						<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-300">
+							{t('certificates.status', $language)}: {statusOptions.find(s => s.value === statusFilter)?.label}
 							<button
 								onclick={() => {
 									statusFilter = 'All';
 									handleFilterChange();
 								}}
-								class="ml-1 text-blue-600 hover:text-blue-800">×</button
+								class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
 							>
+								×
+							</button>
 						</span>
 					{/if}
 					{#if formatFilter}
-						<span
-							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
-						>
+						<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-300">
 							{t('certificates.format', $language)}: {formatFilter}
 							<button
 								onclick={() => {
 									formatFilter = '';
 									handleFilterChange();
 								}}
-								class="ml-1 text-blue-600 hover:text-blue-800">×</button
+								class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
 							>
+								×
+							</button>
 						</span>
 					{/if}
 					{#if workspaceFilter}
-						<span
-							class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
-						>
+						<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-300">
 							{t('common.workspace', $language)}: {getWorkspaceName(workspaceFilter)}
 							<button
 								onclick={() => goto('/certificates')}
-								class="ml-1 text-blue-600 hover:text-blue-800">×</button
+								class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
 							>
+								×
+							</button>
 						</span>
 					{/if}
 				</div>
@@ -495,39 +458,35 @@
 
 	{#if isLoading}
 		<div class="flex h-64 items-center justify-center">
-			<div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+			<div class="relative">
+				<div class="h-16 w-16 animate-spin rounded-full border-4 border-blue-200 dark:border-blue-800"></div>
+				<div class="absolute top-0 left-0 h-16 w-16 animate-spin rounded-full border-4 border-transparent border-t-blue-600"></div>
+			</div>
 		</div>
 	{:else if certificates.length === 0}
-		<Card>
-			<div class="py-12 text-center">
-				<svg
-					class="mx-auto h-12 w-12 text-gray-400"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-					/>
-				</svg>
-				<h3 class="mt-2 text-sm font-medium text-gray-900">
+		<Card glass={true}>
+			<div class="py-16 text-center">
+				<div class="relative inline-flex mb-6">
+					<svg class="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+					</svg>
+					<div class="absolute inset-0 rounded-full bg-gray-400/20 dark:bg-gray-500/20 animate-pulse blur-md"></div>
+				</div>
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
 					{searchTerm || statusFilter !== 'All' || formatFilter
 						? t('certificates.noMatches', $language)
 						: t('certificates.empty', $language)}
 				</h3>
-				<p class="mt-1 text-sm text-gray-500">
+				<p class="text-gray-500 dark:text-gray-400 mb-8">
 					{searchTerm || statusFilter !== 'All' || formatFilter
 						? t('certificates.adjustFilters', $language)
 						: t('certificates.uploadFirst', $language)}
 				</p>
-				<div class="mt-6 flex justify-center space-x-3">
+				<div class="flex justify-center space-x-3">
 					{#if searchTerm || statusFilter !== 'All' || formatFilter}
-						<Button variant="outline" onclick={clearFilters}
-							>{t('certificates.clearFilters', $language)}</Button
-						>
+						<Button variant="outline" onclick={clearFilters}>
+							{t('certificates.clearFilters', $language)}
+						</Button>
 					{/if}
 					<Button onclick={showUploadModalWithWorkspace}>
 						{t('certificates.upload', $language)}
@@ -537,7 +496,7 @@
 		</Card>
 	{:else}
 		<!-- Results Summary -->
-		<div class="flex items-center justify-between text-sm text-gray-600">
+		<div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 {mounted ? 'animate-in slide-in-from-left-4 duration-700' : ''}">
 			<span>
 				{t('certificates.showing', $language)}
 				{certificates.length}
@@ -545,39 +504,31 @@
 				{totalCount}
 				{t('certificates.title', $language).toLowerCase()}
 				{#if statusFilter !== 'All'}
-					({getStatusFilterText(statusFilter)})
+					({statusOptions.find(s => s.value === statusFilter)?.label})
 				{/if}
 				{#if currentPage > 1}
 					({t('certificates.page', $language)}
 					{currentPage}
 					{t('common.of', $language)}
-					{totalPages}){/if}
+					{totalPages})
+				{/if}
 			</span>
 			<div class="flex items-center space-x-2">
 				<span>{t('certificates.sort', $language)}:</span>
 				<button
 					onclick={() => handleSort(sortBy)}
-					class="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
+					class="flex items-center space-x-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
 				>
-					<span
-						>{sortBy === 'notAfter'
-							? t('certificates.expiry', $language)
-							: sortBy === 'createdAt'
-								? t('certificates.created', $language)
-								: t(`certificates.${sortBy}`, $language)}</span
-					>
+					<span>
+						{sortOptions.find(s => s.value === sortBy)?.label}
+					</span>
 					<svg
-						class="h-4 w-4 {sortDescending ? 'rotate-180' : ''}"
+						class="h-4 w-4 transition-transform duration-200 {sortDescending ? 'rotate-180' : ''}"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
 					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M5 15l7-7 7 7"
-						/>
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
 					</svg>
 				</button>
 			</div>

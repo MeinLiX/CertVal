@@ -39,7 +39,7 @@
 
 	interface InviteMemberRequest {
 		email: string;
-		role: 'Viewer' | 'Editor' | 'Administrator'; // Using the correct enum values
+		role: 'Viewer' | 'Editor' | 'Administrator';
 	}
 
 	let workspace = $state<Workspace | null>(null);
@@ -92,7 +92,6 @@
 			const response = await api.get<Workspace>(`/v1/workspaces/${workspaceId}`);
 			if (response.data) {
 				workspace = response.data;
-				// Initialize update form
 				updateForm = {
 					name: workspace.name,
 					description: workspace.description || '',
@@ -485,7 +484,7 @@
 								{/if}
 
 								<Input
-                                    id="invite-email"
+									id="invite-email"
 									type="email"
 									label={t('workspaces.emailAddress', $language)}
 									bind:value={inviteForm.email}
@@ -755,30 +754,11 @@
 									</div>
 								</div>
 							{/each}
-
-							{#if members.length === 0}
-								<div class="py-8 text-center">
-									<svg
-										class="mx-auto h-8 w-8 text-gray-400"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-										/>
-									</svg>
-									<p class="mt-2 text-sm text-gray-500">
-										{t('workspaces.noAdditionalMembers', $language)}
-									</p>
-									{#if canManage && workspace.allowMemberInvites}
-										<Button variant="outline" class="mt-4" onclick={() => (showInviteModal = true)}>
-											{t('workspaces.inviteFirstMember', $language)}
-										</Button>
-									{/if}
+							{#if canManage && workspace.allowMemberInvites}
+								<div class="py-1 text-center">
+									<Button variant="outline" class="mt-4" onclick={() => (showInviteModal = true)}>
+										{t('workspaces.inviteMember', $language)}
+									</Button>
 								</div>
 							{/if}
 						</div>

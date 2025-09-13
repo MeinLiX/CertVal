@@ -157,7 +157,6 @@
 		isCreatingRule = true;
 
 		try {
-			// Generate proper channel config based on type
 			let channelConfig = '{}';
 			if (createRuleForm.channelType === 'Email') {
 				channelConfig = JSON.stringify({
