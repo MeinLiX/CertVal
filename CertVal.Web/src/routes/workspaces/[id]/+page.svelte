@@ -283,7 +283,7 @@
 	<title>
 		{workspace
 			? `${workspace.name} - ${t('workspaces.details', $language)}`
-			: t('workspaces.details', $language)} - CertVal
+			: t('workspaces.details', $language)}
 	</title>
 </svelte:head>
 

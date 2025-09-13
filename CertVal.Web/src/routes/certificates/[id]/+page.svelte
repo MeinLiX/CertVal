@@ -128,7 +128,7 @@
 
 <svelte:head>
 	<title>
-		{certificate ? `${certificate.subject} - ${t('certificates.details', $language)}` : t('certificates.details', $language)} - CertVal
+		{certificate ? `${certificate.subject} - ${t('certificates.details', $language)}` : t('certificates.details', $language)}
 	</title>
 </svelte:head>
 

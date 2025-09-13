@@ -303,7 +303,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('certificates.title', $language)} - CertVal</title>
+	<title>{t('certificates.title', $language)}</title>
 </svelte:head>
 
 <div class="space-y-6">

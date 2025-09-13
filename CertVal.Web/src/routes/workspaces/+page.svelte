@@ -96,7 +96,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('workspaces.title', $language)} - CertVal</title>
+	<title>{t('workspaces.title', $language)}</title>
 </svelte:head>
 
 <div class="space-y-6">

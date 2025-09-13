@@ -63,7 +63,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('dashboard.title', $language)} - CertVal</title>
+	<title>{t('dashboard.title', $language)}</title>
 </svelte:head>
 
 <div class="space-y-6">

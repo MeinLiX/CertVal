@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('auth.register.title', $language)} - CertVal</title>
+	<title>{t('auth.register.title', $language)}</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">

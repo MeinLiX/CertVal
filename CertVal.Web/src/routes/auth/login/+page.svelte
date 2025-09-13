@@ -67,8 +67,8 @@
 </script>
 
 <svelte:head>
-	<title>{t('auth.login.title', $language)} - CertVal</title>
-	<meta name="description" content="Sign in to your CertVal account to manage your SSL certificates" />
+	<title>{t('auth.login.title', $language)}</title>
+	<meta name="description" content="Sign in to your account to manage your SSL certificates" />
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">

@@ -273,7 +273,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('nav.notifications', $language)} - CertVal</title>
+	<title>{t('nav.notifications', $language)}</title>
 </svelte:head>
 
 <div class="space-y-6">
