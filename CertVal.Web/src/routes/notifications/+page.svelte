@@ -10,45 +10,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import type { Workspace } from '$lib/types';
-
-	interface NotificationRule {
-		id: string;
-		workspaceId: string;
-		name: string;
-		isEnabled: boolean;
-		daysBeforeExpiry: number;
-		frequency: string;
-		channelType: string;
-		channelConfig: string;
-		createdAt: string;
-		updatedAt: string;
-	}
-
-	interface NotificationHistory {
-		id: string;
-		notificationRuleId: string;
-		certificateId: string;
-		status: string;
-		channelType: string;
-		recipient: string;
-		subject: string;
-		message: string;
-		scheduledAt: string;
-		sentAt?: string;
-		deliveredAt?: string;
-		errorMessage?: string;
-		retryCount: number;
-		createdAt: string;
-	}
-
-	interface CreateNotificationRuleRequest {
-		name: string;
-		daysBeforeExpiry: number;
-		channelType: 'Email' | 'Webhook' | 'Slack' | 'Telegram';
-		channelConfig: string;
-		frequency: 'Once' | 'Daily' | 'Weekly' | 'Monthly';
-	}
+	import type { CreateNotificationRuleRequest, NotificationHistory, NotificationRule, Workspace } from '$lib/types';
 
 	let workspaces = $state<Workspace[]>([]);
 	let selectedWorkspaceId = $state<string>('');

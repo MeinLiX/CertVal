@@ -13,17 +13,19 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
-	import type { Certificate, Workspace, PagedResult } from '$lib/types';
+	import type { Certificate, Workspace, PagedResult, BulkUploadResultDto, BulkUploadItemResult } from '$lib/types';
 
 	let certificates = $state<Certificate[]>([]);
 	let workspaceList = $state<Workspace[]>([]);
 	let isLoading = $state(true);
 	let showUploadModal = $state(false);
+	let showResultsModal = $state(false);
 	let isUploading = $state(false);
 	let mounted = $state(false);
 
 	let selectedWorkspaceId = $state<string>('');
-	let selectedFile = $state<File | null>(null);
+	let selectedFiles = $state<FileList | null>(null);
+	let uploadResults = $state<BulkUploadResultDto | null>(null);
 	let errors = $state<Record<string, string>>({});
 
 	// Filters
@@ -166,11 +168,11 @@
 		}
 	}
 
-	async function handleUploadCertificate(event: Event) {
+	async function handleUploadCertificates(event: Event) {
 		event.preventDefault();
 		errors = {};
 
-		if (!selectedFile || !selectedWorkspaceId) {
+		if (!selectedFiles || selectedFiles.length === 0 || !selectedWorkspaceId) {
 			errors.general = t('errors.required', $language);
 			return;
 		}
@@ -179,12 +181,18 @@
 
 		try {
 			const formData = new FormData();
-			formData.append('file', selectedFile);
 			formData.append('workspaceId', selectedWorkspaceId);
+			
+			Array.from(selectedFiles).forEach(file => {
+				formData.append('files', file);
+			});
 
-			const response = await api.upload<Certificate>('/v1/certificates/upload', formData);
+			const response = await api.upload<BulkUploadResultDto>('/v1/certificates/upload/multiple', formData);
+			
 			if (response.data) {
+				uploadResults = response.data;
 				showUploadModal = false;
+				showResultsModal = true;
 				resetUploadForm();
 				await loadCertificates();
 			} else if (response.message) {
@@ -198,31 +206,14 @@
 	}
 
 	function resetUploadForm() {
-		selectedFile = null;
+		selectedFiles = null;
 		selectedWorkspaceId = workspaceFilter || '';
 		errors = {};
 	}
 
-	function handleFileSelect(eventOrFile: Event | File | FileList | null | undefined) {
-		if (!eventOrFile) {
-			selectedFile = null;
-			return;
-		}
-
-		if ((eventOrFile as Event).type) {
-			const evt = eventOrFile as Event;
-			const target = evt.target as HTMLInputElement | null;
-			selectedFile = target?.files?.[0] ?? null;
-			return;
-		}
-
-		if ((eventOrFile as FileList).item !== undefined) {
-			const files = eventOrFile as FileList;
-			selectedFile = files.item(0) ?? null;
-			return;
-		}
-
-		selectedFile = eventOrFile as File;
+	function handleFileSelect(event: Event) {
+		const target = event.target as HTMLInputElement;
+		selectedFiles = target.files;
 	}
 
 	function handleCloseModal() {
@@ -273,7 +264,6 @@
 
 	function changePage(page: number) {
 		currentPage = page;
-		// URL and reload will be handled by $effect
 	}
 
 	function handleSort(field: string) {
@@ -303,8 +293,22 @@
 		showUploadModal = true;
 	}
 
-	function handleBackNavigation() {
-		window.history.back();
+	function getResultStatusColor(result: BulkUploadItemResult): string {
+		if (result.success) return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
+		if (result.isSkipped) return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
+		return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
+	}
+
+	function getResultStatusText(result: BulkUploadItemResult): string {
+		if (result.success) return 'Success';
+		if (result.isSkipped) return 'Skipped';
+		return 'Failed';
+	}
+
+	function getResultStatusIcon(result: BulkUploadItemResult): string {
+		if (result.success) return 'M5 13l4 4L19 7';
+		if (result.isSkipped) return 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+		return 'M6 18L18 6M6 6l12 12';
 	}
 </script>
 
@@ -321,12 +325,14 @@
 			</h1>
 			<p class="mt-2 text-gray-600 dark:text-gray-400">{t('certificates.subtitle', $language)}</p>
 		</div>
-		<Button onclick={showUploadModalWithWorkspace} class="shadow-lg">
-			<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-			</svg>
-			{t('certificates.upload', $language)}
-		</Button>
+		<div class="flex space-x-3">
+			<Button onclick={showUploadModalWithWorkspace} class="shadow-lg">
+				<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 17l3 3 3-3M9 12l3 3 3-3" />
+				</svg>
+				Upload
+			</Button>
+		</div>
 	</div>
 
 	<!-- Filters Card -->
@@ -490,6 +496,9 @@
 					{/if}
 					<Button onclick={showUploadModalWithWorkspace}>
 						{t('certificates.upload', $language)}
+					</Button>
+					<Button variant="outline" onclick={showUploadModalWithWorkspace}>
+						Upload Multiple
 					</Button>
 				</div>
 			</div>
@@ -809,13 +818,13 @@
 	{/if}
 </div>
 
-<!-- Upload Certificate Modal -->
+<!-- Upload Certificates Modal -->
 <Modal
 	isOpen={showUploadModal}
-	title={t('certificates.upload', $language)}
+	title="Upload Multiple Certificates"
 	onClose={handleCloseModal}
 >
-	<form onsubmit={handleUploadCertificate} class="space-y-4">
+	<form onsubmit={handleUploadCertificates} class="space-y-4">
 		{#if errors.general}
 			<div class="rounded-md border border-red-200 bg-red-50 p-4">
 				<div class="flex">
@@ -850,18 +859,24 @@
 			</select>
 		</div>
 
-		<Input
-			type="file"
-			label={t('certificates.certificateFile', $language)}
-			accept=".cer,.crt,.pem,.der,.p7b,.p7c,.pfx,.p12"
-			required
-			onchange={handleFileSelect}
-			error={errors.file}
-		/>
+		<div class="space-y-1">
+			<label for="files" class="block text-sm font-medium text-gray-700">
+				Certificate Files <span class="text-red-500">*</span>
+			</label>
+			<input
+				id="files"
+				type="file"
+				accept=".cer,.crt,.pem,.der,.p7b,.p7c,.pfx,.p12"
+				multiple
+				required
+				onchange={handleFileSelect}
+				class="block w-full rounded-xl border-0 bg-white dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-inset transition-all duration-200"
+			/>
+		</div>
 
-		{#if selectedFile}
+		{#if selectedFiles && selectedFiles.length > 0}
 			<div class="rounded-md border border-blue-200 bg-blue-50 p-4">
-				<div class="flex items-center">
+				<div class="flex items-center mb-2">
 					<svg
 						class="mr-2 h-5 w-5 text-blue-600"
 						fill="none"
@@ -872,16 +887,44 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							stroke-width="2"
-							d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6"
 						/>
 					</svg>
-					<div>
-						<p class="text-sm font-medium text-blue-800">{selectedFile.name}</p>
-						<p class="text-xs text-blue-600">{formatFileSize(selectedFile.size)}</p>
-					</div>
+					<p class="text-sm font-medium text-blue-800">{selectedFiles.length} files selected</p>
+				</div>
+				<div class="max-h-32 overflow-y-auto space-y-1">
+					{#each Array.from(selectedFiles) as file}
+						<div class="flex items-center justify-between text-xs text-blue-700 bg-blue-100 rounded px-2 py-1">
+							<span class="truncate">{file.name}</span>
+							<span class="ml-2">{formatFileSize(file.size)}</span>
+						</div>
+					{/each}
 				</div>
 			</div>
 		{/if}
+
+		<div class="rounded-md border border-amber-200 bg-amber-50 p-4">
+			<div class="flex">
+				<svg class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+					<path
+						fill-rule="evenodd"
+						d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+						clip-rule="evenodd"
+					/>
+				</svg>
+				<div class="ml-3">
+					<p class="text-sm text-amber-700">
+						<strong>Upload Information:</strong>
+					</p>
+					<ul class="mt-1 text-xs text-amber-700 list-disc list-inside space-y-1">
+						<li>Duplicate certificates will be skipped automatically</li>
+						<li>Individual file errors won't stop the entire batch</li>
+						<li>You'll see detailed results for each file after upload</li>
+						<li>Maximum recommended files per batch: 50</li>
+					</ul>
+				</div>
+			</div>
+		</div>
 
 		<div class="rounded-md border border-gray-200 bg-gray-50 p-4">
 			<h4 class="mb-2 text-sm font-medium text-gray-900">
@@ -900,17 +943,111 @@
 			<Button variant="outline" onclick={handleCloseModal} type="button">
 				{t('common.cancel', $language)}
 			</Button>
-			<Button type="submit" loading={isUploading} disabled={!selectedFile || !selectedWorkspaceId}>
+			<Button type="submit" loading={isUploading} disabled={!selectedFiles || selectedFiles.length === 0 || !selectedWorkspaceId}>
 				<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
 						stroke-width="2"
-						d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+						d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 17l3 3 3-3M9 12l3 3 3-3"
 					/>
 				</svg>
-				{t('common.upload', $language)}
+				Upload {selectedFiles?.length || 0} Files
 			</Button>
 		</div>
 	</form>
+</Modal>
+
+<!-- Upload Results Modal -->
+<Modal
+	isOpen={showResultsModal}
+	title="Upload Results"
+	onClose={() => (showResultsModal = false)}
+>
+	{#if uploadResults}
+		<div class="space-y-6">
+			<!-- Summary Stats -->
+			<div class="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl">
+				<div class="text-center">
+					<div class="text-2xl font-bold text-gray-900">{uploadResults.totalFiles}</div>
+					<div class="text-sm text-gray-500">Total</div>
+				</div>
+				<div class="text-center">
+					<div class="text-2xl font-bold text-green-600">{uploadResults.successCount}</div>
+					<div class="text-sm text-gray-500">Uploaded</div>
+				</div>
+				<div class="text-center">
+					<div class="text-2xl font-bold text-yellow-600">{uploadResults.skippedCount}</div>
+					<div class="text-sm text-gray-500">Skipped</div>
+				</div>
+				<div class="text-center">
+					<div class="text-2xl font-bold text-red-600">{uploadResults.failureCount}</div>
+					<div class="text-sm text-gray-500">Failed</div>
+				</div>
+			</div>
+
+			<!-- Summary Message -->
+			<div class="rounded-md border border-blue-200 bg-blue-50 p-4">
+				<div class="flex">
+					<svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+						<path
+							fill-rule="evenodd"
+							d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<div class="ml-3">
+						<p class="text-sm text-blue-700">{uploadResults.summary}</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Detailed Results -->
+			<div class="space-y-2">
+				<h4 class="text-sm font-medium text-gray-900">File Details:</h4>
+				<div class="max-h-64 overflow-y-auto space-y-2">
+					{#each uploadResults.results as result}
+						<div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg {result.success ? 'bg-green-50' : result.isSkipped ? 'bg-yellow-50' : 'bg-red-50'}">
+							<div class="flex items-center space-x-3">
+								<div class="flex-shrink-0">
+									<svg class="h-5 w-5 {getResultStatusColor(result)}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={getResultStatusIcon(result)} />
+									</svg>
+								</div>
+								<div class="min-w-0 flex-1">
+									<p class="text-sm font-medium text-gray-900 truncate">{result.fileName}</p>
+									{#if result.subject}
+										<p class="text-xs text-gray-500 truncate">{result.subject}</p>
+									{/if}
+									{#if result.errorMessage}
+										<p class="text-xs text-red-600 truncate">{result.errorMessage}</p>
+									{/if}
+								</div>
+							</div>
+							<div class="flex-shrink-0">
+								<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold {getResultStatusColor(result)}">
+									{getResultStatusText(result)}
+								</span>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Actions -->
+			<div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+				<Button variant="outline" onclick={() => (showResultsModal = false)}>
+					{t('common.close', $language)}
+				</Button>
+				{#if uploadResults.successCount > 0}
+					<Button onclick={() => {
+						showResultsModal = false;
+						goto(`/certificates${workspaceFilter ? `?workspace=${workspaceFilter}` : ''}`);
+					}}>
+						View Uploaded Certificates
+					</Button>
+				{/if}
+			</div>
+		</div>
+	{/if}
 </Modal>

@@ -28,6 +28,14 @@ export interface Workspace {
     updatedAt: string;
 }
 
+export interface UpdateWorkspaceRequest {
+    name: string;
+    description?: string;
+    maxCertificates: number;
+    isPublic: boolean;
+    allowMemberInvites: boolean;
+}
+
 export interface Certificate {
     id: string;
     workspaceId: string;
@@ -95,25 +103,18 @@ export interface CreateWorkspaceRequest {
 }
 
 export interface InviteMemberRequest {
-    request: {
-        email: string;
-        role: WorkspaceRole;
-    };
-}
-
-export interface DirectInviteMemberRequest {
     email: string;
     role: WorkspaceRole;
 }
 
 export type WorkspaceRole = 'Viewer' | 'Editor' | 'Administrator';
-
+export type WorkspaceMemberStatus = 'Pending' | 'Active' | 'Inactive';
 export interface WorkspaceMember {
     id: string;
     userId: string;
     workspaceId: string;
     role: WorkspaceRole;
-    status: 'Pending' | 'Active' | 'Inactive';
+    status: WorkspaceMemberStatus;
     user: User;
     joinedAt?: string;
     createdAt: string;
@@ -128,6 +129,62 @@ export interface DashboardStats {
     expiringIn30Days: number;
     validCertificates: number;
 }
+
+export interface BulkUploadResultDto {
+    totalFiles: number;
+    successCount: number;
+    skippedCount: number;
+    failureCount: number;
+    results: BulkUploadItemResult[];
+    summary: string;
+}
+
+export interface BulkUploadItemResult {
+    fileName: string;
+    success: boolean;
+    isSkipped: boolean;
+    certificateId?: string;
+    subject?: string;
+    errorMessage?: string;
+}
+
+export interface NotificationRule {
+		id: string;
+		workspaceId: string;
+		name: string;
+		isEnabled: boolean;
+		daysBeforeExpiry: number;
+		frequency: string;
+		channelType: string;
+		channelConfig: string;
+		createdAt: string;
+		updatedAt: string;
+	}
+
+export interface NotificationHistory {
+		id: string;
+		notificationRuleId: string;
+		certificateId: string;
+		status: string;
+		channelType: string;
+		recipient: string;
+		subject: string;
+		message: string;
+		scheduledAt: string;
+		sentAt?: string;
+		deliveredAt?: string;
+		errorMessage?: string;
+		retryCount: number;
+		createdAt: string;
+	}
+
+export interface CreateNotificationRuleRequest {
+		name: string;
+		daysBeforeExpiry: number;
+		channelType: 'Email' | 'Webhook' | 'Slack' | 'Telegram';
+		channelConfig: string;
+		frequency: 'Once' | 'Daily' | 'Weekly' | 'Monthly';
+	}
 
 export type Language = 'uk' | 'en';
 

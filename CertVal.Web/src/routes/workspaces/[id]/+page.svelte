@@ -11,36 +11,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import type { Workspace, Certificate, PagedResult } from '$lib/types';
-
-	interface WorkspaceMember {
-		id: string;
-		userId: string;
-		user: {
-			id: string;
-			email: string;
-			firstName: string;
-			lastName: string;
-			fullName: string;
-		};
-		role: string;
-		status: string;
-		joinedAt?: string;
-		createdAt: string;
-	}
-
-	interface UpdateWorkspaceRequest {
-		name: string;
-		description?: string;
-		maxCertificates: number;
-		isPublic: boolean;
-		allowMemberInvites: boolean;
-	}
-
-	interface InviteMemberRequest {
-		email: string;
-		role: 'Viewer' | 'Editor' | 'Administrator';
-	}
+	import type { Workspace, Certificate, PagedResult, UpdateWorkspaceRequest, WorkspaceMember, InviteMemberRequest } from '$lib/types';
 
 	let workspace = $state<Workspace | null>(null);
 	let certificates = $state<Certificate[]>([]);

@@ -139,6 +139,39 @@ class ApiClient {
         }
     }
 
+    async uploadSingleCertificate<T>(workspaceId: string, file: File, description?: string) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('workspaceId', workspaceId);
+        if (description) {
+            formData.append('description', description);
+        }
+
+        return this.upload<T>('/v1/certificates/upload', formData);
+    }
+
+    async uploadMultipleCertificates<T>(workspaceId: string, files: FileList | File[], description?: string) {
+        const formData = new FormData();
+        formData.append('workspaceId', workspaceId);
+        
+        if (description) {
+            formData.append('description', description);
+        }
+
+        const fileArray = Array.from(files);
+        fileArray.forEach(file => {
+            formData.append('files', file);
+        });
+
+        console.log('Uploading files:', fileArray.map(f => f.name));
+        console.log('FormData entries:');
+        for (const [key, value] of formData.entries()) {
+            console.log(key, value instanceof File ? `File: ${value.name}` : value);
+        }
+
+        return this.upload<T>('/v1/certificates/upload/multiple', formData);
+    }
+
     async inviteMember<T>(workspaceId: string, email: string, role: string) {
         let requestData = {
             request: {
