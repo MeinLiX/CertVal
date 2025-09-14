@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth';
-	import { workspaces } from '$lib/stores/workspaces';
+	import { workspaces as workspacesStore } from '$lib/stores/workspaces';
 	import { language } from '$lib/stores/language';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
@@ -13,11 +13,10 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import type { Workspace, CreateWorkspaceRequest, PagedResult } from '$lib/types';
 
-	let workspaceList = $state<Workspace[]>([]);
+	let workspaces = $state<Workspace[]>([]);
 	let isLoading = $state(true);
 	let showCreateModal = $state(false);
 	let isCreating = $state(false);
-
 	let createForm = $state<CreateWorkspaceRequest>({
 		name: '',
 		description: '',
@@ -25,7 +24,6 @@
 		isPublic: false,
 		allowMemberInvites: true
 	});
-
 	let errors = $state<Record<string, string>>({});
 
 	onMount(async () => {
@@ -33,16 +31,16 @@
 			goto('/auth/login');
 			return;
 		}
-
 		await loadWorkspaces();
 	});
 
 	async function loadWorkspaces() {
+		isLoading = true;
 		try {
 			const response = await api.get<PagedResult<Workspace>>('/v1/workspaces');
 			if (response.data) {
-				workspaceList = response.data.items;
-				workspaces.set(workspaceList);
+				workspaces = response.data.items;
+				workspacesStore.set(workspaces);
 			}
 		} catch (error) {
 			console.error('Failed to load workspaces:', error);
@@ -55,14 +53,12 @@
 		event.preventDefault();
 		errors = {};
 		isCreating = true;
-
 		try {
 			const response = await api.post<Workspace>('/v1/workspaces', createForm);
 			if (response.data) {
-				workspaceList = [...workspaceList, response.data];
-				workspaces.add(response.data);
+				workspacesStore.add(response.data);
+				workspaces = [...workspaces, response.data];
 				showCreateModal = false;
-				resetCreateForm();
 			} else if (response.message) {
 				errors.general = response.message;
 			}
@@ -73,7 +69,7 @@
 		}
 	}
 
-	function resetCreateForm() {
+	function openCreateModal() {
 		createForm = {
 			name: '',
 			description: '',
@@ -82,16 +78,7 @@
 			allowMemberInvites: true
 		};
 		errors = {};
-	}
-
-	function handleCloseModal() {
-		showCreateModal = false;
-		resetCreateForm();
-	}
-
-	function handleDescriptionChange(event: Event) {
-		const target = event.target as HTMLTextAreaElement;
-		createForm.description = target.value;
+		showCreateModal = true;
 	}
 </script>
 
@@ -100,87 +87,107 @@
 </svelte:head>
 
 <div class="space-y-6">
-	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-2xl font-bold text-gray-900">{t('workspaces.title', $language)}</h1>
-			<p class="text-gray-600">Manage your certificate workspaces</p>
+			<h1 class="text-3xl font-bold">{t('workspaces.title', $language)}</h1>
+			<p class="mt-1 text-base-content/70">Manage your certificate workspaces</p>
 		</div>
-		<Button onclick={() => (showCreateModal = true)}>
+		<Button onclick={openCreateModal}>
+			<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+				><path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+				/></svg
+			>
 			{t('workspaces.create', $language)}
 		</Button>
 	</div>
 
 	{#if isLoading}
-		<div class="flex h-64 items-center justify-center">
-			<div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+			{#each { length: 3 } as _}
+				<div class="h-48 w-full skeleton"></div>
+			{/each}
 		</div>
-	{:else if workspaceList.length === 0}
-		<Card>
-			<div class="py-12 text-center">
-				<svg
-					class="mx-auto h-12 w-12 text-gray-400"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6"
-					/>
-				</svg>
-				<h3 class="mt-2 text-sm font-medium text-gray-900">{t('workspaces.empty', $language)}</h3>
-				<p class="mt-1 text-sm text-gray-500">{t('workspaces.createFirst', $language)}</p>
-				<div class="mt-6">
-					<Button onclick={() => (showCreateModal = true)}>
-						{t('workspaces.create', $language)}
-					</Button>
+	{:else if workspaces.length === 0}
+		<div class="py-16 text-center">
+			<div class="placeholder avatar">
+				<div class="w-24 rounded-full bg-base-200 text-base-content/50">
+					<svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+						><path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6"
+						/></svg
+					>
 				</div>
 			</div>
-		</Card>
+			<h3 class="mt-4 text-xl font-semibold">{t('workspaces.empty', $language)}</h3>
+			<p class="mt-2 text-base-content/60">{t('workspaces.createFirst', $language)}</p>
+			<div class="mt-6">
+				<Button onclick={openCreateModal}>
+					{t('workspaces.create', $language)}
+				</Button>
+			</div>
+		</div>
 	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each workspaceList as workspace}
-				<Card>
-					<div class="space-y-4">
-						<div class="flex items-start justify-between">
-							<h3 class="text-lg font-medium text-gray-900">{workspace.name}</h3>
-							<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {workspace.isPublic ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-								{workspace.isPublic ? 'Public' : 'Private'}
-							</span>
-						</div>
+			{#each workspaces as workspace (workspace.id)}
+				<Card
+					hover={true}
+					class="cursor-pointer"
+					onclick={() => goto(`/workspaces/${workspace.id}`)}
+				>
+					<div class="mb-4 flex items-center justify-between">
+						<h3 class="card-title text-lg">{workspace.name}</h3>
+						<span class="badge {workspace.isPublic ? 'badge-accent' : 'badge-ghost'} badge-sm">
+							{workspace.isPublic ? t('common.public', $language) : t('common.private', $language)}
+						</span>
+					</div>
 
-						{#if workspace.description}
-							<p class="text-sm text-gray-600 line-clamp-2">{workspace.description}</p>
-						{/if}
+					<p class="line-clamp-2 h-10 text-sm text-base-content/70">
+						{workspace.description || 'No description provided.'}
+					</p>
 
-						<div class="flex justify-between text-sm text-gray-500">
+					<div class="mt-4 flex justify-between text-sm">
+						<div class="flex items-center gap-2">
+							<svg class="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+								><path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622"
+								/></svg
+							>
 							<span>{workspace.certificateCount} {t('workspaces.certificates', $language)}</span>
+						</div>
+						<div class="flex items-center gap-2">
+							<svg class="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+								><path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+								/></svg
+							>
 							<span>{workspace.memberCount} {t('workspaces.members', $language)}</span>
 						</div>
+					</div>
 
-						<div class="text-xs text-gray-400">
-							Created {formatDate(workspace.createdAt)}
-						</div>
-
-						<div class="flex items-center justify-between border-t border-gray-200 pt-4">
-							<Button
-								variant="outline"
-								size="sm"
-								onclick={() => goto(`/workspaces/${workspace.id}`)}
-							>
-								View Details
-							</Button>
-							<Button
-								variant="primary"
-								size="sm"
-								onclick={() => goto(`/certificates?workspace=${workspace.id}`)}
-							>
-								View Certificates
-							</Button>
-						</div>
+					<div class="mt-4 card-actions justify-end">
+						<Button
+							size="sm"
+							variant="primary"
+							onclick={(e) => {
+								e.stopPropagation();
+								goto(`/certificates?workspace=${workspace.id}`);
+							}}
+						>
+							View Certificates
+						</Button>
 					</div>
 				</Card>
 			{/each}
@@ -188,79 +195,83 @@
 	{/if}
 </div>
 
-<!-- Create Workspace Modal -->
 <Modal
 	isOpen={showCreateModal}
 	title={t('workspaces.create', $language)}
-	onClose={handleCloseModal}
+	onClose={() => (showCreateModal = false)}
 >
 	<form onsubmit={handleCreateWorkspace} class="space-y-4">
 		{#if errors.general}
-			<div class="rounded-md border border-red-200 bg-red-50 p-4">
-				<p class="text-sm text-red-600">{errors.general}</p>
+			<div role="alert" class="alert alert-error text-sm">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-6 w-6 shrink-0 stroke-current"
+					fill="none"
+					viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+					/></svg
+				>
+				<span>{errors.general}</span>
 			</div>
 		{/if}
 
 		<Input
-			id="workspace-name"
 			label={t('workspaces.name', $language)}
 			bind:value={createForm.name}
 			required
 			error={errors.name}
-			placeholder="Enter workspace name"
+			placeholder="e.g. Production Environment"
 		/>
 
-		<div class="space-y-1">
-			<label for="workspace-description" class="block text-sm font-medium text-gray-700">
-				{t('workspaces.description', $language)}
+		<div>
+			<label for="description" class="label">
+				<span class="label-text">{t('workspaces.description', $language)}</span>
 			</label>
 			<textarea
-				id="workspace-description"
-				value={createForm.description}
-				oninput={handleDescriptionChange}
+				id="description"
+				bind:value={createForm.description}
 				rows={3}
-				class="block w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
-				placeholder="Optional description for this workspace"
+				class="textarea-bordered textarea w-full"
+				placeholder="Optional description for your workspace"
 			></textarea>
 		</div>
 
 		<Input
-			id="max-certificates"
 			type="number"
 			label="Max Certificates"
 			bind:value={createForm.maxCertificates}
 			required
 			error={errors.maxCertificates}
-			placeholder="1000"
 		/>
 
-		<div class="flex items-center space-x-4">
-			<label class="flex items-center">
-				<input
-					id="is-public"
-					type="checkbox"
-					bind:checked={createForm.isPublic}
-					class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-				/>
-				<span class="ml-2 text-sm text-gray-700">Public workspace</span>
-			</label>
-
-			<label class="flex items-center">
-				<input
-					id="allow-invites"
-					type="checkbox"
-					bind:checked={createForm.allowMemberInvites}
-					class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-				/>
-				<span class="ml-2 text-sm text-gray-700">Allow member invites</span>
-			</label>
+		<div class="flex gap-4">
+			<div class="form-control">
+				<label class="label cursor-pointer gap-2">
+					<span class="label-text">Public</span>
+					<input type="checkbox" bind:checked={createForm.isPublic} class="toggle toggle-primary" />
+				</label>
+			</div>
+			<div class="form-control">
+				<label class="label cursor-pointer gap-2">
+					<span class="label-text">Allow Invites</span>
+					<input
+						type="checkbox"
+						bind:checked={createForm.allowMemberInvites}
+						class="toggle toggle-primary"
+					/>
+				</label>
+			</div>
 		</div>
 
-		<div class="flex justify-end space-x-3 pt-4">
-			<Button variant="outline" onclick={handleCloseModal} type="button">
+		<div class="modal-action">
+			<Button type="button" variant="ghost" onclick={() => (showCreateModal = false)}>
 				{t('common.cancel', $language)}
 			</Button>
-			<Button type="submit" loading={isCreating}>
+			<Button type="submit" loading={isCreating} variant="primary">
 				{t('common.save', $language)}
 			</Button>
 		</div>

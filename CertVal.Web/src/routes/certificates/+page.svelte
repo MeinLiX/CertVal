@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { auth } from '$lib/stores/auth';
-	import { workspaces } from '$lib/stores/workspaces';
+	import { workspaces as workspacesStore } from '$lib/stores/workspaces';
 	import { language } from '$lib/stores/language';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
@@ -13,125 +13,47 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
-	import type { Certificate, Workspace, PagedResult, BulkUploadResultDto, BulkUploadItemResult } from '$lib/types';
+	import type { Certificate, Workspace, PagedResult, BulkUploadResultDto } from '$lib/types';
 
 	let certificates = $state<Certificate[]>([]);
 	let workspaceList = $state<Workspace[]>([]);
+	let totalCount = $state(0);
 	let isLoading = $state(true);
+	let isMounted = $state(false);
+
 	let showUploadModal = $state(false);
 	let showResultsModal = $state(false);
 	let isUploading = $state(false);
-	let mounted = $state(false);
-
-	let selectedWorkspaceId = $state<string>('');
-	let selectedFiles = $state<FileList | null>(null);
 	let uploadResults = $state<BulkUploadResultDto | null>(null);
 	let errors = $state<Record<string, string>>({});
 
-	// Filters
-	let searchTerm = $state<string>('');
-	let statusFilter = $state<'All' | 'Valid' | 'Expiring' | 'Expired'>('All');
-	let formatFilter = $state<string>('');
-	let sortBy = $state<string>('notAfter');
-	let sortDescending = $state<boolean>(false);
-
-	// Pagination
-	let currentPage = $state<number>(1);
-	let pageSize = $state<number>(20);
-	let totalCount = $state<number>(0);
-
-	const currentParams = $derived($page.url.searchParams);
-	const workspaceFilter = $derived(currentParams.get('workspace'));
-
-	const totalPages = $derived(Math.ceil(totalCount / pageSize));
-
+	const filters = $derived({
+		searchTerm: $page.url.searchParams.get('search') || '',
+		status: $page.url.searchParams.get('status') || 'All',
+		workspaceId: $page.url.searchParams.get('workspace') || '',
+		page: parseInt($page.url.searchParams.get('page') || '1'),
+		pageSize: parseInt($page.url.searchParams.get('pageSize') || '10')
+	});
+	
+	const totalPages = $derived(Math.ceil(totalCount / filters.pageSize) || 1);
 	const workspaceOptions = $derived([
 		{ value: '', label: t('certificates.allWorkspaces', $language) },
-		...workspaceList.map(w => ({ value: w.id, label: w.name }))
+		...workspaceList.map((w) => ({ value: w.id, label: w.name }))
 	]);
-
-	const statusOptions = $derived([
-		{ value: 'All', label: t('certificates.allStatuses', $language) },
-		{ value: 'Valid', label: t('certificates.valid', $language) },
-		{ value: 'Expiring', label: t('certificates.expiring30', $language) },
-		{ value: 'Expired', label: t('certificates.expired', $language) }
-	]);
-
-	const availableFormats = $derived([...new Set(certificates.map((c) => c.fileFormat))].sort());
-	const formatOptions = $derived([
-		{ value: '', label: t('certificates.allFormats', $language) },
-		...availableFormats.map(f => ({ value: f, label: f }))
-	]);
-
-	const sortOptions = $derived([
-		{ value: 'notAfter', label: t('certificates.expiryDate', $language) },
-		{ value: 'subject', label: t('certificates.subject', $language) },
-		{ value: 'issuer', label: t('certificates.issuer', $language) },
-		{ value: 'createdAt', label: t('certificates.createdDate', $language) }
-	]);
-
-	$effect(() => {
-		const urlParams = currentParams;
-		searchTerm = urlParams.get('search') || '';
-		const statusParam = urlParams.get('status');
-		statusFilter = (statusParam as 'All' | 'Valid' | 'Expiring' | 'Expired') || 'All';
-		formatFilter = urlParams.get('format') || '';
-		sortBy = urlParams.get('sortBy') || 'notAfter';
-		sortDescending = urlParams.get('sortDesc') === 'true';
-		currentPage = parseInt(urlParams.get('page') || '1');
-	});
-
-	$effect(() => {
-		const deps = [
-			searchTerm,
-			statusFilter,
-			formatFilter,
-			sortBy,
-			sortDescending,
-			currentPage,
-			workspaceFilter
-		];
-
-		if (!isLoading && workspaceList.length > 0) {
-			loadCertificates();
-		}
-	});
-
-	$effect(() => {
-		if (typeof window !== 'undefined') {
-			const url = new URL(window.location.href);
-
-			if (searchTerm) url.searchParams.set('search', searchTerm);
-			else url.searchParams.delete('search');
-
-			if (statusFilter && statusFilter !== 'All') url.searchParams.set('status', statusFilter);
-			else url.searchParams.delete('status');
-
-			if (formatFilter) url.searchParams.set('format', formatFilter);
-			else url.searchParams.delete('format');
-
-			if (sortBy !== 'notAfter') url.searchParams.set('sortBy', sortBy);
-			else url.searchParams.delete('sortBy');
-
-			if (sortDescending) url.searchParams.set('sortDesc', 'true');
-			else url.searchParams.delete('sortDesc');
-
-			if (currentPage > 1) url.searchParams.set('page', currentPage.toString());
-			else url.searchParams.delete('page');
-
-			window.history.replaceState({}, '', url.pathname + url.search);
-		}
-	});
 
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
 			return;
 		}
+		await loadWorkspaces();
+		isMounted = true;
+	});
 
-		await Promise.all([loadWorkspaces(), loadCertificates()]);
-		isLoading = false;
-		mounted = true;
+	$effect(() => {
+		if (isMounted) {
+			loadCertificates();
+		}
 	});
 
 	async function loadWorkspaces() {
@@ -139,7 +61,7 @@
 			const response = await api.get<PagedResult<Workspace>>('/v1/workspaces');
 			if (response.data) {
 				workspaceList = response.data.items;
-				workspaces.set(workspaceList);
+				workspacesStore.set(workspaceList);
 			}
 		} catch (error) {
 			console.error('Failed to load workspaces:', error);
@@ -147,906 +69,181 @@
 	}
 
 	async function loadCertificates() {
+		isLoading = true;
 		try {
-			const searchParams = {
-				query: searchTerm || undefined,
-				workspaceId: workspaceFilter || undefined,
-				statusFilter: statusFilter,
-				format: formatFilter || undefined,
-				pageSize: pageSize,
-				pageNumber: currentPage
-			};
-
-			const response = await api.searchCertificates<PagedResult<Certificate>>(searchParams);
-
+			const params = new URLSearchParams({
+				pageNumber: filters.page.toString(),
+				pageSize: filters.pageSize.toString(),
+				sortBy: 'notAfter',
+				sortDescending: 'false'
+			});
+			if (filters.workspaceId) params.set('workspaceId', filters.workspaceId);
+			if (filters.searchTerm) params.set('query', filters.searchTerm);
+			if (filters.status !== 'All') params.set('statusFilter', filters.status);
+			
+			const response = await api.get<PagedResult<Certificate>>(`/v1/search/certificates?${params.toString()}`);
 			if (response.data) {
 				certificates = response.data.items;
 				totalCount = response.data.totalCount;
 			}
 		} catch (error) {
 			console.error('Failed to load certificates:', error);
+		} finally {
+			isLoading = false;
 		}
+	}
+	
+	function updateUrlParams(newParams: Record<string, string | number>) {
+		const params = new URLSearchParams($page.url.searchParams);
+		for (const [key, value] of Object.entries(newParams)) {
+			if (value) {
+				params.set(key, String(value));
+			} else {
+				params.delete(key);
+			}
+		}
+		if (!('page' in newParams)) {
+			params.delete('page');
+		}
+
+		goto(`?${params.toString()}`, { keepFocus: true, noScroll: true, replaceState: true });
 	}
 
 	async function handleUploadCertificates(event: Event) {
 		event.preventDefault();
-		errors = {};
-
-		if (!selectedFiles || selectedFiles.length === 0 || !selectedWorkspaceId) {
-			errors.general = t('errors.required', $language);
-			return;
-		}
-
+		const form = event.target as HTMLFormElement;
+		const formData = new FormData(form);
 		isUploading = true;
-
+		errors = {};
 		try {
-			const formData = new FormData();
-			formData.append('workspaceId', selectedWorkspaceId);
-			
-			Array.from(selectedFiles).forEach(file => {
-				formData.append('files', file);
-			});
-
 			const response = await api.upload<BulkUploadResultDto>('/v1/certificates/upload/multiple', formData);
-			
 			if (response.data) {
 				uploadResults = response.data;
 				showUploadModal = false;
 				showResultsModal = true;
-				resetUploadForm();
 				await loadCertificates();
-			} else if (response.message) {
-				errors.general = response.message;
+			} else {
+				errors.upload = response.message || 'Upload failed.';
 			}
 		} catch (error) {
-			errors.general = t('errors.network', $language);
+			errors.upload = 'A network error occurred during upload.';
 		} finally {
 			isUploading = false;
 		}
 	}
-
-	function resetUploadForm() {
-		selectedFiles = null;
-		selectedWorkspaceId = workspaceFilter || '';
-		errors = {};
-	}
-
-	function handleFileSelect(event: Event) {
-		const target = event.target as HTMLInputElement;
-		selectedFiles = target.files;
-	}
-
-	function handleCloseModal() {
-		showUploadModal = false;
-		resetUploadForm();
-	}
-
-	function getStatusColor(status: 'expired' | 'expiring' | 'valid'): string {
-		switch (status) {
-			case 'expired':
-				return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
-			case 'expiring':
-				return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
-			case 'valid':
-				return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
-		}
-	}
-
-	function getStatusText(status: 'expired' | 'expiring' | 'valid'): string {
-		return t(`certificates.${status}`, $language);
-	}
-
-	function getWorkspaceName(workspaceId: string): string {
-		const workspace = workspaceList.find((w) => w.id === workspaceId);
-		return workspace?.name || t('workspaces.unknownWorkspace', $language);
-	}
-
-	function handleWorkspaceFilterChange(value: string) {
-		const url = new URL(window.location.href);
-		if (value) {
-			url.searchParams.set('workspace', value);
-		} else {
-			url.searchParams.delete('workspace');
-		}
-		url.searchParams.delete('page');
-		goto(url.pathname + url.search);
-	}
-
-	function clearFilters() {
-		searchTerm = '';
-		statusFilter = 'All';
-		formatFilter = '';
-		sortBy = 'notAfter';
-		sortDescending = false;
-		currentPage = 1;
-		goto('/certificates' + (workspaceFilter ? `?workspace=${workspaceFilter}` : ''));
-	}
-
-	function changePage(page: number) {
-		currentPage = page;
-	}
-
-	function handleSort(field: string) {
-		if (sortBy === field) {
-			sortDescending = !sortDescending;
-		} else {
-			sortBy = field;
-			sortDescending = false;
-		}
-		currentPage = 1;
-	}
-
-	function handleFilterChange() {
-		currentPage = 1;
-	}
-
-	function formatFileSize(bytes: number): string {
-		if (bytes === 0) return '0 B';
-		const k = 1024;
-		const sizes = ['B', 'KB', 'MB', 'GB'];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-	}
-
-	function showUploadModalWithWorkspace() {
-		selectedWorkspaceId = workspaceFilter || (workspaceList.length > 0 ? workspaceList[0].id : '');
-		showUploadModal = true;
-	}
-
-	function getResultStatusColor(result: BulkUploadItemResult): string {
-		if (result.success) return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
-		if (result.isSkipped) return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
-		return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
-	}
-
-	function getResultStatusText(result: BulkUploadItemResult): string {
-		if (result.success) return 'Success';
-		if (result.isSkipped) return 'Skipped';
-		return 'Failed';
-	}
-
-	function getResultStatusIcon(result: BulkUploadItemResult): string {
-		if (result.success) return 'M5 13l4 4L19 7';
-		if (result.isSkipped) return 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-		return 'M6 18L18 6M6 6l12 12';
-	}
 </script>
 
 <svelte:head>
-	<title>{t('certificates.title', $language)} - CertVal</title>
+	<title>{t('certificates.title', $language)}</title>
 </svelte:head>
 
 <div class="space-y-6">
-	<!-- Header -->
-	<div class="flex items-center justify-between {mounted ? 'animate-in slide-in-from-top-4 duration-500' : ''}">
+	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-				{t('certificates.title', $language)}
-			</h1>
-			<p class="mt-2 text-gray-600 dark:text-gray-400">{t('certificates.subtitle', $language)}</p>
+			<h1 class="text-3xl font-bold">{t('certificates.title', $language)}</h1>
+			<p class="mt-1 text-base-content/70">{t('certificates.subtitle', $language)}</p>
 		</div>
-		<div class="flex space-x-3">
-			<Button onclick={showUploadModalWithWorkspace} class="shadow-lg">
-				<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 17l3 3 3-3M9 12l3 3 3-3" />
-				</svg>
-				Upload
-			</Button>
-		</div>
+		<Button onclick={() => showUploadModal = true}>
+			<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+			{t('certificates.upload', $language)}
+		</Button>
 	</div>
 
-	<!-- Filters Card -->
-	<Card glass={true} class={mounted ? 'animate-in slide-in-from-bottom-4 duration-700' : ''}>
-		<div class="space-y-6">
-			<div class="flex items-center justify-between">
-				<h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-					{t('common.filter', $language)}
-				</h3>
-				<Button variant="outline" size="sm" onclick={clearFilters}>
-					<svg class="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-					</svg>
-					{t('certificates.clearAll', $language)}
-				</Button>
-			</div>
-
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-				<!-- Workspace Filter -->
-				{#if workspaceList.length > 1}
-					<Select
-						label={t('common.workspace', $language)}
-						value={workspaceFilter || ''}
-						options={workspaceOptions}
-						onchange={handleWorkspaceFilterChange}
-					/>
-				{/if}
-
-				<!-- Search -->
-				<Input
-					label={t('common.search', $language)}
-					type="search"
-					bind:value={searchTerm}
-					placeholder={t('certificates.searchPlaceholder', $language)}
-					oninput={handleFilterChange}
-					icon="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-				/>
-
-				<!-- Status Filter -->
-				<Select
-					label={t('certificates.status', $language)}
-					bind:value={statusFilter}
-					options={statusOptions}
-					onchange={handleFilterChange}
-				/>
-
-				<!-- Format Filter -->
-				{#if availableFormats.length > 1}
-					<Select
-						label={t('certificates.format', $language)}
-						bind:value={formatFilter}
-						options={formatOptions}
-						onchange={handleFilterChange}
-					/>
-				{/if}
-
-				<!-- Sort -->
-				<Select
-					label={t('certificates.sortBy', $language)}
-					bind:value={sortBy}
-					options={sortOptions}
-					onchange={handleFilterChange}
-				/>
-			</div>
-
-			<!-- Active Filters Display -->
-			{#if searchTerm || statusFilter !== 'All' || formatFilter || workspaceFilter}
-				<div class="flex flex-wrap gap-2 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
-					<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-						{t('certificates.activeFilters', $language)}:
-					</span>
-					{#if searchTerm}
-						<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-300">
-							{t('common.search', $language)}: {searchTerm}
-							<button
-								onclick={() => {
-									searchTerm = '';
-									handleFilterChange();
-								}}
-								class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-							>
-								×
-							</button>
-						</span>
-					{/if}
-					{#if statusFilter !== 'All'}
-						<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-300">
-							{t('certificates.status', $language)}: {statusOptions.find(s => s.value === statusFilter)?.label}
-							<button
-								onclick={() => {
-									statusFilter = 'All';
-									handleFilterChange();
-								}}
-								class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-							>
-								×
-							</button>
-						</span>
-					{/if}
-					{#if formatFilter}
-						<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-300">
-							{t('certificates.format', $language)}: {formatFilter}
-							<button
-								onclick={() => {
-									formatFilter = '';
-									handleFilterChange();
-								}}
-								class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-							>
-								×
-							</button>
-						</span>
-					{/if}
-					{#if workspaceFilter}
-						<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-300">
-							{t('common.workspace', $language)}: {getWorkspaceName(workspaceFilter)}
-							<button
-								onclick={() => goto('/certificates')}
-								class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-							>
-								×
-							</button>
-						</span>
-					{/if}
-				</div>
-			{/if}
+	<Card>
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+			<Input label="Search" value={filters.searchTerm} oninput={(e) => updateUrlParams({ search: (e.target as HTMLInputElement).value })} placeholder="Subject, issuer..." icon="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+			<Select label="Workspace" value={filters.workspaceId} onchange={(e) => updateUrlParams({ workspace: (e.target as HTMLSelectElement).value })} options={workspaceOptions} />
+			<Select label="Status" value={filters.status} onchange={(e) => updateUrlParams({ status: (e.target as HTMLSelectElement).value })} options={[ {value: 'All', label: 'All'}, {value: 'Valid', label: 'Valid'}, {value: 'Expiring', label: 'Expiring'}, {value: 'Expired', label: 'Expired'} ]} />
+			<Select label="Per Page" value={filters.pageSize} onchange={(e) => updateUrlParams({ pageSize: (e.target as HTMLSelectElement).value })} options={[ {value: 10, label: '10'}, {value: 20, label: '20'}, {value: 50, label: '50'}, {value: 100, label: '100'} ]} />
 		</div>
 	</Card>
 
-	{#if isLoading}
-		<div class="flex h-64 items-center justify-center">
-			<div class="relative">
-				<div class="h-16 w-16 animate-spin rounded-full border-4 border-blue-200 dark:border-blue-800"></div>
-				<div class="absolute top-0 left-0 h-16 w-16 animate-spin rounded-full border-4 border-transparent border-t-blue-600"></div>
-			</div>
-		</div>
-	{:else if certificates.length === 0}
-		<Card glass={true}>
-			<div class="py-16 text-center">
-				<div class="relative inline-flex mb-6">
-					<svg class="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-					</svg>
-					<div class="absolute inset-0 rounded-full bg-gray-400/20 dark:bg-gray-500/20 animate-pulse blur-md"></div>
-				</div>
-				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-					{searchTerm || statusFilter !== 'All' || formatFilter
-						? t('certificates.noMatches', $language)
-						: t('certificates.empty', $language)}
-				</h3>
-				<p class="text-gray-500 dark:text-gray-400 mb-8">
-					{searchTerm || statusFilter !== 'All' || formatFilter
-						? t('certificates.adjustFilters', $language)
-						: t('certificates.uploadFirst', $language)}
-				</p>
-				<div class="flex justify-center space-x-3">
-					{#if searchTerm || statusFilter !== 'All' || formatFilter}
-						<Button variant="outline" onclick={clearFilters}>
-							{t('certificates.clearFilters', $language)}
-						</Button>
-					{/if}
-					<Button onclick={showUploadModalWithWorkspace}>
-						{t('certificates.upload', $language)}
-					</Button>
-					<Button variant="outline" onclick={showUploadModalWithWorkspace}>
-						Upload Multiple
-					</Button>
-				</div>
-			</div>
-		</Card>
-	{:else}
-		<!-- Results Summary -->
-		<div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 {mounted ? 'animate-in slide-in-from-left-4 duration-700' : ''}">
-			<span>
-				{t('certificates.showing', $language)}
-				{certificates.length}
-				{t('common.of', $language)}
-				{totalCount}
-				{t('certificates.title', $language).toLowerCase()}
-				{#if statusFilter !== 'All'}
-					({statusOptions.find(s => s.value === statusFilter)?.label})
-				{/if}
-				{#if currentPage > 1}
-					({t('certificates.page', $language)}
-					{currentPage}
-					{t('common.of', $language)}
-					{totalPages})
-				{/if}
-			</span>
-			<div class="flex items-center space-x-2">
-				<span>{t('certificates.sort', $language)}:</span>
-				<button
-					onclick={() => handleSort(sortBy)}
-					class="flex items-center space-x-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-				>
-					<span>
-						{sortOptions.find(s => s.value === sortBy)?.label}
-					</span>
-					<svg
-						class="h-4 w-4 transition-transform duration-200 {sortDescending ? 'rotate-180' : ''}"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-					</svg>
-				</button>
-			</div>
-		</div>
-
-		<!-- Certificates Table -->
-		<Card>
-			<div class="overflow-hidden">
-				<table class="min-w-full divide-y divide-gray-200">
-					<thead class="bg-gray-50">
-						<tr>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								<button
-									onclick={() => handleSort('subject')}
-									class="group flex items-center space-x-1 hover:text-gray-700"
-								>
-									<span>{t('certificates.subject', $language)}</span>
-									<svg
-										class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'subject'
-											? 'opacity-100'
-											: ''}"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 9l4-4 4 4m0 6l-4 4-4-4"
-										/>
-									</svg>
-								</button>
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								<button
-									onclick={() => handleSort('issuer')}
-									class="group flex items-center space-x-1 hover:text-gray-700"
-								>
-									<span>{t('certificates.issuer', $language)}</span>
-									<svg
-										class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'issuer'
-											? 'opacity-100'
-											: ''}"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 9l4-4 4 4m0 6l-4 4-4-4"
-										/>
-									</svg>
-								</button>
-							</th>
-							{#if !workspaceFilter}
-								<th
-									class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-								>
-									{t('common.workspace', $language)}
-								</th>
-							{/if}
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								{t('certificates.format', $language)}
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								<button
-									onclick={() => handleSort('notAfter')}
-									class="group flex items-center space-x-1 hover:text-gray-700"
-								>
-									<span>{t('certificates.expires', $language)}</span>
-									<svg
-										class="h-3 w-3 opacity-0 group-hover:opacity-100 {sortBy === 'notAfter'
-											? 'opacity-100'
-											: ''}"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 9l4-4 4 4m0 6l-4 4-4-4"
-										/>
-									</svg>
-								</button>
-							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>
-								{t('certificates.status', $language)}
-							</th>
-							<th class="relative px-6 py-3">
-								<span class="sr-only">{t('common.actions', $language)}</span>
-							</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-gray-200 bg-white">
-						{#each certificates as certificate}
-							{@const status = getCertificateStatus(certificate.notAfter)}
-							<tr class="hover:bg-gray-50">
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="flex items-center">
-										{#if certificate.isBundle}
-											<svg
-												class="mr-2 h-4 w-4 text-blue-500"
-												fill="none"
-												viewBox="0 0 24 24"
-												stroke="currentColor"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6"
-												/>
-											</svg>
-										{/if}
-										<div>
-											<div
-												class="max-w-xs truncate text-sm font-medium text-gray-900"
-												title={certificate.subject}
-											>
-												{certificate.subject}
-											</div>
-											<div class="text-sm text-gray-500">{certificate.originalFileName}</div>
-										</div>
-									</div>
+	<Card>
+		<div class="overflow-x-auto">
+			<table class="table">
+				<thead>
+					<tr>
+						<th>{t('certificates.subject', $language)}</th>
+						<th>{t('certificates.expires', $language)}</th>
+						<th>{t('certificates.status', $language)}</th>
+						<th>{t('common.workspace', $language)}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{#if isLoading}
+						{#each { length: filters.pageSize } as _}
+							<tr><td colspan="5"><div class="skeleton h-10 w-full"></div></td></tr>
+						{/each}
+					{:else if certificates.length === 0}
+						<tr><td colspan="5" class="text-center py-8">No certificates found.</td></tr>
+					{:else}
+						{#each certificates as cert (cert.id)}
+							<tr>
+								<td>
+									<a href="/certificates/{cert.id}" class="link link-hover font-bold truncate block max-w-sm">{cert.subject}</a>
+									<div class="text-xs opacity-60">{cert.originalFileName}</div>
 								</td>
-								<td
-									class="max-w-xs truncate px-6 py-4 text-sm whitespace-nowrap text-gray-900"
-									title={certificate.issuer}
-								>
-									{certificate.issuer}
+								<td>
+									{formatDate(cert.notAfter)}
+									<div class="text-xs opacity-60">{cert.daysUntilExpiry} days left</div>
 								</td>
-								{#if !workspaceFilter}
-									<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
-										{getWorkspaceName(certificate.workspaceId)}
-									</td>
-								{/if}
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span
-										class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800"
-									>
-										{certificate.fileFormat}
-									</span>
-								</td>
-								<td class="px-6 py-4 text-sm whitespace-nowrap">
-									<div class="text-gray-900">{formatDate(certificate.notAfter)}</div>
-									<div class="text-xs text-gray-500">{formatFileSize(certificate.fileSize)}</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span
-										class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {getStatusColor(
-											status
-										)}"
-									>
-										{getStatusText(status)}
-										{#if certificate.daysUntilExpiry > 0}
-											({certificate.daysUntilExpiry} {t('certificates.days', $language)})
-										{/if}
-									</span>
-								</td>
-								<td class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
-									<Button
-										variant="outline"
-										size="sm"
-										onclick={() => goto(`/certificates/${certificate.id}`)}
-									>
-										{t('certificates.viewDetails', $language)}
-									</Button>
-								</td>
+								<td><span class="badge {getCertificateStatus(cert.notAfter) === 'expired' ? 'badge-error' : getCertificateStatus(cert.notAfter) === 'expiring' ? 'badge-warning' : 'badge-success'} badge-sm">{getCertificateStatus(cert.notAfter)}</span></td>
+								<td>{workspaceList.find(w => w.id === cert.workspaceId)?.name || 'N/A'}</td>
+								<td><Button size="sm" variant="ghost" onclick={() => goto(`/certificates/${cert.id}`)}>Details</Button></td>
 							</tr>
 						{/each}
-					</tbody>
-				</table>
-			</div>
-		</Card>
-
-		<!-- Pagination -->
-		{#if totalPages > 1}
-			<div class="flex items-center justify-between">
-				<div class="flex items-center space-x-2 text-sm text-gray-700">
-					<span>
-						{t('certificates.showing', $language)}
-						{(currentPage - 1) * pageSize + 1}
-						{t('common.to', $language)}
-						{Math.min(currentPage * pageSize, totalCount)}
-						{t('common.of', $language)}
-						{totalCount}
-						{t('certificates.results', $language)}
-					</span>
-				</div>
-
-				<div class="flex items-center space-x-1">
-					<Button
-						variant="outline"
-						size="sm"
-						disabled={currentPage === 1}
-						onclick={() => changePage(currentPage - 1)}
-					>
-						{t('common.previous', $language)}
-					</Button>
-
-					{#if totalPages <= 7}
-						{#each Array(totalPages) as _, i}
-							<Button
-								variant={currentPage === i + 1 ? 'primary' : 'outline'}
-								size="sm"
-								onclick={() => changePage(i + 1)}
-							>
-								{i + 1}
-							</Button>
-						{/each}
-					{:else}
-						<!-- Show first page -->
-						<Button
-							variant={currentPage === 1 ? 'primary' : 'outline'}
-							size="sm"
-							onclick={() => changePage(1)}
-						>
-							1
-						</Button>
-
-						{#if currentPage > 3}
-							<span class="px-2 text-gray-500">...</span>
-						{/if}
-
-						<!-- Show pages around current -->
-						{#each [Math.max(2, currentPage - 1), currentPage, Math.min(totalPages - 1, currentPage + 1)] as page}
-							{#if page > 1 && page < totalPages}
-								<Button
-									variant={currentPage === page ? 'primary' : 'outline'}
-									size="sm"
-									onclick={() => changePage(page)}
-								>
-									{page}
-								</Button>
-							{/if}
-						{/each}
-
-						{#if currentPage < totalPages - 2}
-							<span class="px-2 text-gray-500">...</span>
-						{/if}
-
-						<!-- Show last page -->
-						<Button
-							variant={currentPage === totalPages ? 'primary' : 'outline'}
-							size="sm"
-							onclick={() => changePage(totalPages)}
-						>
-							{totalPages}
-						</Button>
 					{/if}
-
-					<Button
-						variant="outline"
-						size="sm"
-						disabled={currentPage === totalPages}
-						onclick={() => changePage(currentPage + 1)}
-					>
-						{t('common.next', $language)}
-					</Button>
-				</div>
+				</tbody>
+			</table>
+		</div>
+		<div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+			<div class="text-sm">
+				Showing <strong>{Math.min((filters.page - 1) * filters.pageSize + 1, totalCount)}</strong>
+				to <strong>{Math.min(filters.page * filters.pageSize, totalCount)}</strong>
+				of <strong>{totalCount}</strong> results
 			</div>
-		{/if}
-	{/if}
+			{#if totalPages > 1}
+			<div class="join">
+				<Button class="join-item" onclick={() => updateUrlParams({ page: filters.page - 1 })} disabled={filters.page <= 1}>«</Button>
+				<span class="join-item btn no-animation">Page {filters.page} of {totalPages}</span>
+				<Button class="join-item" onclick={() => updateUrlParams({ page: filters.page + 1 })} disabled={filters.page >= totalPages}>»</Button>
+			</div>
+			{/if}
+		</div>
+	</Card>
 </div>
 
-<!-- Upload Certificates Modal -->
-<Modal
-	isOpen={showUploadModal}
-	title="Upload Multiple Certificates"
-	onClose={handleCloseModal}
->
+<Modal isOpen={showUploadModal} title="Upload Certificates" onClose={() => showUploadModal = false}>
 	<form onsubmit={handleUploadCertificates} class="space-y-4">
-		{#if errors.general}
-			<div class="rounded-md border border-red-200 bg-red-50 p-4">
-				<div class="flex">
-					<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-						<path
-							fill-rule="evenodd"
-							d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<div class="ml-3">
-						<p class="text-sm text-red-600">{errors.general}</p>
-					</div>
-				</div>
-			</div>
+		{#if errors.upload}
+			<div role="alert" class="alert alert-error text-sm"><span>{errors.upload}</span></div>
 		{/if}
-
-		<div class="space-y-1">
-			<label for="workspace-select" class="block text-sm font-medium text-gray-700">
-				{t('common.workspace', $language)} <span class="text-red-500">*</span>
-			</label>
-			<select
-				id="workspace-select"
-				bind:value={selectedWorkspaceId}
-				required
-				class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
-			>
-				<option value="">{t('certificates.selectWorkspace', $language)}</option>
-				{#each workspaceList as workspace}
-					<option value={workspace.id}>{workspace.name}</option>
-				{/each}
-			</select>
-		</div>
-
-		<div class="space-y-1">
-			<label for="files" class="block text-sm font-medium text-gray-700">
-				Certificate Files <span class="text-red-500">*</span>
-			</label>
-			<input
-				id="files"
-				type="file"
-				accept=".cer,.crt,.pem,.der,.p7b,.p7c,.pfx,.p12"
-				multiple
-				required
-				onchange={handleFileSelect}
-				class="block w-full rounded-xl border-0 bg-white dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-inset transition-all duration-200"
-			/>
-		</div>
-
-		{#if selectedFiles && selectedFiles.length > 0}
-			<div class="rounded-md border border-blue-200 bg-blue-50 p-4">
-				<div class="flex items-center mb-2">
-					<svg
-						class="mr-2 h-5 w-5 text-blue-600"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6"
-						/>
-					</svg>
-					<p class="text-sm font-medium text-blue-800">{selectedFiles.length} files selected</p>
-				</div>
-				<div class="max-h-32 overflow-y-auto space-y-1">
-					{#each Array.from(selectedFiles) as file}
-						<div class="flex items-center justify-between text-xs text-blue-700 bg-blue-100 rounded px-2 py-1">
-							<span class="truncate">{file.name}</span>
-							<span class="ml-2">{formatFileSize(file.size)}</span>
-						</div>
-					{/each}
-				</div>
-			</div>
-		{/if}
-
-		<div class="rounded-md border border-amber-200 bg-amber-50 p-4">
-			<div class="flex">
-				<svg class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-					<path
-						fill-rule="evenodd"
-						d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-				<div class="ml-3">
-					<p class="text-sm text-amber-700">
-						<strong>Upload Information:</strong>
-					</p>
-					<ul class="mt-1 text-xs text-amber-700 list-disc list-inside space-y-1">
-						<li>Duplicate certificates will be skipped automatically</li>
-						<li>Individual file errors won't stop the entire batch</li>
-						<li>You'll see detailed results for each file after upload</li>
-						<li>Maximum recommended files per batch: 50</li>
-					</ul>
-				</div>
-			</div>
-		</div>
-
-		<div class="rounded-md border border-gray-200 bg-gray-50 p-4">
-			<h4 class="mb-2 text-sm font-medium text-gray-900">
-				{t('certificates.supportedFormats', $language)}:
-			</h4>
-			<div class="grid grid-cols-4 gap-2 text-xs text-gray-600">
-				<span>• .cer, .crt</span>
-				<span>• .pem</span>
-				<span>• .der</span>
-				<span>• .p7b, .p7c</span>
-				<span>• .pfx, .p12</span>
-			</div>
-		</div>
-
-		<div class="flex justify-end space-x-3 pt-4">
-			<Button variant="outline" onclick={handleCloseModal} type="button">
-				{t('common.cancel', $language)}
-			</Button>
-			<Button type="submit" loading={isUploading} disabled={!selectedFiles || selectedFiles.length === 0 || !selectedWorkspaceId}>
-				<svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 17l3 3 3-3M9 12l3 3 3-3"
-					/>
-				</svg>
-				Upload {selectedFiles?.length || 0} Files
-			</Button>
+		<Select label="Workspace" name="workspaceId" options={workspaceList.map(w => ({value: w.id, label: w.name}))} required />
+		<Input label="Certificate Files" name="files" type="file" required multiple accept=".cer,.crt,.pem,.der,.p7b,.p7c,.pfx,.p12" />
+		<div class="modal-action">
+			<Button type="button" variant="ghost" onclick={() => showUploadModal = false}>Cancel</Button>
+			<Button type="submit" loading={isUploading} variant="primary">Upload</Button>
 		</div>
 	</form>
 </Modal>
 
-<!-- Upload Results Modal -->
-<Modal
-	isOpen={showResultsModal}
-	title="Upload Results"
-	onClose={() => (showResultsModal = false)}
->
+<Modal isOpen={showResultsModal} title="Upload Results" onClose={() => showResultsModal = false}>
 	{#if uploadResults}
-		<div class="space-y-6">
-			<!-- Summary Stats -->
-			<div class="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl">
-				<div class="text-center">
-					<div class="text-2xl font-bold text-gray-900">{uploadResults.totalFiles}</div>
-					<div class="text-sm text-gray-500">Total</div>
-				</div>
-				<div class="text-center">
-					<div class="text-2xl font-bold text-green-600">{uploadResults.successCount}</div>
-					<div class="text-sm text-gray-500">Uploaded</div>
-				</div>
-				<div class="text-center">
-					<div class="text-2xl font-bold text-yellow-600">{uploadResults.skippedCount}</div>
-					<div class="text-sm text-gray-500">Skipped</div>
-				</div>
-				<div class="text-center">
-					<div class="text-2xl font-bold text-red-600">{uploadResults.failureCount}</div>
-					<div class="text-sm text-gray-500">Failed</div>
-				</div>
-			</div>
-
-			<!-- Summary Message -->
-			<div class="rounded-md border border-blue-200 bg-blue-50 p-4">
-				<div class="flex">
-					<svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-						<path
-							fill-rule="evenodd"
-							d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<div class="ml-3">
-						<p class="text-sm text-blue-700">{uploadResults.summary}</p>
+		<div class="space-y-4">
+			<p>{uploadResults.summary}</p>
+			<div class="max-h-60 overflow-y-auto space-y-2">
+				{#each uploadResults.results as result}
+					<div class="p-2 rounded-lg {result.success ? 'bg-success/20' : result.isSkipped ? 'bg-warning/20' : 'bg-error/20'}">
+						<p class="font-semibold text-sm">{result.fileName}</p>
+						{#if !result.success}
+							<p class="text-xs opacity-70">{result.errorMessage}</p>
+						{/if}
 					</div>
-				</div>
+				{/each}
 			</div>
-
-			<!-- Detailed Results -->
-			<div class="space-y-2">
-				<h4 class="text-sm font-medium text-gray-900">File Details:</h4>
-				<div class="max-h-64 overflow-y-auto space-y-2">
-					{#each uploadResults.results as result}
-						<div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg {result.success ? 'bg-green-50' : result.isSkipped ? 'bg-yellow-50' : 'bg-red-50'}">
-							<div class="flex items-center space-x-3">
-								<div class="flex-shrink-0">
-									<svg class="h-5 w-5 {getResultStatusColor(result)}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={getResultStatusIcon(result)} />
-									</svg>
-								</div>
-								<div class="min-w-0 flex-1">
-									<p class="text-sm font-medium text-gray-900 truncate">{result.fileName}</p>
-									{#if result.subject}
-										<p class="text-xs text-gray-500 truncate">{result.subject}</p>
-									{/if}
-									{#if result.errorMessage}
-										<p class="text-xs text-red-600 truncate">{result.errorMessage}</p>
-									{/if}
-								</div>
-							</div>
-							<div class="flex-shrink-0">
-								<span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold {getResultStatusColor(result)}">
-									{getResultStatusText(result)}
-								</span>
-							</div>
-						</div>
-					{/each}
-				</div>
-			</div>
-
-			<!-- Actions -->
-			<div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-				<Button variant="outline" onclick={() => (showResultsModal = false)}>
-					{t('common.close', $language)}
-				</Button>
-				{#if uploadResults.successCount > 0}
-					<Button onclick={() => {
-						showResultsModal = false;
-						goto(`/certificates${workspaceFilter ? `?workspace=${workspaceFilter}` : ''}`);
-					}}>
-						View Uploaded Certificates
-					</Button>
-				{/if}
+			<div class="modal-action">
+				<Button onclick={() => showResultsModal = false}>Close</Button>
 			</div>
 		</div>
 	{/if}

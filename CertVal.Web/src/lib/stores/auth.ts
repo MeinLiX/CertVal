@@ -48,7 +48,7 @@ function createAuthStore() {
         },
         initialize: () => {
             if (!browser) return;
-            
+
             const token = localStorage.getItem('auth_token');
             const userStr = localStorage.getItem('user');
 

@@ -32,7 +32,7 @@ class ApiClient {
 
             let data;
             const contentType = response.headers.get('content-type');
-            
+
             if (contentType && contentType.includes('application/json')) {
                 data = await response.json();
             } else {
@@ -52,7 +52,7 @@ class ApiClient {
                     }
                     throw new Error(errorMessages.join(', ') || 'Validation error');
                 }
-                
+
                 throw new Error(data.message || data.title || 'Request failed');
             }
 
@@ -106,7 +106,7 @@ class ApiClient {
 
             let data;
             const contentType = response.headers.get('content-type');
-            
+
             if (contentType && contentType.includes('application/json')) {
                 data = await response.json();
             } else {
@@ -126,7 +126,7 @@ class ApiClient {
                     }
                     throw new Error(errorMessages.join(', ') || 'Upload failed');
                 }
-                
+
                 throw new Error(data.message || data.title || 'Upload failed');
             }
 
@@ -153,7 +153,7 @@ class ApiClient {
     async uploadMultipleCertificates<T>(workspaceId: string, files: FileList | File[], description?: string) {
         const formData = new FormData();
         formData.append('workspaceId', workspaceId);
-        
+
         if (description) {
             formData.append('description', description);
         }
@@ -181,16 +181,16 @@ class ApiClient {
         };
 
         console.log('Trying nested request structure:', requestData);
-        
+
         let response = await this.post<T>(`/v1/workspaces/${workspaceId}/members/invite`, requestData);
-        
+
         if (response.message && response.message.includes('validation')) {
             console.log('Nested structure failed, trying flat structure');
             requestData = {
                 email: email,
                 role: role
             } as any;
-            
+
             response = await this.post<T>(`/v1/workspaces/${workspaceId}/members/invite`, requestData);
         }
 
@@ -207,7 +207,7 @@ class ApiClient {
         pageNumber?: number;
     }) {
         const searchParams = new URLSearchParams();
-        
+
         if (params.query) searchParams.set('query', params.query);
         if (params.workspaceId) searchParams.set('workspaceId', params.workspaceId);
         if (params.statusFilter && params.statusFilter !== 'All') {

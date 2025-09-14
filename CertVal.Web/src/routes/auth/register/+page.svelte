@@ -14,33 +14,27 @@
 		password: '',
 		confirmPassword: '',
 		language: $language,
-		timeZone: 'Europe/Kiev'
+		timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
 	});
-
 	let errors = $state<Record<string, string>>({});
 	let isLoading = $state(false);
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
 		errors = {};
-
-		// Validate passwords match
 		if (formData.password !== formData.confirmPassword) {
 			errors.confirmPassword = 'Passwords do not match';
 			return;
 		}
 
 		isLoading = true;
-
 		try {
 			const { confirmPassword, ...userData } = formData;
 			const response = await api.post<any>('/v1/auth/register', userData);
-
 			if (response.data) {
-				// Redirect to login with success message
 				goto('/auth/login?registered=true');
-			} else if (response.message) {
-				errors.general = response.message;
+			} else {
+				errors.general = response.message || 'Registration failed.';
 			}
 		} catch (error) {
 			errors.general = t('errors.network', $language);
@@ -51,91 +45,74 @@
 </script>
 
 <svelte:head>
-	<title>{t('auth.register.title', $language)}</title>
+	<title>{t('auth.register.title', $language)} - CertVal</title>
 </svelte:head>
 
-<div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-	<div class="w-full max-w-md space-y-8">
-		<div>
-			<div class="flex justify-center">
-				<svg class="h-12 w-12 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-					<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
-				</svg>
-			</div>
-			<h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-				{t('auth.register.title', $language)}
-			</h2>
-			<p class="mt-2 text-center text-sm text-gray-600">
-				{t('auth.register.hasAccount', $language)}
-				<a href="/auth/login" class="font-medium text-blue-600 hover:text-blue-500">
-					{t('auth.register.loginLink', $language)}
-				</a>
+<div class="hero min-h-screen bg-base-200">
+	<div class="hero-content w-full max-w-4xl flex-col lg:flex-row-reverse">
+		<div class="text-center lg:pl-10 lg:text-left">
+			<h1 class="text-5xl font-bold">Join CertVal Today!</h1>
+			<p class="py-6">
+				Start monitoring your certificates in minutes. Get timely expiration alerts and keep your
+				services secure and online.
 			</p>
 		</div>
+		<div class="card w-full max-w-sm shrink-0 bg-base-100 shadow-2xl">
+			<form class="card-body" onsubmit={handleSubmit}>
+				<h2 class="mb-4 text-center text-2xl font-bold">{t('auth.register.title', $language)}</h2>
 
-		<form class="mt-8 space-y-6" onsubmit={handleSubmit}>
-			<div class="space-y-4">
 				{#if errors.general}
-					<div class="rounded-md border border-red-200 bg-red-50 p-4">
-						<p class="text-sm text-red-600">{errors.general}</p>
+					<div role="alert" class="alert alert-error text-sm">
+						<span>{errors.general}</span>
 					</div>
 				{/if}
 
 				<div class="grid grid-cols-2 gap-4">
 					<Input
-						type="text"
 						label={t('auth.register.firstName', $language)}
 						bind:value={formData.firstName}
 						required
-						error={errors.firstName}
 					/>
-
 					<Input
-						type="text"
 						label={t('auth.register.lastName', $language)}
 						bind:value={formData.lastName}
 						required
-						error={errors.lastName}
 					/>
 				</div>
-
 				<Input
-					type="email"
 					label={t('auth.register.email', $language)}
+					type="email"
 					bind:value={formData.email}
 					required
-					error={errors.email}
 				/>
-
 				<Input
-					type="password"
 					label={t('auth.register.password', $language)}
+					type="password"
 					bind:value={formData.password}
 					required
-					error={errors.password}
 				/>
-
 				<Input
-					type="password"
 					label={t('auth.register.confirmPassword', $language)}
+					type="password"
 					bind:value={formData.confirmPassword}
 					required
 					error={errors.confirmPassword}
 				/>
-			</div>
 
-			<div>
-				<Button
-					type="submit"
-					variant="primary"
-					size="lg"
-					loading={isLoading}
-					disabled={isLoading}
-					class="w-full"
-				>
-					{t('auth.register.submit', $language)}
-				</Button>
-			</div>
-		</form>
+				<div class="form-control mt-6">
+					<Button type="submit" variant="primary" loading={isLoading}>
+						{t('auth.register.submit', $language)}
+					</Button>
+				</div>
+				<div class="mt-4 text-center text-sm">
+					<p>
+						{t('auth.register.hasAccount', $language)}
+						<a href="/auth/login" class="link link-primary"
+							>{t('auth.register.loginLink', $language)}</a
+						>
+					</p>
+				</div>
+			</form>
+		</div>
 	</div>
 </div>

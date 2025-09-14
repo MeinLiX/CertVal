@@ -149,42 +149,55 @@ export interface BulkUploadItemResult {
 }
 
 export interface NotificationRule {
-		id: string;
-		workspaceId: string;
-		name: string;
-		isEnabled: boolean;
-		daysBeforeExpiry: number;
-		frequency: string;
-		channelType: string;
-		channelConfig: string;
-		createdAt: string;
-		updatedAt: string;
-	}
+    id: string;
+    workspaceId: string;
+    name: string;
+    isEnabled: boolean;
+    daysBeforeExpiry: number;
+    frequency: string;
+    channelType: string;
+    channelConfig: string;
+    createdAt: string;
+    updatedAt: string;
+}
 
 export interface NotificationHistory {
-		id: string;
-		notificationRuleId: string;
-		certificateId: string;
-		status: string;
-		channelType: string;
-		recipient: string;
-		subject: string;
-		message: string;
-		scheduledAt: string;
-		sentAt?: string;
-		deliveredAt?: string;
-		errorMessage?: string;
-		retryCount: number;
-		createdAt: string;
-	}
+    id: string;
+    notificationRuleId: string;
+    certificateId: string;
+    status: string;
+    channelType: string;
+    recipient: string;
+    subject: string;
+    message: string;
+    scheduledAt: string;
+    sentAt?: string;
+    deliveredAt?: string;
+    errorMessage?: string;
+    retryCount: number;
+    createdAt: string;
+}
 
 export interface CreateNotificationRuleRequest {
-		name: string;
-		daysBeforeExpiry: number;
-		channelType: 'Email' | 'Webhook' | 'Slack' | 'Telegram';
-		channelConfig: string;
-		frequency: 'Once' | 'Daily' | 'Weekly' | 'Monthly';
-	}
+    name: string;
+    daysBeforeExpiry: number;
+    channelType: 'Email' | 'Webhook' | 'Slack' | 'Telegram';
+    channelConfig: string;
+    frequency: 'Once' | 'Daily' | 'Weekly' | 'Monthly';
+}
+export interface UpdateUserRequest {
+    firstName: string;
+    lastName: string;
+    timeZone?: string;
+    language?: string;
+    emailNotificationsEnabled: boolean;
+}
+
+export interface ChangePasswordRequest {
+    currentPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+}
 
 export type Language = 'uk' | 'en';
 

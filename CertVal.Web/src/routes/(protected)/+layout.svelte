@@ -6,13 +6,11 @@
 	let { children } = $props();
 
 	onMount(() => {
-		// Redirect to login if not authenticated
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
 		}
 	});
 
-	// Watch for auth state changes
 	$effect(() => {
 		if (!$auth.isAuthenticated && typeof window !== 'undefined') {
 			goto('/auth/login');
