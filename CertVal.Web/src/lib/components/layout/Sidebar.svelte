@@ -5,6 +5,7 @@
 	import { t } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import logoUrl from '$lib/assets/favicon.svg?url';
 
 	interface MenuItem {
 		label: string;
@@ -64,15 +65,25 @@
 	});
 </script>
 
-<aside class="drawer-side h-[calc(100vh-4rem)] top-16">
-	<label for="drawer-toggle" class="drawer-overlay"></label>
-	<div class="menu bg-base-100/90 backdrop-blur-xl min-h-full w-64 border-r border-base-300 transition-all duration-300">
-		<!-- Decorative gradient overlay -->
-		<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-secondary/5"></div>
+<aside class="drawer-side h-screen">
+	<label for="drawer-toggle" class="drawer-overlay lg:hidden"></label>
+	<div class="min-h-full w-64 bg-base-100 flex flex-col border-r border-base-200">
+		<!-- Logo Section -->
+		<div class="flex items-center gap-3 p-6 border-b border-base-200">
+			<div class="avatar">
+				<div class="w-10 rounded-xl overflow-hidden">
+					<img src="{logoUrl}" alt="CertVal logo" class="w-10 h-10 object-cover" />
+				</div>
+			</div>
+			<div class="flex flex-col">
+				<span class="font-bold text-xl text-base-content">CertVal</span>
+				<span class="text-xs text-base-content/60">Certificate Monitor</span>
+			</div>
+		</div>
 
-		<!-- Main Navigation -->
-		<div class="relative flex h-full flex-col py-4">
-			<ul class="menu-compact flex-1 space-y-1 px-2">
+		<!-- Navigation -->
+		<nav class="flex-1 p-4">
+			<ul class="menu menu-vertical w-full gap-1">
 				{#each menuItems as item, index}
 					{@const active = isActive(item.href)}
 					<li
@@ -81,23 +92,16 @@
 					>
 						<a
 							href={item.href}
-							class="group relative flex items-center gap-4 rounded-xl p-3 transition-all duration-300 hover:scale-[1.02] {active
-								? 'bg-primary/10 text-primary border border-primary/20 shadow-sm' 
+							class="group relative flex items-center gap-3 rounded-xl transition-all duration-300 hover:scale-[1.02] {active
+								? 'bg-primary text-primary-content shadow-lg' 
 								: 'hover:bg-base-200'}"
 							onmouseenter={() => (hoveredItem = item.href)}
 							onmouseleave={() => (hoveredItem = null)}
 						>
-							<!-- Active indicator -->
-							{#if active}
-								<div class="absolute -left-2 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-primary shadow-sm"></div>
-							{/if}
-
 							<!-- Icon container -->
 							<div class="relative flex h-6 w-6 items-center justify-center">
 								<svg
-									class="h-5 w-5 transition-all duration-300 {active
-										? 'text-primary'
-										: 'text-base-content/60 group-hover:text-base-content'} {hoveredItem === item.href ? 'scale-110' : ''}"
+									class="h-5 w-5 transition-all duration-300 {hoveredItem === item.href ? 'scale-110' : ''}"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke="currentColor"
@@ -114,11 +118,11 @@
 
 							<!-- Label and description -->
 							<div class="min-w-0 flex-1">
-								<span class="block font-medium transition-all duration-300 {active ? 'text-primary' : ''} truncate">
+								<span class="block font-medium transition-all duration-300 truncate">
 									{t(item.label, $language)}
 								</span>
 								{#if item.description && (hoveredItem === item.href || active)}
-									<span class="mt-0.5 block truncate text-xs text-base-content/60 {mounted ? 'animate-in slide-in-from-top-2 duration-200' : ''}">
+									<span class="mt-0.5 block truncate text-xs opacity-70 {mounted ? 'animate-in slide-in-from-top-2 duration-200' : ''}">
 										{item.description}
 									</span>
 								{/if}
@@ -126,13 +130,57 @@
 
 							<!-- Badge if present -->
 							{#if item.badge}
-								<div class="badge badge-primary badge-sm">{item.badge}</div>
+								<div class="badge badge-secondary badge-sm">{item.badge}</div>
 							{/if}
 						</a>
 					</li>
 				{/each}
 			</ul>
-		</div>
+		</nav>
+
+		<!-- User Section -->
+		{#if user}
+			<div class="p-4 border-t border-base-200">
+				<div class="flex items-center gap-3 p-3 rounded-xl bg-base-200/50">
+					<div class="avatar placeholder">
+						<div class="bg-primary text-primary-content rounded-full w-10">
+							<span class="text-sm font-semibold">
+								{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+							</span>
+						</div>
+					</div>
+					<div class="min-w-0 flex-1">
+						<div class="font-medium text-sm truncate">{user.fullName}</div>
+						<div class="text-xs text-base-content/60 truncate">{user.email}</div>
+					</div>
+					<div class="dropdown dropdown-top dropdown-end">
+						<div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+							</svg>
+						</div>
+						<ul class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border border-base-200">
+							<li>
+								<a href="/profile" class="flex items-center gap-3">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+									</svg>
+									{t('nav.profile', $language)}
+								</a>
+							</li>
+							<div class="divider my-0"></div>
+							<li>
+								<button onclick={handleLogout} class="flex items-center gap-3 text-error">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+									</svg>
+									{t('nav.logout', $language)}
+								</button>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</div>
 </aside>
-											

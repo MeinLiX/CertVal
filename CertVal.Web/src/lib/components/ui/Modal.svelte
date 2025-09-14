@@ -44,7 +44,7 @@
 <svelte:window onkeydown={handleKeyDown} />
 
 {#if isOpen}
-	<div
+	<dialog
 		class="modal modal-open"
 		onclick={handleBackdropClick}
 		onkeydown={(event) => {
@@ -52,7 +52,6 @@
 				onClose?.();
 			}
 		}}
-		role="dialog"
 		tabindex="0"
 		aria-modal="true"
 		aria-labelledby={title ? "modal-title" : undefined}
@@ -79,5 +78,5 @@
 			
 			{@render children?.()}
 		</div>
-	</div>
+	</dialog>
 {/if}
