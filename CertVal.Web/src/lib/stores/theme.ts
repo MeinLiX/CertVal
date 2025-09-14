@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark';
 
 interface ThemeState {
     theme: Theme;
@@ -10,7 +10,7 @@ interface ThemeState {
 
 function createThemeStore() {
     const { subscribe, set, update } = writable<ThemeState>({
-        theme: 'system',
+        theme: 'light',
         resolved: 'light'
     });
 
@@ -20,72 +20,41 @@ function createThemeStore() {
             if (!browser) return;
             
             localStorage.setItem('theme', newTheme);
-            
-            const resolved = getResolvedTheme(newTheme);
-            applyTheme(resolved);
+            applyTheme(newTheme);
             
             update(state => ({
                 ...state,
                 theme: newTheme,
-                resolved
+                resolved: newTheme
             }));
         },
         initialize: () => {
             if (!browser) return;
             
-            const savedTheme = localStorage.getItem('theme') as Theme || 'system';
-            const resolved = getResolvedTheme(savedTheme);
+            const savedTheme = localStorage.getItem('theme') as Theme;
+            const defaultTheme: Theme = savedTheme === 'dark' ? 'dark' : 'light';
             
-            applyTheme(resolved);
+            applyTheme(defaultTheme);
             
             set({
-                theme: savedTheme,
-                resolved
+                theme: defaultTheme,
+                resolved: defaultTheme
             });
-
-            // Listen for system theme changes
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-            const handleChange = () => {
-                update(state => {
-                    if (state.theme === 'system') {
-                        const newResolved = mediaQuery.matches ? 'dark' : 'light';
-                        applyTheme(newResolved);
-                        return {
-                            ...state,
-                            resolved: newResolved
-                        };
-                    }
-                    return state;
-                });
-            };
-
-            mediaQuery.addEventListener('change', handleChange);
-
-            return () => {
-                mediaQuery.removeEventListener('change', handleChange);
-            };
         }
     };
 }
 
-function getResolvedTheme(theme: Theme): 'light' | 'dark' {
-    if (theme === 'system') {
-        return browser && window.matchMedia('(prefers-color-scheme: dark)').matches 
-            ? 'dark' 
-            : 'light';
-    }
-    return theme;
-}
-
-function applyTheme(theme: 'light' | 'dark') {
+function applyTheme(theme: Theme) {
     if (!browser) return;
     
     const root = document.documentElement;
     
     if (theme === 'dark') {
         root.classList.add('dark');
+        root.setAttribute('data-theme', 'dark');
     } else {
         root.classList.remove('dark');
+        root.setAttribute('data-theme', 'light');
     }
 }
 

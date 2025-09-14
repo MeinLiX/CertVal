@@ -544,7 +544,7 @@
 		</div>
 
 		<!-- Certificates Table -->
-		<Card padding={false}>
+		<Card>
 			<div class="overflow-hidden">
 				<table class="min-w-full divide-y divide-gray-200">
 					<thead class="bg-gray-50">

@@ -45,8 +45,13 @@
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+		class="modal modal-open"
 		onclick={handleBackdropClick}
+		onkeydown={(event) => {
+			if (event.key === 'Escape') {
+				onClose?.();
+			}
+		}}
 		role="dialog"
 		tabindex="0"
 		aria-modal="true"
@@ -54,29 +59,25 @@
 	>
 		<div
 			bind:this={modalRef}
-			class="relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-full overflow-y-auto"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
+			class="modal-box relative animate-in slide-in-from-bottom-8 duration-300"
 			role="document"
 		>
-			<div class="p-6">
-				<div class="flex justify-between items-center mb-4">
-					{#if title}
-						<h3 id="modal-title" class="text-lg font-medium text-gray-900">{title}</h3>
-					{/if}
-					<button
-						class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-						onclick={onClose}
-						aria-label="Close modal"
-					>
-						<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
-				</div>
-				
-				{@render children?.()}
+			<div class="flex justify-between items-center mb-4">
+				{#if title}
+					<h3 id="modal-title" class="font-bold text-lg text-base-content">{title}</h3>
+				{/if}
+				<button
+					class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+					onclick={onClose}
+					aria-label="Close modal"
+				>
+					<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
 			</div>
+			
+			{@render children?.()}
 		</div>
 	</div>
 {/if}

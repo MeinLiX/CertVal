@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+@plugin 'daisyui';
 
 /* Custom scrollbar styling */
 ::-webkit-scrollbar {
@@ -9,28 +10,16 @@
 }
 
 ::-webkit-scrollbar-track {
-	background: theme('colors.gray.100');
-}
-
-.dark ::-webkit-scrollbar-track {
-	background: theme('colors.gray.800');
+	background: oklch(var(--b2));
 }
 
 ::-webkit-scrollbar-thumb {
-	background: theme('colors.gray.300');
+	background: oklch(var(--bc) / 0.2);
 	border-radius: 4px;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-	background: theme('colors.gray.600');
-}
-
 ::-webkit-scrollbar-thumb:hover {
-	background: theme('colors.gray.400');
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-	background: theme('colors.gray.500');
+	background: oklch(var(--bc) / 0.3);
 }
 
 /* Custom animations */
@@ -163,23 +152,6 @@
 	-webkit-backdrop-filter: blur(8px);
 }
 
-/* Custom focus styles */
-.focus-ring {
-	@apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
-}
-
-/* Smooth transitions for theme switching */
-* {
-	transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-	transition-duration: 200ms;
-}
-
-/* Typography enhancements */
-.text-balance {
-	text-wrap: balance;
-}
-
 /* Enhanced button hover effects */
 .btn-enhance {
 	position: relative;
@@ -199,42 +171,7 @@
 	transform: translateX(100%);
 }
 
-/* Loading spinner enhancement */
-@keyframes spin-smooth {
-	to {
-		transform: rotate(360deg);
-	}
-}
-
-.animate-spin-smooth {
-	animation: spin-smooth 1s linear infinite;
-}
-
-/* Card hover effects */
-.card-hover {
-	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-hover:hover {
-	transform: translateY(-2px) scale(1.02);
-	box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-}
-
-.dark .card-hover:hover {
-	box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
-}
-
-/* Enhanced form focus states */
-.form-input {
-	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.form-input:focus {
-	transform: translateY(-1px);
-	box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-}
-
-/* Status indicators */
+/* Status indicators with DaisyUI colors */
 .status-indicator {
 	position: relative;
 }
@@ -247,6 +184,22 @@
 	background: inherit;
 	opacity: 0.3;
 	animation: pulse-soft 2s infinite;
+}
+
+/* Progress bars using DaisyUI colors */
+.progress-bar {
+	background: linear-gradient(90deg, 
+		oklch(var(--p)), 
+		oklch(var(--s)), 
+		oklch(var(--a)));
+	background-size: 200% 100%;
+	animation: gradient-shift 2s ease infinite;
+}
+
+/* Custom selection colors using DaisyUI */
+::selection {
+	background: oklch(var(--p));
+	color: oklch(var(--pc));
 }
 
 /* Notification animations */
@@ -280,46 +233,9 @@
 	animation: slide-out-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Enhanced shadows for dark mode */
-.dark .shadow-sm {
-	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-}
-
-.dark .shadow {
-	box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-}
-
-.dark .shadow-md {
-	box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-}
-
-.dark .shadow-lg {
-	box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
-}
-
-.dark .shadow-xl {
-	box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
-}
-
-/* Progress bars */
-.progress-bar {
-	background: linear-gradient(90deg, 
-		theme('colors.blue.500'), 
-		theme('colors.indigo.500'), 
-		theme('colors.purple.500'));
-	background-size: 200% 100%;
-	animation: gradient-shift 2s ease infinite;
-}
-
-/* Custom selection colors */
-::selection {
-	background: theme('colors.blue.500');
-	color: white;
-}
-
-.dark ::selection {
-	background: theme('colors.blue.400');
-	color: theme('colors.gray.900');
+/* Typography enhancements */
+.text-balance {
+	text-wrap: balance;
 }
 
 /* Print styles */

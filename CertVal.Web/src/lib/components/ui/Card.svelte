@@ -2,55 +2,51 @@
 	interface Props {
 		title?: string;
 		children?: any;
-		padding?: boolean;
+		compact?: boolean;
+		glass?: boolean;
+		bordered?: boolean;
 		shadow?: boolean;
 		hover?: boolean;
-		glass?: boolean;
 		class?: string;
 	}
 
 	let { 
 		title, 
 		children, 
-		padding = true, 
-		shadow = true, 
-		hover = false, 
+		compact = false,
 		glass = false,
+		bordered = true,
+		shadow = true,
+		hover = false,
 		class: className = ''
 	}: Props = $props();
 
 	const classes = $derived(`
-		relative overflow-hidden rounded-2xl transition-all duration-300
-		${glass 
-			? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-800/50' 
-			: 'bg-white dark:bg-gray-900 border border-gray-200/50 dark:border-gray-800/50'
-		}
-		${shadow ? 'shadow-sm hover:shadow-lg dark:shadow-gray-900/20' : ''} 
-		${hover ? 'hover:scale-[1.02] cursor-pointer' : ''}
-		${padding ? 'p-6' : ''} 
+		card bg-base-100 transition-all duration-300
+		${glass ? 'glass' : ''} 
+		${bordered ? 'border border-base-300' : ''}
+		${shadow ? 'shadow-lg' : ''} 
+		${hover ? 'hover:scale-[1.02] hover:shadow-xl cursor-pointer' : ''}
+		${compact ? 'card-compact' : ''} 
 		${className}
 	`.trim().replace(/\s+/g, ' '));
 </script>
 
 <div class={classes}>
-	<!-- Decorative gradient overlay -->
-	{#if glass}
-		<div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent dark:from-gray-800/5 pointer-events-none"></div>
-	{/if}
-	
 	{#if title}
-		<div class="relative mb-6 flex items-center">
-			<div class="flex-1">
-				<h3 class="text-lg font-semibold text-gray-900 dark:text-white bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-					{title}
-				</h3>
+		<div class="card-body">
+			<h3 class="card-title text-base-content mb-4">
+				{title}
+				<!-- Decorative element -->
+				<div class="flex-1 h-px bg-gradient-to-r from-base-300 to-transparent ml-4"></div>
+			</h3>
+			<div class="relative">
+				{@render children?.()}
 			</div>
-			<!-- Decorative element -->
-			<div class="h-px flex-1 ml-4 bg-gradient-to-r from-gray-200 to-transparent dark:from-gray-700"></div>
+		</div>
+	{:else}
+		<div class="card-body">
+			{@render children?.()}
 		</div>
 	{/if}
-	
-	<div class="relative">
-		{@render children?.()}
-	</div>
 </div>

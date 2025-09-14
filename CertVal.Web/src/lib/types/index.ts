@@ -188,7 +188,7 @@ export interface CreateNotificationRuleRequest {
 
 export type Language = 'uk' | 'en';
 
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark';
 
 export interface ThemeState {
     theme: Theme;

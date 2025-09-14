@@ -59,7 +59,6 @@
 	const themes: { value: Theme; label: string; icon: string }[] = [
 		{ value: 'light', label: 'Light', icon: '☀️' },
 		{ value: 'dark', label: 'Dark', icon: '🌙' },
-		{ value: 'system', label: 'System', icon: '💻' }
 	];
 	const timezones = [
 		{ value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
