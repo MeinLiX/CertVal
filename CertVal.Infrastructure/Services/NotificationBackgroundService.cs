@@ -88,7 +88,7 @@ public class NotificationBackgroundService : BackgroundService
         var certificates = await unitOfWork.Certificates.GetByWorkspaceAsync(rule.WorkspaceId, cancellationToken);
 
         var expiringCertificates = certificates.Where(c =>
-            c.NotAfter.Date == targetDate.Date &&
+            c.NotAfter.Date <= targetDate.Date &&
             c.NotAfter > DateTime.UtcNow).ToList();
 
         foreach (var certificate in expiringCertificates)
