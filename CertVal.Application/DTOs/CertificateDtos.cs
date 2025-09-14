@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using CertVal.Core.Enums;
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
-using CertVal.Core.Enums;
 
 namespace CertVal.Application.DTOs;
 
