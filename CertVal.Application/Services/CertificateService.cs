@@ -158,11 +158,12 @@ public class CertificateService : ICertificateService
             var parsedCertificates = parseResult.Value.ToList();
             var mainCertificate = parsedCertificates.First();
 
-            var existingCert = await _unitOfWork.Certificates.GetByThumbprintAsync(mainCertificate.Thumbprint, cancellationToken);
+            var existingCert = await _unitOfWork.Certificates.GetByThumbprintInWorkspaceAsync(
+                mainCertificate.Thumbprint, request.WorkspaceId, cancellationToken);
             if (existingCert != null)
-                return Result.Failure<CertificateDto>("Certificate with this thumbprint already exists");
+                return Result.Failure<CertificateDto>("Certificate with this thumbprint already exists in this workspace");
 
-            var filePath = await SaveCertificateFile(certificateData, request.File.FileName);
+            var filePath = await SaveCertificateFileInWorkspace(certificateData, request.File.FileName, request.WorkspaceId);
 
             Certificate? parentCertificate = null;
 
@@ -238,6 +239,180 @@ public class CertificateService : ICertificateService
         {
             return Result.Failure<CertificateDto>($"Error processing certificate: {ex.Message}");
         }
+    }
+
+    public async Task<Result<BulkUploadResultDto>> UploadMultipleCertificatesAsync(UploadMultipleCertificatesRequest request, CancellationToken cancellationToken = default)
+    {
+        if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
+            return Result.Failure<BulkUploadResultDto>("User not authenticated");
+
+        if (!await CanAccessWorkspace(request.WorkspaceId, cancellationToken))
+            return Result.Failure<BulkUploadResultDto>("Access denied to this workspace");
+
+        if (request.Files == null || !request.Files.Any())
+            return Result.Failure<BulkUploadResultDto>("No files provided");
+
+        var results = new List<BulkUploadItemResult>();
+        var successCount = 0;
+        var skippedCount = 0;
+        var failureCount = 0;
+
+        var existingCertificates = await _unitOfWork.Certificates.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken);
+        var existingThumbprints = existingCertificates.Select(c => c.Thumbprint).ToHashSet();
+
+        foreach (var file in request.Files)
+        {
+            try
+            {
+                var validationResult = ValidateCertificateFile(file);
+                if (!validationResult.IsSuccess)
+                {
+                    results.Add(new BulkUploadItemResult
+                    {
+                        FileName = file.FileName,
+                        Success = false,
+                        ErrorMessage = validationResult.Error,
+                        IsSkipped = false
+                    });
+                    failureCount++;
+                    continue;
+                }
+
+                using var stream = new MemoryStream();
+                await file.CopyToAsync(stream, cancellationToken);
+                var certificateData = stream.ToArray();
+
+                var parseResult = await _certificateProcessor.ProcessCertificateAsync(
+                    certificateData, file.FileName, cancellationToken);
+
+                if (!parseResult.IsSuccess)
+                {
+                    results.Add(new BulkUploadItemResult
+                    {
+                        FileName = file.FileName,
+                        Success = false,
+                        ErrorMessage = parseResult.Error,
+                        IsSkipped = false
+                    });
+                    failureCount++;
+                    continue;
+                }
+
+                var parsedCertificates = parseResult.Value.ToList();
+                var mainCertificate = parsedCertificates.First();
+
+                if (existingThumbprints.Contains(mainCertificate.Thumbprint))
+                {
+                    results.Add(new BulkUploadItemResult
+                    {
+                        FileName = file.FileName,
+                        Success = false,
+                        ErrorMessage = "Certificate with this thumbprint already exists in this workspace",
+                        IsSkipped = true
+                    });
+                    skippedCount++;
+                    continue;
+                }
+
+                var filePath = await SaveCertificateFileInWorkspace(certificateData, file.FileName, request.WorkspaceId);
+
+                Certificate? certificate;
+
+                if (parsedCertificates.Count > 1)
+                {
+                    certificate = Certificate.Create(
+                        request.WorkspaceId,
+                        $"Bundle: {file.FileName}",
+                        "Certificate Bundle",
+                        $"BUNDLE_{Guid.NewGuid():N}",
+                        parsedCertificates.Min(c => c.NotBefore),
+                        parsedCertificates.Max(c => c.NotAfter),
+                        file.FileName,
+                        filePath,
+                        mainCertificate.Format,
+                        file.Length,
+                        null,
+                        null,
+                        true
+                    );
+
+                    await _unitOfWork.Certificates.AddAsync(certificate, cancellationToken);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                    foreach (var parsedCert in parsedCertificates)
+                    {
+                        var childCert = Certificate.Create(
+                            request.WorkspaceId,
+                            parsedCert.Subject,
+                            parsedCert.Issuer,
+                            parsedCert.Thumbprint,
+                            parsedCert.NotBefore,
+                            parsedCert.NotAfter,
+                            file.FileName,
+                            filePath,
+                            parsedCert.Format,
+                            file.Length,
+                            parsedCert.SerialNumber,
+                            certificate.Id
+                        );
+
+                        await _unitOfWork.Certificates.AddAsync(childCert, cancellationToken);
+                    }
+                }
+                else
+                {
+                    certificate = Certificate.Create(
+                        request.WorkspaceId,
+                        mainCertificate.Subject,
+                        mainCertificate.Issuer,
+                        mainCertificate.Thumbprint,
+                        mainCertificate.NotBefore,
+                        mainCertificate.NotAfter,
+                        file.FileName,
+                        filePath,
+                        mainCertificate.Format,
+                        file.Length,
+                        mainCertificate.SerialNumber
+                    );
+
+                    await _unitOfWork.Certificates.AddAsync(certificate, cancellationToken);
+                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                existingThumbprints.Add(mainCertificate.Thumbprint);
+
+                results.Add(new BulkUploadItemResult
+                {
+                    FileName = file.FileName,
+                    Success = true,
+                    CertificateId = certificate.Id,
+                    Subject = certificate.Subject,
+                    IsSkipped = false
+                });
+                successCount++;
+            }
+            catch (Exception ex)
+            {
+                results.Add(new BulkUploadItemResult
+                {
+                    FileName = file.FileName,
+                    Success = false,
+                    ErrorMessage = $"Unexpected error: {ex.Message}",
+                    IsSkipped = false
+                });
+                failureCount++;
+            }
+        }
+
+        return Result.Success(new BulkUploadResultDto
+        {
+            TotalFiles = request.Files.Count(),
+            SuccessCount = successCount,
+            SkippedCount = skippedCount,
+            FailureCount = failureCount,
+            Results = results
+        });
     }
 
     public async Task<Result> DeleteCertificateAsync(Guid certificateId, CancellationToken cancellationToken = default)
@@ -320,9 +495,9 @@ public class CertificateService : ICertificateService
         return Result.Success();
     }
 
-    private async Task<string> SaveCertificateFile(byte[] data, string fileName)
+    private async Task<string> SaveCertificateFileInWorkspace(byte[] data, string fileName, Guid workspaceId)
     {
-        var uploadsDir = Path.Combine("wwwroot", "uploads", "certificates");
+        var uploadsDir = Path.Combine("wwwroot", "uploads", "certificates", workspaceId.ToString());
         Directory.CreateDirectory(uploadsDir);
 
         var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";

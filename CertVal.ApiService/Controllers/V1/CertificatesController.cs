@@ -74,6 +74,26 @@ public class CertificatesController : ControllerBase
         return CreatedAtAction(nameof(GetCertificate), new { id = result.Value.Id }, result.Value);
     }
 
+    [HttpPost("upload/multiple")]
+    [ProducesResponseType(typeof(BulkUploadResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<BulkUploadResultDto>> UploadMultipleCertificates([FromForm] UploadMultipleCertificatesRequest request)
+    {
+        var result = await _certificateService.UploadMultipleCertificatesAsync(request);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error.Contains("Access denied"))
+                return Forbid();
+
+            return BadRequest(new { message = result.Error });
+        }
+
+        return Ok(result.Value);
+    }
+
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

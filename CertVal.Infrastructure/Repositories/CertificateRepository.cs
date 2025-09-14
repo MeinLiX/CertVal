@@ -48,6 +48,13 @@ public class CertificateRepository : BaseRepository<Certificate>, ICertificateRe
             .FirstOrDefaultAsync(c => c.Thumbprint == thumbprint, cancellationToken);
     }
 
+    public async Task<Certificate?> GetByThumbprintInWorkspaceAsync(string thumbprint, Guid workspaceId, CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .Include(c => c.Workspace)
+            .FirstOrDefaultAsync(c => c.Thumbprint == thumbprint && c.WorkspaceId == workspaceId, cancellationToken);
+    }
+
     public async Task<IEnumerable<Certificate>> GetBundleContentsAsync(Guid parentCertificateId, CancellationToken cancellationToken = default)
     {
         return await DbSet

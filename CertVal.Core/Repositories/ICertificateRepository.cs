@@ -8,6 +8,7 @@ public interface ICertificateRepository : IRepository<Certificate>
     Task<IEnumerable<Certificate>> GetExpiringAsync(int daysAhead = 30, CancellationToken cancellationToken = default);
     Task<IEnumerable<Certificate>> GetExpiredAsync(CancellationToken cancellationToken = default);
     Task<Certificate?> GetByThumbprintAsync(string thumbprint, CancellationToken cancellationToken = default);
+    Task<Certificate?> GetByThumbprintInWorkspaceAsync(string thumbprint, Guid workspaceId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Certificate>> GetBundleContentsAsync(Guid parentCertificateId, CancellationToken cancellationToken = default);
     Task<int> GetWorkspaceCertificateCountAsync(Guid workspaceId, CancellationToken cancellationToken = default);
 }

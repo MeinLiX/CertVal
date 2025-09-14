@@ -38,6 +38,17 @@ public record UploadCertificateRequest
     public string? Description { get; init; }
 }
 
+public record UploadMultipleCertificatesRequest
+{
+    [Required]
+    public Guid WorkspaceId { get; init; }
+
+    [Required]
+    public IEnumerable<IFormFile> Files { get; init; } = null!;
+
+    public string? Description { get; init; }
+}
+
 public record CertificateFilterRequest
 {
     public Guid? WorkspaceId { get; init; }
