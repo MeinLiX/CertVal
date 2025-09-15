@@ -12,6 +12,13 @@ var db = builder.AddSqlServer("CertVal-sql-server", port: sqlport, password: sql
 
 var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-server")
     .WithReference(db)
-    .WaitFor(db);
+    .WaitFor(db)
+    .PublishAsDockerFile();
+
+var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
+    .WithNpmPackageInstallation()
+    .WithReference(apiService).WaitFor(apiService)
+    .WithExternalHttpEndpoints()
+    .PublishAsDockerFile();
 
 builder.Build().Run();
