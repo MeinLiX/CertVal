@@ -20,16 +20,19 @@ public class EmailWorkerService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Email Worker Service starting...");
-
         try
         {
+            _logger.LogInformation("Email Worker Service starting...");
+
             await _rabbitMqService.StartConsumingAsync(stoppingToken);
 
-            _logger.LogInformation("Email Worker Service started successfully");
+            _logger.LogInformation("Email Worker Service started successfully and consuming messages");
 
-            // Keep the service running until cancellation is requested
-            await Task.Delay(Timeout.Infinite, stoppingToken);
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                _logger.LogDebug("Email Worker Service is running...");
+            }
         }
         catch (OperationCanceledException)
         {
@@ -39,6 +42,7 @@ public class EmailWorkerService : BackgroundService
         {
             _logger.LogCritical(ex, "Email Worker Service failed to start");
             _hostApplicationLifetime.StopApplication();
+            throw;
         }
     }
 
@@ -46,7 +50,15 @@ public class EmailWorkerService : BackgroundService
     {
         _logger.LogInformation("Email Worker Service is stopping...");
 
-        await _rabbitMqService.StopConsumingAsync();
+        try
+        {
+            await _rabbitMqService.StopConsumingAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error stopping RabbitMQ service");
+        }
+
         await base.StopAsync(cancellationToken);
 
         _logger.LogInformation("Email Worker Service stopped");

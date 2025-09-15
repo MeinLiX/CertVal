@@ -100,7 +100,7 @@ public class RabbitMqService : IRabbitMqService
     {
         if (_channel == null) throw new InvalidOperationException("Channel not initialized");
 
-        var consumer = new AsyncEventingBasicConsumer(_channel);
+        var consumer = new EventingBasicConsumer(_channel);
 
         consumer.Received += async (model, ea) =>
         {
@@ -147,9 +147,12 @@ public class RabbitMqService : IRabbitMqService
                 return;
             }
 
+            _logger.LogInformation("Processing email message {MessageId} of type {Type} to {Email}",
+                message.MessageId, message.Type, message.ToEmail);
+
             if (message.RetryCount >= _messagingConfig.MaxRetryAttempts)
             {
-                _logger.LogError("Message {MessageId} exceeded max retry attempts ({MaxRetries}). Moving to dead letter queue.",
+                _logger.LogError("Message {MessageId} exceeded max retry attempts ({MaxRetries}). Discarding message.",
                     message.MessageId, _messagingConfig.MaxRetryAttempts);
 
                 _channel!.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: false);

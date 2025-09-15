@@ -40,8 +40,6 @@ public class EmailTemplateService : IEmailTemplateService
 
         var subject = $"Welcome to {_templateSettings.CompanyName}! Please confirm your email";
 
-        // Використовуємо $$""" для того, щоб компілятор не плутав фігурні дужки CSS {} з інтерполяцією C# {}.
-        // Тепер для інтерполяції ми використовуємо подвійні фігурні дужки {{змінна}}.
         var htmlBody = $$"""
             <!DOCTYPE html>
             <html>

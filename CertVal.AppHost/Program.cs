@@ -19,6 +19,8 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-service")
     .WithReference(rabbitmq)
     .WithMessagingConfig(builder.Configuration)
+    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development")
+    .WithEnvironment("DOTNET_ENVIRONMENT", "Development")
     .WaitFor(rabbitmq);
 
 var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-server")
@@ -27,6 +29,7 @@ var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-se
     .WithMessagingConfig(builder.Configuration)
     .WaitFor(db)
     .WaitFor(rabbitmq)
+    .WaitFor(emailService)
     .PublishAsDockerFile();
 
 var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
