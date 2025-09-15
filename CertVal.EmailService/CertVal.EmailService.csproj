@@ -18,6 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\CertVal.Core\CertVal.Core.csproj" />
 		<ProjectReference Include="..\CertVal.ServiceDefaults\CertVal.ServiceDefaults.csproj" />
 	</ItemGroup>
 

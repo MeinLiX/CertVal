@@ -1,11 +1,8 @@
-﻿using CertVal.EmailService.Configuration;
+﻿using CertVal.Core.Messaging;
+using CertVal.EmailService.Configuration;
 using CertVal.EmailService.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace CertVal.EmailService.Services;
 

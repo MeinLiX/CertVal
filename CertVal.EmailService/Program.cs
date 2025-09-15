@@ -1,4 +1,5 @@
-﻿using CertVal.EmailService;
+﻿using CertVal.Core.Messaging;
+using CertVal.EmailService;
 using CertVal.EmailService.Configuration;
 using CertVal.EmailService.Services;
 
@@ -10,9 +11,17 @@ builder.AddServiceDefaults();
 // Add RabbitMQ using Aspire
 builder.AddRabbitMQClient("rabbitmq");
 
+// Configure messaging settings from environment variables (set by Aspire)
+builder.Services.AddOptions<MessagingConfiguration>()
+    .BindConfiguration(MessagingConfiguration.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 // Configure EmailService settings
-builder.Services.Configure<EmailServiceConfiguration>(
-    builder.Configuration.GetSection(EmailServiceConfiguration.SectionName));
+builder.Services.AddOptions<EmailServiceConfiguration>()
+    .BindConfiguration(EmailServiceConfiguration.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // Register services
 builder.Services.AddSingleton<IEmailTemplateService, EmailTemplateService>();

@@ -1,6 +1,6 @@
 ﻿using CertVal.Core.Events;
+using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
-using CertVal.Infrastructure.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace CertVal.Infrastructure.Events;
@@ -56,7 +56,6 @@ public class EmailNotificationEventHandlers :
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to handle UserRegisteredEvent for user {UserId}", domainEvent.UserId);
-            // Don't throw - we don't want to fail the user registration process
         }
     }
 
@@ -75,7 +74,6 @@ public class EmailNotificationEventHandlers :
                 return;
             }
 
-            // Get the membership to determine role and invitation token
             var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(
                 domainEvent.WorkspaceId, domainEvent.UserId, cancellationToken);
 
@@ -86,7 +84,6 @@ public class EmailNotificationEventHandlers :
                 return;
             }
 
-            // Generate invitation token (you might want to add this to your WorkspaceMember entity)
             var invitationToken = Guid.NewGuid().ToString();
 
             await _emailPublisher.PublishWorkspaceInvitationAsync(
@@ -160,7 +157,7 @@ public class EmailNotificationEventHandlers :
             daysUntilExpiry,
             cancellationToken);
 
-        // Optionally, send to all workspace members with notification permissions
+        // Send to all workspace members with notification permissions
         var members = await _unitOfWork.WorkspaceMembers.GetByWorkspaceAsync(workspaceId, cancellationToken);
         var membersWithNotifications = members.Where(m =>
             m.Status == Core.Enums.WorkspaceMemberStatus.Active &&

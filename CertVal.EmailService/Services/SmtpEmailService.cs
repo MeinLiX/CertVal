@@ -1,5 +1,5 @@
-﻿using CertVal.EmailService.Configuration;
-using CertVal.EmailService.Models;
+﻿using CertVal.Core.Messaging;
+using CertVal.EmailService.Configuration;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;

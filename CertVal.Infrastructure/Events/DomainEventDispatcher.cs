@@ -28,8 +28,10 @@ public class DomainEventDispatcher : IDomainEventDispatcher
             _logger.LogDebug("Publishing domain event: {EventType} with ID {EventId}",
                 domainEvent.GetType().Name, domainEvent.Id);
 
+            using var scope = _serviceProvider.CreateScope();
+
             var handlerType = typeof(IDomainEventHandler<>).MakeGenericType(domainEvent.GetType());
-            var handlers = _serviceProvider.GetServices(handlerType);
+            var handlers = scope.ServiceProvider.GetServices(handlerType);
 
             var tasks = new List<Task>();
             foreach (var handler in handlers)
@@ -37,7 +39,23 @@ public class DomainEventDispatcher : IDomainEventDispatcher
                 var handleMethod = handlerType.GetMethod("HandleAsync");
                 if (handleMethod != null)
                 {
-                    var task = (Task)handleMethod.Invoke(handler, [domainEvent, cancellationToken])!;
+                    var task = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var result = handleMethod.Invoke(handler, [domainEvent, cancellationToken]);
+                            if (result is Task taskResult)
+                            {
+                                await taskResult;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error in domain event handler {HandlerType} for event {EventType}",
+                                handler?.GetType().Name, domainEvent.GetType().Name);
+                        }
+                    }, cancellationToken);
+
                     tasks.Add(task);
                 }
             }
@@ -51,7 +69,6 @@ public class DomainEventDispatcher : IDomainEventDispatcher
         {
             _logger.LogError(ex, "Error publishing domain event: {EventType} with ID {EventId}",
                 domainEvent.GetType().Name, domainEvent.Id);
-            throw;
         }
     }
 
@@ -65,8 +82,10 @@ public class DomainEventDispatcher : IDomainEventDispatcher
 
         _logger.LogDebug("Publishing {EventCount} domain events", events.Count);
 
-        var tasks = events.Select(domainEvent => PublishAsync(domainEvent, cancellationToken));
-        await Task.WhenAll(tasks);
+        foreach (var domainEvent in events)
+        {
+            await PublishAsync(domainEvent, cancellationToken);
+        }
 
         _logger.LogDebug("Successfully published {EventCount} domain events", events.Count);
     }

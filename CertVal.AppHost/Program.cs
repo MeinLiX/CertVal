@@ -1,3 +1,5 @@
+using CertVal.AppHost.Extensions;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 var sqlportParametr = builder.AddParameter("database-port", secret: false);
@@ -16,11 +18,13 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 
 var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-service")
     .WithReference(rabbitmq)
+    .WithMessagingConfig(builder.Configuration)
     .WaitFor(rabbitmq);
 
 var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-server")
     .WithReference(db)
     .WithReference(rabbitmq)
+    .WithMessagingConfig(builder.Configuration)
     .WaitFor(db)
     .WaitFor(rabbitmq)
     .PublishAsDockerFile();
@@ -31,6 +35,4 @@ var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
-builder.Build().Run();
-
-builder.Build().Run();
+await builder.Build().RunAsync();

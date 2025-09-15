@@ -1,6 +1,4 @@
-﻿using CertVal.Infrastructure.Messaging.Models;
-
-namespace CertVal.Infrastructure.Messaging;
+﻿namespace CertVal.Core.Messaging;
 
 public interface IEmailNotificationPublisher : IAsyncDisposable
 {

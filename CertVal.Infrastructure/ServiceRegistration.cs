@@ -1,5 +1,6 @@
 ﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Core.Events;
+using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Authentication;
 using CertVal.Infrastructure.Data;
@@ -14,8 +15,7 @@ namespace CertVal.Infrastructure;
 
 public static class ServiceRegistration
 {
-    public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
@@ -99,12 +99,17 @@ public static class ServiceRegistration
         }
     }
 
-    public static IServiceCollection AddMessaging(
-    this IServiceCollection services)
+    public static IServiceCollection AddMessaging(this IServiceCollection services)
     {
+        // Add messaging configuration from Core
+        services.AddOptions<MessagingConfiguration>()
+            .BindConfiguration(MessagingConfiguration.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Register the RabbitMQ implementation
         services.AddSingleton<IEmailNotificationPublisher, RabbitMqEmailNotificationPublisher>();
 
         return services;
     }
-
 }

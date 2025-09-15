@@ -1,4 +1,4 @@
-﻿using CertVal.EmailService.Models;
+﻿using CertVal.Core.Messaging;
 
 namespace CertVal.EmailService.Services;
 

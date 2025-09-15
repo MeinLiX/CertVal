@@ -1,4 +1,6 @@
-﻿namespace CertVal.Infrastructure.Messaging.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace CertVal.Core.Messaging;
 
 public record EmailNotificationMessage
 {
@@ -12,6 +14,7 @@ public record EmailNotificationMessage
     public string? CorrelationId { get; init; }
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum EmailNotificationType
 {
     UserRegistered = 1,

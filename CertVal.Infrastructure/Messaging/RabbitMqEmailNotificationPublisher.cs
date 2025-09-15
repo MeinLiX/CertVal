@@ -1,6 +1,7 @@
-﻿using CertVal.Infrastructure.Messaging.Models;
+﻿using CertVal.Core.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
@@ -10,21 +11,20 @@ namespace CertVal.Infrastructure.Messaging;
 public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
 {
     private readonly IConnection _connection;
+    private readonly MessagingConfiguration _messagingConfig;
     private readonly IConfiguration _configuration;
     private readonly ILogger<RabbitMqEmailNotificationPublisher> _logger;
     private readonly Lazy<Task<IModel>> _channelLazy;
     private bool _disposed;
 
-    //TODO OUT to env
-    private const string ExchangeName = "certval-notifications";
-    private const string EmailRoutingKey = "email";
-
     public RabbitMqEmailNotificationPublisher(
         IConnection connection,
+        IOptions<MessagingConfiguration> messagingOptions,
         IConfiguration configuration,
         ILogger<RabbitMqEmailNotificationPublisher> logger)
     {
         _connection = connection;
+        _messagingConfig = messagingOptions.Value;
         _configuration = configuration;
         _logger = logger;
 
@@ -47,7 +47,7 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
             var properties = channel.CreateBasicProperties();
             properties.MessageId = message.MessageId;
             properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            properties.Persistent = true;
+            properties.Persistent = _messagingConfig.PersistentMessages;
             properties.Type = message.Type.ToString();
 
             if (!string.IsNullOrEmpty(message.CorrelationId))
@@ -56,8 +56,8 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
             }
 
             channel.BasicPublish(
-                exchange: ExchangeName,
-                routingKey: EmailRoutingKey,
+                exchange: _messagingConfig.ExchangeName,
+                routingKey: _messagingConfig.RoutingKey,
                 mandatory: false,
                 basicProperties: properties,
                 body: body);
@@ -178,12 +178,13 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
         {
             var channel = _connection.CreateModel();
 
+            // Declare exchange
             channel.ExchangeDeclare(
-                exchange: ExchangeName,
+                exchange: _messagingConfig.ExchangeName,
                 type: ExchangeType.Direct,
-                durable: true);
+                durable: _messagingConfig.DurableQueues);
 
-            _logger.LogDebug("RabbitMQ channel created and exchange declared: {ExchangeName}", ExchangeName);
+            _logger.LogDebug("RabbitMQ channel created and exchange declared: {ExchangeName}", _messagingConfig.ExchangeName);
 
             return await Task.FromResult(channel);
         }
@@ -202,8 +203,11 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
         {
             if (_channelLazy.IsValueCreated)
             {
-                var channel = _channelLazy.Value;
-                channel?.Dispose();
+                var channelTask = _channelLazy.Value;
+                if (channelTask.IsCompletedSuccessfully)
+                {
+                    channelTask.Result?.Dispose();
+                }
             }
         }
         catch (Exception ex)

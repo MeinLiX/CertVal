@@ -1,6 +1,4 @@
-﻿using CertVal.EmailService.Models;
-
-namespace CertVal.EmailService.Services;
+﻿namespace CertVal.EmailService.Services;
 
 public interface IRabbitMqService : IAsyncDisposable
 {
