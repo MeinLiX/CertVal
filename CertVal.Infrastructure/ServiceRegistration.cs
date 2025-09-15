@@ -4,6 +4,7 @@ using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Authentication;
 using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Events;
+using CertVal.Infrastructure.Messaging;
 using CertVal.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,7 @@ public static class ServiceRegistration
 
         AddDomainEventHandlers(services);
         AddRepositories(services);
+        services.AddMessaging();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
@@ -55,6 +57,12 @@ public static class ServiceRegistration
         services.AddScoped<IDomainEventHandler<ApiTokenCreatedEvent>, ApiTokenEventHandlers>();
         services.AddScoped<IDomainEventHandler<ApiTokenUsedEvent>, ApiTokenEventHandlers>();
         services.AddScoped<IDomainEventHandler<ApiTokenRevokedEvent>, ApiTokenEventHandlers>();
+
+        // Email notification event handlers
+        services.AddScoped<IDomainEventHandler<UserRegisteredEvent>, EmailNotificationEventHandlers>();
+        services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>, EmailNotificationEventHandlers>();
+        services.AddScoped<IDomainEventHandler<CertificateExpiringEvent>, EmailNotificationEventHandlers>();
+        services.AddScoped<IDomainEventHandler<CertificateExpiredEvent>, EmailNotificationEventHandlers>();
     }
 
     private static void AddRepositories(IServiceCollection services)
@@ -90,4 +98,13 @@ public static class ServiceRegistration
             throw;
         }
     }
+
+    public static IServiceCollection AddMessaging(
+    this IServiceCollection services)
+    {
+        services.AddSingleton<IEmailNotificationPublisher, RabbitMqEmailNotificationPublisher>();
+
+        return services;
+    }
+
 }

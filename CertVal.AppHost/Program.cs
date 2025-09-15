@@ -10,9 +10,19 @@ var db = builder.AddSqlServer("CertVal-sql-server", port: sqlport, password: sql
     .WithLifetime(ContainerLifetime.Persistent)
     .AddDatabase("CertVal-database");
 
+var rabbitmq = builder.AddRabbitMQ("rabbitmq")
+    .WithManagementPlugin()
+    .WithLifetime(ContainerLifetime.Persistent);
+
+var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-service")
+    .WithReference(rabbitmq)
+    .WaitFor(rabbitmq);
+
 var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-server")
     .WithReference(db)
+    .WithReference(rabbitmq)
     .WaitFor(db)
+    .WaitFor(rabbitmq)
     .PublishAsDockerFile();
 
 var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
@@ -20,5 +30,7 @@ var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
     .WithReference(apiService).WaitFor(apiService)
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
+
+builder.Build().Run();
 
 builder.Build().Run();

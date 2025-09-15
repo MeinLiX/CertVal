@@ -12,6 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+builder.AddRabbitMQClient("rabbitmq");
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

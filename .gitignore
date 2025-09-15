@@ -56,4 +56,4 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /CertVal.ApiService/wwwroot/uploads/certificates
-/CertVal.ApiService/appsettings.Development.json
+appsettings.*.json
