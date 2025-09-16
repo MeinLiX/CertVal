@@ -13,6 +13,7 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { Certificate, Workspace, PagedResult, BulkUploadResultDto } from '$lib/types';
 
 	let certificates = $state<Certificate[]>([]);
@@ -145,14 +146,7 @@
 			<p class="mt-1 text-base-content/70">{t('certificates.subtitle', $language)}</p>
 		</div>
 		<Button onclick={() => (showUploadModal = true)}>
-			<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-				><path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-				/></svg
-			>
+			<Icon name="upload" />
 			{t('certificates.upload', $language)}
 		</Button>
 	</div>
@@ -164,7 +158,7 @@
 				value={filters.searchTerm}
 				oninput={(e) => updateUrlParams({ search: (e.target as HTMLInputElement).value })}
 				placeholder={t('certificates.searchPlaceholder', $language)}
-				icon="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+				icon="search"
 			/>
 			<Select
 				label={t('common.workspace', $language)}

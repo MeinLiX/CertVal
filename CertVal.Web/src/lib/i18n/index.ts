@@ -45,7 +45,10 @@ export const translations = {
             of: 'з',
             to: 'до',
             actions: 'Дії',
-            created: 'Створено'
+            created: 'Створено',
+            clickToUpload: 'Натисніть, щоб завантажити',
+			orDragAndDrop: 'або перетягніть файли',
+			selectedFiles: 'Обрані файли:'
         },
         nav: {
             dashboard: 'Панель керування',
@@ -387,7 +390,10 @@ export const translations = {
             of: 'of',
             to: 'to',
             actions: 'Actions',
-            created: 'Created'
+            created: 'Created',
+            clickToUpload: 'Click to upload',
+			orDragAndDrop: 'or drag and drop',
+			selectedFiles: 'Selected files:'
         },
         nav: {
             dashboard: 'Dashboard',

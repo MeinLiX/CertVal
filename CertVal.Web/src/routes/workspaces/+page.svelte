@@ -6,12 +6,13 @@
 	import { language } from '$lib/stores/language';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
-	import { formatDate } from '$lib/utils/date';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { Workspace, CreateWorkspaceRequest, PagedResult } from '$lib/types';
+
 	let workspaces = $state<Workspace[]>([]);
 	let isLoading = $state(true);
 	let showCreateModal = $state(false);
@@ -91,14 +92,7 @@
 			<p class="mt-1 text-base-content/70">{t('workspaces.subtitle', $language)}</p>
 		</div>
 		<Button onclick={openCreateModal}>
-			<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-				><path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-				/></svg
-			>
+			<Icon name="plus" />
 			{t('workspaces.create', $language)}
 		</Button>
 	</div>
@@ -113,14 +107,7 @@
 		<div class="py-16 text-center">
 			<div class="placeholder avatar">
 				<div class="w-24 rounded-full bg-base-200 text-base-content/50">
-					<svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-						><path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M19 11H5m14-7v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2zM9 11h6"
-						/></svg
-					>
+					<Icon name="workspaceIcon" class="h-12 w-12" />
 				</div>
 			</div>
 			<h3 class="mt-4 text-xl font-semibold">{t('workspaces.empty', $language)}</h3>
@@ -155,26 +142,11 @@ flex items-center justify-between"
 
 					<div class="mt-4 flex justify-between text-sm">
 						<div class="flex items-center gap-2">
-							<svg class="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-								><path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622"
-								/></svg
-							>
+							<Icon name="certificates" class="h-4 w-4 opacity-50" />
 							<span>{workspace.certificateCount} {t('workspaces.certificates', $language)}</span>
 						</div>
 						<div class="flex items-center gap-2">
-							<svg class="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-								><path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 
-015 0z"
-								/></svg
-							>
+							<Icon name="members" class="h-4 w-4 opacity-50" />
 							<span>{workspace.memberCount} {t('workspaces.members', $language)}</span>
 						</div>
 					</div>
@@ -205,18 +177,7 @@ flex items-center justify-between"
 	<form onsubmit={handleCreateWorkspace} class="space-y-4">
 		{#if errors.general}
 			<div role="alert" class="alert alert-error text-sm">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-6 w-6 shrink-0 stroke-current"
-					fill="none"
-					viewBox="0 0 24 24"
-					><path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-					/></svg
-				>
+				<Icon name="error" class="h-6 w-6 shrink-0 stroke-current" />
 				<span>{errors.general}</span>
 			</div>
 		{/if}
