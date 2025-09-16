@@ -31,3 +31,10 @@ public record UpdateMemberRoleRequest
     [Required]
     public WorkspaceRole Role { get; init; }
 }
+
+public record TransferOwnershipRequest
+{
+    [Required]
+    [EmailAddress]
+    public string NewOwnerEmail { get; init; } = string.Empty;
+}
