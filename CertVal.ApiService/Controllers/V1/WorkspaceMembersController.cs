@@ -73,6 +73,10 @@ public class WorkspaceMembersController : ControllerBase
         if (user == null)
             return BadRequest(new { message = "User with this email does not exist" });
 
+        var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
+        if (workspace?.OwnerId == user.Id)
+            return BadRequest(new { message = "Workspace owner cannot invite themselves" });
+
         var existingMember = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, user.Id);
         if (existingMember != null)
             return BadRequest(new { message = "User is already a member of this workspace" });
@@ -161,6 +165,152 @@ public class WorkspaceMembersController : ControllerBase
         };
 
         return Ok(memberDto);
+    }
+
+    [HttpDelete("{memberId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RemoveMember(Guid workspaceId, Guid memberId)
+    {
+        if (!await CanManageWorkspace(workspaceId))
+            return Forbid();
+
+        var member = await _unitOfWork.WorkspaceMembers.GetByIdAsync(memberId);
+        if (member == null || member.WorkspaceId != workspaceId)
+            return NotFound();
+
+        var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
+        if (workspace?.OwnerId == member.UserId && member.UserId == _currentUser.UserId)
+            return BadRequest(new { message = "Workspace owner cannot remove themselves. Transfer ownership first." });
+
+        member.Deactivate();
+        await _unitOfWork.WorkspaceMembers.UpdateAsync(member);
+        await _unitOfWork.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPost("leave")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> LeaveWorkspace(Guid workspaceId)
+    {
+        if (!_currentUser.UserId.HasValue)
+            return Unauthorized();
+
+        var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
+        if (workspace == null)
+            return NotFound();
+
+        if (workspace.OwnerId == _currentUser.UserId.Value)
+            return BadRequest(new { message = "Workspace owner cannot leave. Transfer ownership first." });
+
+        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value);
+        if (membership == null)
+            return NotFound();
+
+        membership.Deactivate();
+        await _unitOfWork.WorkspaceMembers.UpdateAsync(membership);
+        await _unitOfWork.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPost("transfer-ownership")]
+    [ProducesResponseType(typeof(WorkspaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<WorkspaceDto>> TransferOwnership(
+        Guid workspaceId,
+        TransferOwnershipRequest request)
+    {
+        if (!_currentUser.UserId.HasValue)
+            return Unauthorized();
+
+        var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
+        if (workspace == null)
+            return NotFound();
+
+        if (workspace.OwnerId != _currentUser.UserId.Value)
+            return Forbid();
+
+        var newOwner = await _unitOfWork.Users.GetByEmailAsync(request.NewOwnerEmail);
+        if (newOwner == null)
+            return BadRequest(new { message = "User with this email does not exist" });
+
+        if (!newOwner.IsEmailConfirmed)
+            return BadRequest(new { message = "New owner must have confirmed email address" });
+
+        if (newOwner.Id == workspace.OwnerId)
+            return BadRequest(new { message = "User is already the workspace owner" });
+
+        var existingMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, newOwner.Id);
+
+        await _unitOfWork.BeginTransactionAsync();
+
+        try
+        {
+            var oldOwnerId = workspace.OwnerId;
+            workspace.TransferOwnership(newOwner.Id);
+            await _unitOfWork.Workspaces.UpdateAsync(workspace);
+
+            if (existingMembership != null)
+            {
+                await _unitOfWork.WorkspaceMembers.DeleteAsync(existingMembership.Id);
+            }
+
+            var oldOwnerMembership = WorkspaceMember.Create(
+                workspaceId,
+                oldOwnerId,
+                Core.Enums.WorkspaceRole.Admin,
+                newOwner.Id
+            );
+            oldOwnerMembership.AcceptInvitation();
+
+            await _unitOfWork.WorkspaceMembers.AddAsync(oldOwnerMembership);
+
+            await _unitOfWork.CommitTransactionAsync();
+
+            workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
+
+            var workspaceDto = new WorkspaceDto
+            {
+                Id = workspace!.Id,
+                Name = workspace.Name,
+                Description = workspace.Description,
+                OwnerId = workspace.OwnerId,
+                Owner = new UserDto
+                {
+                    Id = workspace.Owner.Id,
+                    Email = workspace.Owner.Email,
+                    FirstName = workspace.Owner.FirstName,
+                    LastName = workspace.Owner.LastName,
+                    FullName = workspace.Owner.FullName,
+                    IsEmailConfirmed = workspace.Owner.IsEmailConfirmed,
+                    LastLoginAt = workspace.Owner.LastLoginAt,
+                    Status = workspace.Owner.Status.ToString(),
+                    CreatedAt = workspace.Owner.CreatedAt
+                },
+                MaxCertificates = workspace.MaxCertificates,
+                IsPublic = workspace.IsPublic,
+                AllowMemberInvites = workspace.AllowMemberInvites,
+                CertificateCount = await _unitOfWork.Certificates.GetWorkspaceCertificateCountAsync(workspace.Id),
+                MemberCount = workspace.Members.Count + 1,
+                CreatedAt = workspace.CreatedAt,
+                UpdatedAt = workspace.UpdatedAt
+            };
+
+            return Ok(workspaceDto);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 
     private async Task<bool> CanAccessWorkspace(Guid workspaceId)

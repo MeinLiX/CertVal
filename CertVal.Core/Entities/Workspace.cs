@@ -70,4 +70,19 @@ public class Workspace : BaseEntity
         AllowMemberInvites = allowMemberInvites;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void TransferOwnership(Guid newOwnerId)
+    {
+        if (newOwnerId == Guid.Empty)
+            throw new ArgumentException("New owner ID cannot be empty", nameof(newOwnerId));
+
+        if (newOwnerId == OwnerId)
+            throw new InvalidOperationException("Cannot transfer ownership to the same user");
+
+        var oldOwnerId = OwnerId;
+        OwnerId = newOwnerId;
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new WorkspaceOwnershipTransferredEvent(Id, oldOwnerId, newOwnerId));
+    }
 }
