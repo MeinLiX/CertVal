@@ -17,7 +17,8 @@
 		Certificate,
 		PagedResult,
 		WorkspaceMember,
-		InviteMemberRequest
+		InviteMemberRequest,
+		TransferOwnershipRequest
 	} from '$lib/types';
 
 	let workspace = $state<Workspace | null>(null);
@@ -28,11 +29,18 @@
 
 	let showInviteModal = $state(false);
 	let showDeleteModal = $state(false);
+	let showTransferModal = $state(false);
+	let showRemoveMemberModal = $state(false);
+	let memberToRemove = $state<WorkspaceMember | null>(null);
+
 	let inviteForm = $state<InviteMemberRequest>({ email: '', role: 'Viewer' });
+	let transferForm = $state<TransferOwnershipRequest>({ newOwnerEmail: '' });
 	let confirmDeleteName = $state('');
 	let isProcessing = $state(false);
+
 	const workspaceId = $derived($page.params.id);
 	const canManage = $derived(workspace && $auth.user && workspace.ownerId === $auth.user.id);
+
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -86,9 +94,56 @@
 		}
 	}
 
+	async function handleRemoveMember() {
+		if (!memberToRemove) return;
+		errors = {};
+		isProcessing = true;
+		try {
+			const response = await api.delete(
+				`/v1/workspaces/${workspaceId}/members/${memberToRemove.id}`
+			);
+			if (response.message) {
+				errors.removeMember = response.message;
+			} else {
+				members = members.filter((m) => m.id !== memberToRemove!.id);
+				showRemoveMemberModal = false;
+				memberToRemove = null;
+			}
+		} catch (err) {
+			errors.removeMember = t('errors.general', $language);
+		} finally {
+			isProcessing = false;
+		}
+	}
+
+	async function handleTransferOwnership(event: Event) {
+		event.preventDefault();
+		errors = {};
+		isProcessing = true;
+		try {
+			const response = await api.post<Workspace>(
+				`/v1/workspaces/${workspaceId}/members/transfer-ownership`,
+				transferForm
+			);
+			if (response.data) {
+				workspace = response.data;
+				showTransferModal = false;
+				transferForm.newOwnerEmail = '';
+				await loadData();
+			} else {
+				errors.transfer = response.message || t('errors.general', $language);
+			}
+		} catch (err) {
+			errors.transfer = err instanceof Error ? err.message : t('errors.general', $language);
+		} finally {
+			isProcessing = false;
+		}
+	}
+
 	async function handleDelete(event: Event) {
 		event.preventDefault();
 		if (confirmDeleteName !== workspace?.name) return;
+		errors = {};
 		isProcessing = true;
 		try {
 			await api.delete(`/v1/workspaces/${workspaceId}`);
@@ -201,13 +256,13 @@
 								<tbody>
 									{#each certificates as cert}
 										<tr>
-											<td>
-												<a
+											<td
+												><a
 													href="/certificates/{cert.id}"
 													class="block max-w-md link truncate font-semibold link-hover"
 													>{cert.subject}</a
-												>
-											</td>
+												></td
+											>
 											<td
 												>{formatDate(cert.notAfter)} ({cert.daysUntilExpiry}
 												{t('certificates.days', $language)})</td
@@ -262,9 +317,21 @@
 										<div class="text-xs opacity-50">{member.user.email}</div>
 									</div>
 								</div>
-								<span class="badge {getRoleBadgeClass(member.role)}"
-									>{t(`workspaces.roles.${member.role.toLowerCase()}`, $language)}</span
-								>
+								<div class="flex items-center gap-2">
+									<span class="badge {getRoleBadgeClass(member.role)}"
+										>{t(`workspaces.roles.${member.role.toLowerCase()}`, $language)}</span
+									>
+									{#if canManage}
+										<Button
+											size="xs"
+											variant="ghost"
+											onclick={() => {
+												memberToRemove = member;
+												showRemoveMemberModal = true;
+											}}>✕</Button
+										>
+									{/if}
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -283,7 +350,10 @@
 						<p class="text-sm text-base-content/70">
 							{t('workspaces.dangerZoneWarning', $language)}
 						</p>
-						<div class="mt-4 card-actions justify-end">
+						<div class="mt-4 card-actions justify-end gap-2">
+							<Button variant="warning" onclick={() => (showTransferModal = true)}
+								>{t('workspaces.transferOwnership', $language)}</Button
+							>
 							<Button variant="danger" onclick={() => (showDeleteModal = true)}
 								>{t('workspaces.deleteWorkspace', $language)}</Button
 							>
@@ -300,9 +370,9 @@
 		onClose={() => (showInviteModal = false)}
 	>
 		<form onsubmit={handleInvite} class="space-y-4">
-			{#if errors.invite}
-				<div role="alert" class="alert alert-error text-sm"><span>{errors.invite}</span></div>
-			{/if}
+			{#if errors.invite}<div role="alert" class="alert alert-error text-sm">
+					<span>{errors.invite}</span>
+				</div>{/if}
 			<Input
 				label={t('auth.login.email', $language)}
 				type="email"
@@ -344,9 +414,9 @@
 				{t('workspaces.confirmDelete', $language)}
 				<strong class="text-error">{workspace?.name}</strong>
 			</p>
-			{#if errors.delete}
-				<div role="alert" class="alert alert-error text-sm"><span>{errors.delete}</span></div>
-			{/if}
+			{#if errors.delete}<div role="alert" class="alert alert-error text-sm">
+					<span>{errors.delete}</span>
+				</div>{/if}
 			<Input
 				bind:value={confirmDeleteName}
 				placeholder={t('workspaces.workspaceName', $language)}
@@ -364,5 +434,64 @@
 				>
 			</div>
 		</form>
+	</Modal>
+
+	<Modal
+		isOpen={showTransferModal}
+		title={t('workspaces.transferOwnership', $language)}
+		onClose={() => (showTransferModal = false)}
+	>
+		<form onsubmit={handleTransferOwnership} class="space-y-4">
+			<p>{t('workspaces.transferWarning', $language)}</p>
+			{#if errors.transfer}<div role="alert" class="alert alert-error text-sm">
+					<span>{errors.transfer}</span>
+				</div>{/if}
+			<Input
+				label={t('workspaces.newOwnerEmail', $language)}
+				type="email"
+				bind:value={transferForm.newOwnerEmail}
+				required
+				placeholder="new.owner@example.com"
+			/>
+			<div class="modal-action">
+				<Button type="button" variant="ghost" onclick={() => (showTransferModal = false)}
+					>{t('common.cancel', $language)}</Button
+				>
+				<Button type="submit" variant="warning" loading={isProcessing}
+					>{t('workspaces.transfer', $language)}</Button
+				>
+			</div>
+		</form>
+	</Modal>
+
+	<Modal
+		isOpen={showRemoveMemberModal}
+		title={t('workspaces.removeMemberTitle', $language)}
+		onClose={() => {
+			showRemoveMemberModal = false;
+			memberToRemove = null;
+		}}
+	>
+		<p>
+			{t('workspaces.removeMemberWarning', $language, {
+				memberName: memberToRemove?.user.fullName
+			})}
+		</p>
+		{#if errors.removeMember}<div role="alert" class="alert alert-error text-sm">
+				<span>{errors.removeMember}</span>
+			</div>{/if}
+		<div class="modal-action">
+			<Button
+				type="button"
+				variant="ghost"
+				onclick={() => {
+					showRemoveMemberModal = false;
+					memberToRemove = null;
+				}}>{t('common.cancel', $language)}</Button
+			>
+			<Button variant="danger" loading={isProcessing} onclick={handleRemoveMember}
+				>{t('workspaces.remove', $language)}</Button
+			>
+		</div>
 	</Modal>
 </div>
