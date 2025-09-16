@@ -88,6 +88,9 @@ public class WorkspaceMembersController : ControllerBase
             _currentUser.UserId!.Value
         );
 
+        //Temporary before adding ensdpoint for accept invation;
+        member.AcceptInvitation();
+
         await _unitOfWork.WorkspaceMembers.AddAsync(member);
         await _unitOfWork.SaveChangesAsync();
 
