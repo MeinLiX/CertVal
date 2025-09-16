@@ -95,9 +95,23 @@ export const translations = {
             },
             forgot: {
                 title: 'Відновлення пароля',
-                subtitle: 'Введіть свою електронну пошту для відновлення',
+                subtitle: 'Введіть свою електронну пошту для отримання інструкцій',
                 submit: 'Надіслати посилання',
-                backToLogin: 'Повернутися до входу'
+                backToLogin: 'Повернутися до входу',
+                emailSent: 'Якщо такий email існує, ми надіслали посилання для відновлення.'
+            },
+            reset: {
+                title: 'Встановлення нового пароля',
+                newPassword: 'Новий пароль',
+                confirmPassword: 'Підтвердіть новий пароль',
+                submit: 'Змінити пароль'
+            },
+            confirm: {
+                title: 'Підтвердження Email',
+                processing: 'Обробка вашого запиту...',
+                success: 'Ваш email успішно підтверджено! Тепер ви можете увійти.',
+                invalidToken: 'Недійсний або застарілий токен.',
+                login: 'Перейти до входу'
             }
         },
         dashboard: {
@@ -176,6 +190,20 @@ export const translations = {
                 viewer: 'Глядач',
                 editor: 'Редактор',
                 admin: 'Адміністратор'
+            },
+            transferOwnership: 'Передати право власності',
+            transferWarning: 'Ви збираєтеся передати право власності на цей робочий простір. Ви втратите права власника і станете адміністратором.',
+            newOwnerEmail: 'Email нового власника',
+            transfer: 'Передати',
+            removeMemberTitle: 'Видалити учасника',
+            removeMemberWarning: 'Ви впевнені, що хочете видалити {memberName} з цього робочого простору?',
+            remove: 'Видалити',
+            join: {
+                title: 'Приєднання до робочого простору',
+                processing: 'Обробка запрошення...',
+                success: 'Ви успішно приєдналися до робочого простору!',
+                invalidToken: 'Недійсний або застарілий токен запрошення.',
+                goToWorkspace: 'Перейти до робочого простору'
             }
         },
         certificates: {
@@ -445,8 +473,22 @@ export const translations = {
                 title: 'Reset Password',
                 subtitle: 'Enter your email to receive reset instructions',
                 submit: 'Send Reset Link',
-                backToLogin: 'Back to Login'
-            }
+                backToLogin: 'Back to Login',
+                emailSent: 'If an account with this email exists, a reset link has been sent.'
+            },
+            reset: {
+                title: 'Set a New Password',
+                newPassword: 'New Password',
+                confirmPassword: 'Confirm New Password',
+                submit: 'Change Password'
+            },
+            confirm: {
+                title: 'Email Confirmation',
+                processing: 'Processing your request...',
+                success: 'Your email has been successfully confirmed! You can now log in.',
+                invalidToken: 'Invalid or expired token.',
+                login: 'Go to Login'
+            },
         },
         dashboard: {
             title: 'Dashboard',
@@ -524,6 +566,20 @@ export const translations = {
                 viewer: 'Viewer',
                 editor: 'Editor',
                 admin: 'Administrator'
+            },
+            transferOwnership: 'Transfer Ownership',
+            transferWarning: 'You are about to transfer ownership of this workspace. You will lose owner privileges and become an administrator.',
+            newOwnerEmail: "New Owner's Email",
+            transfer: 'Transfer',
+            removeMemberTitle: 'Remove Member',
+            removeMemberWarning: 'Are you sure you want to remove {memberName} from this workspace?',
+            remove: 'Remove',
+            join: {
+                title: 'Joining Workspace',
+                processing: 'Processing your invitation...',
+                success: 'You have successfully joined the workspace!',
+                invalidToken: 'Invalid or expired invitation token.',
+                goToWorkspace: 'Go to Workspace'
             }
         },
         certificates: {
