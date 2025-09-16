@@ -4,7 +4,7 @@
 	import { icons, type IconName } from '$lib/icons';
 
 	interface Props {
-		type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'file';
+		type?: 'text' | 'email' | 'password' | 'number' | 'search' | 'file' | 'url';
 		value?: string | number;
 		placeholder?: string;
 		label?: string;

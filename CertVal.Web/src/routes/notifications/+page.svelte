@@ -19,6 +19,7 @@
 		Workspace,
 		PagedResult
 	} from '$lib/types';
+
 	let workspaces = $state<Workspace[]>([]);
 	let selectedWorkspaceId = $state<string>('');
 	let rules = $state<NotificationRule[]>([]);
@@ -36,7 +37,9 @@
 		channelConfig: '{}',
 		frequency: 'Once'
 	});
+	let webhookUrl = $state('');
 	let errors = $state<Record<string, string>>({});
+
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -103,6 +106,19 @@
 		}
 	}
 
+	function openCreateModal() {
+		createForm = {
+			name: '',
+			daysBeforeExpiry: 30,
+			channelType: 'Email',
+			channelConfig: '{}',
+			frequency: 'Once'
+		};
+		webhookUrl = '';
+		errors = {};
+		showCreateModal = true;
+	}
+
 	async function handleCreateRule(event: Event) {
 		event.preventDefault();
 		isProcessing = true;
@@ -111,6 +127,15 @@
 		let channelConfig = '{}';
 		if (createForm.channelType === 'Email') {
 			channelConfig = JSON.stringify({ email: $auth.user?.email || '' });
+		} else if (createForm.channelType === 'Webhook') {
+			try {
+				new URL(webhookUrl); // Validate URL format
+				channelConfig = JSON.stringify({ url: webhookUrl });
+			} catch (_) {
+				errors.general = t('errors.invalidUrl', $language);
+				isProcessing = false;
+				return;
+			}
 		}
 
 		try {
@@ -122,10 +147,10 @@
 				rules = [...rules, response.data];
 				showCreateModal = false;
 			} else {
-				errors.general = response.message || t('errors.general', $language);
+				errors.general = response.message || 'Failed to create rule.';
 			}
 		} catch (err) {
-			errors.general = t('errors.network', $language);
+			errors.general = 'A network error occurred.';
 		} finally {
 			isProcessing = false;
 		}
@@ -161,7 +186,7 @@
 				variant="ghost"
 				class="mr-2">{t('notifications.viewHistory', $language)}</Button
 			>
-			<Button onclick={() => (showCreateModal = true)} disabled={!selectedWorkspaceId}
+			<Button onclick={openCreateModal} disabled={!selectedWorkspaceId}
 				>{t('notifications.createRule', $language)}</Button
 			>
 		</div>
@@ -185,7 +210,7 @@
 			<div class="py-16 text-center">
 				<h3 class="text-xl font-semibold">{t('notifications.noRules', $language)}</h3>
 				<p class="mt-2 text-base-content/60">{t('notifications.createFirstRule', $language)}</p>
-				<Button class="mt-6" onclick={() => (showCreateModal = true)}
+				<Button class="mt-6" onclick={openCreateModal}
 					>{t('notifications.createRule', $language)}</Button
 				>
 			</div>
@@ -197,8 +222,10 @@
 							<p class="font-bold">{rule.name}</p>
 							<p class="text-sm opacity-70">
 								{t('notifications.triggers', $language)} <strong>{rule.daysBeforeExpiry}</strong>
-								{t('notifications.daysBeforeExpirySuffix', $language)}.
-								{t('notifications.channel', $language)}
+								{t('notifications.daysBeforeExpirySuffix', $language)}. {t(
+									'notifications.channel',
+									$language
+								)}
 								<strong>{rule.channelType}</strong>. {t('notifications.frequency', $language)}:
 								<strong>{rule.frequency}</strong>.
 							</p>
@@ -253,6 +280,17 @@
 				{ value: 'Webhook', label: t('notifications.webhook', $language) }
 			]}
 		/>
+
+		{#if createForm.channelType === 'Webhook'}
+			<Input
+				label={t('notifications.webhookUrl', $language)}
+				type="url"
+				bind:value={webhookUrl}
+				required
+				placeholder="https://api.example.com/webhook"
+			/>
+		{/if}
+
 		<Select
 			label={t('notifications.frequency', $language)}
 			bind:value={createForm.frequency}

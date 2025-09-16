@@ -47,8 +47,8 @@ export const translations = {
             actions: 'Дії',
             created: 'Створено',
             clickToUpload: 'Натисніть, щоб завантажити',
-			orDragAndDrop: 'або перетягніть файли',
-			selectedFiles: 'Обрані файли:'
+            orDragAndDrop: 'або перетягніть файли',
+            selectedFiles: 'Обрані файли:'
         },
         nav: {
             dashboard: 'Панель керування',
@@ -284,6 +284,7 @@ export const translations = {
             disabled: 'Вимкнено',
             email: 'Електронна пошта',
             webhook: 'Вебхук',
+            webhookUrl: 'Webhook URL',
             slack: 'Slack',
             telegram: 'Telegram',
             once: 'Одноразово',
@@ -334,7 +335,8 @@ export const translations = {
             passwordsNotMatch: 'Паролі не співпадають',
             fileTooBig: 'Файл занадто великий',
             invalidFileFormat: 'Невірний формат файлу',
-            uploadFailed: 'Помилка завантаження файлу'
+            uploadFailed: 'Помилка завантаження файлу',
+            invalidUrl: 'Будь ласка, введіть дійсну URL-адресу.'
         },
         success: {
             saved: 'Збережено успішно',
@@ -392,8 +394,8 @@ export const translations = {
             actions: 'Actions',
             created: 'Created',
             clickToUpload: 'Click to upload',
-			orDragAndDrop: 'or drag and drop',
-			selectedFiles: 'Selected files:'
+            orDragAndDrop: 'or drag and drop',
+            selectedFiles: 'Selected files:'
         },
         nav: {
             dashboard: 'Dashboard',
@@ -629,6 +631,7 @@ export const translations = {
             disabled: 'Disabled',
             email: 'Email',
             webhook: 'Webhook',
+            webhookUrl: 'Webhook URL',
             slack: 'Slack',
             telegram: 'Telegram',
             once: 'Once',
@@ -679,7 +682,8 @@ export const translations = {
             passwordsNotMatch: 'Passwords do not match',
             fileTooBig: 'File too large',
             invalidFileFormat: 'Invalid file format',
-            uploadFailed: 'File upload failed'
+            uploadFailed: 'File upload failed',
+            invalidUrl: 'Please enter a valid URL.'
         },
         success: {
             saved: 'Saved successfully',
