@@ -6,6 +6,7 @@ namespace CertVal.Infrastructure.Events;
 public class WorkspaceEventHandlers :
     IDomainEventHandler<WorkspaceCreatedEvent>,
     IDomainEventHandler<WorkspaceUpdatedEvent>,
+    IDomainEventHandler<WorkspaceOwnershipTransferredEvent>,
     IDomainEventHandler<WorkspaceMemberInvitedEvent>,
     IDomainEventHandler<WorkspaceMemberJoinedEvent>,
     IDomainEventHandler<WorkspaceMemberRemovedEvent>
@@ -28,6 +29,13 @@ public class WorkspaceEventHandlers :
     {
         _logger.LogInformation("Workspace updated: {WorkspaceId} renamed to '{Name}'",
             domainEvent.WorkspaceId, domainEvent.Name);
+        return Task.CompletedTask;
+    }
+
+    public Task HandleAsync(WorkspaceOwnershipTransferredEvent domainEvent, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Workspace ownership transferred: {WorkspaceId} from {OldOwnerId} to {NewOwnerId}",
+            domainEvent.WorkspaceId, domainEvent.OldOwnerId, domainEvent.NewOwnerId);
         return Task.CompletedTask;
     }
 

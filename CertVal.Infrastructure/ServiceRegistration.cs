@@ -42,6 +42,7 @@ public static class ServiceRegistration
         services.AddScoped<WorkspaceEventHandlers>();
         services.AddScoped<IDomainEventHandler<WorkspaceCreatedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
         services.AddScoped<IDomainEventHandler<WorkspaceUpdatedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
+        services.AddScoped<IDomainEventHandler<WorkspaceOwnershipTransferredEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
         services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
         services.AddScoped<IDomainEventHandler<WorkspaceMemberJoinedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
         services.AddScoped<IDomainEventHandler<WorkspaceMemberRemovedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
