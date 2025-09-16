@@ -25,6 +25,13 @@ public record ConfirmEmailRequest
     public string Token { get; init; } = string.Empty;
 }
 
+public record ResendConfirmationRequest
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; init; } = string.Empty;
+}
+
 public record ForgotPasswordRequest
 {
     [Required]
@@ -40,4 +47,10 @@ public record ResetPasswordRequest
     [Required]
     [MinLength(8)]
     public string NewPassword { get; init; } = string.Empty;
+}
+
+public record ValidateResetTokenRequest
+{
+    [Required]
+    public string Token { get; init; } = string.Empty;
 }

@@ -36,7 +36,7 @@ public class EmailTemplateService : IEmailTemplateService
     private EmailTemplate GenerateUserRegisteredTemplate(EmailNotificationMessage message)
     {
         var data = ExtractData<UserRegisteredData>(message.Data);
-        var confirmationUrl = $"{data.BaseUrl}/auth/confirm-email?token={data.ConfirmationToken}";
+        var confirmationUrl = $"{data.BaseUrl}/auth/confirm-email?token={Uri.EscapeDataString(data.ConfirmationToken)}";
 
         var subject = $"Welcome to {_templateSettings.CompanyName}! Please confirm your email";
 
@@ -48,14 +48,14 @@ public class EmailTemplateService : IEmailTemplateService
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Welcome to {{_templateSettings.CompanyName}}</title>
                 <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .header h1 { color: white; margin: 0; font-size: 28px; }
-                    .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
-                    .button { display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
-                    .button:hover { background: #5a6fd8; }
-                    .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
-                    .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                    body {font - family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .header h1 {color: white; margin: 0; font-size: 28px; }
+                    .content {background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+                    .button {display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+                    .button:hover {background: #5a6fd8; }
+                    .footer {background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+                    .warning {background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
                 </style>
             </head>
             <body>
@@ -126,104 +126,10 @@ public class EmailTemplateService : IEmailTemplateService
         };
     }
 
-    private EmailTemplate GenerateWorkspaceInvitationTemplate(EmailNotificationMessage message)
-    {
-        var data = ExtractData<WorkspaceInvitationData>(message.Data);
-        var invitationUrl = $"{data.BaseUrl}/workspaces/{data.WorkspaceId}/join?token={data.InvitationToken}";
-
-        var subject = $"You've been invited to join '{data.WorkspaceName}' workspace";
-
-        var htmlBody = $$"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Workspace Invitation</title>
-                <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .header h1 { color: white; margin: 0; font-size: 28px; }
-                    .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
-                    .button { display: inline-block; padding: 15px 30px; background: #11998e; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
-                    .button:hover { background: #0f8174; }
-                    .workspace-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #11998e; }
-                    .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>Workspace Invitation</h1>
-                </div>
-                <div class="content">
-                    <h2>You've been invited!</h2>
-                    <p>Hello {{data.InviteeName}},</p>
-                    
-                    <p><strong>{{data.InviterName}}</strong> has invited you to join the <strong>'{{data.WorkspaceName}}'</strong> workspace on {{_templateSettings.CompanyName}}.</p>
-                    
-                    <div class="workspace-info">
-                        <h3>Workspace Details</h3>
-                        <p><strong>Workspace:</strong> {{data.WorkspaceName}}</p>
-                        <p><strong>Invited by:</strong> {{data.InviterName}}</p>
-                        <p><strong>Your role:</strong> {{data.Role}}</p>
-                    </div>
-                    
-                    <p>As a {{data.Role.ToLower()}}, you'll be able to collaborate on certificate management and monitoring within this workspace.</p>
-                    
-                    <div style="text-align: center;">
-                        <a href="{{invitationUrl}}" class="button">Accept Invitation</a>
-                    </div>
-                    
-                    <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-                    <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 5px;">{{invitationUrl}}</p>
-                    
-                    <p><strong>Note:</strong> This invitation link will expire in 7 days. If you don't have a {{_templateSettings.CompanyName}} account yet, you'll be prompted to create one.</p>
-                    
-                    <p>If you have any questions about this invitation, please contact {{data.InviterName}} or our support team at <a href="mailto:{{_templateSettings.SupportEmail}}">{{_templateSettings.SupportEmail}}</a>.</p>
-                    
-                    <p>Best regards,<br>The {{_templateSettings.CompanyName}} Team</p>
-                </div>
-                <div class="footer">
-                    <p>&copy; 2025 {{_templateSettings.CompanyName}}. All rights reserved.</p>
-                </div>
-            </body>
-            </html>
-            """;
-
-        var textBody = $"""
-            Workspace Invitation
-
-            Hello {data.InviteeName},
-
-            {data.InviterName} has invited you to join the '{data.WorkspaceName}' workspace on {_templateSettings.CompanyName}.
-
-            Workspace Details:
-            - Workspace: {data.WorkspaceName}
-            - Invited by: {data.InviterName}
-            - Your role: {data.Role}
-
-            To accept this invitation, visit: {invitationUrl}
-
-            This invitation link will expire in 7 days. If you don't have a {_templateSettings.CompanyName} account yet, you'll be prompted to create one.
-
-            If you have any questions, contact us at {_templateSettings.SupportEmail}.
-
-            Best regards,
-            The {_templateSettings.CompanyName} Team
-            """;
-
-        return new EmailTemplate
-        {
-            Subject = subject,
-            HtmlBody = htmlBody,
-            TextBody = textBody
-        };
-    }
-
     private EmailTemplate GeneratePasswordResetTemplate(EmailNotificationMessage message)
     {
         var data = ExtractData<PasswordResetData>(message.Data);
-        var resetUrl = $"{data.BaseUrl}/auth/reset-password?token={data.ResetToken}";
+        var resetUrl = $"{data.BaseUrl}/auth/reset-password?token={Uri.EscapeDataString(data.ResetToken)}";
 
         var subject = "Password Reset Request";
 
@@ -235,14 +141,14 @@ public class EmailTemplateService : IEmailTemplateService
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Password Reset</title>
                 <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .header h1 { color: white; margin: 0; font-size: 28px; }
-                    .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
-                    .button { display: inline-block; padding: 15px 30px; background: #ff6b6b; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
-                    .button:hover { background: #ff5252; }
-                    .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
-                    .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+                    body {font - family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header {background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .header h1 {color: white; margin: 0; font-size: 28px; }
+                    .content {background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+                    .button {display: inline-block; padding: 15px 30px; background: #ff6b6b; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+                    .button:hover {background: #ff5252; }
+                    .warning {background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                    .footer {background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
                 </style>
             </head>
             <body>
@@ -308,6 +214,100 @@ public class EmailTemplateService : IEmailTemplateService
         };
     }
 
+    private EmailTemplate GenerateWorkspaceInvitationTemplate(EmailNotificationMessage message)
+    {
+        var data = ExtractData<WorkspaceInvitationData>(message.Data);
+        var invitationUrl = $"{data.BaseUrl}/workspaces/{data.WorkspaceId}/join?token={Uri.EscapeDataString(data.InvitationToken)}";
+
+        var subject = $"You've been invited to join '{data.WorkspaceName}' workspace";
+
+        var htmlBody = $$"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Workspace Invitation</title>
+                <style>
+                    body {font - family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header {background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .header h1 {color: white; margin: 0; font-size: 28px; }
+                    .content {background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+                    .button {display: inline-block; padding: 15px 30px; background: #11998e; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+                    .button:hover {background: #0f8174; }
+                    .workspace-info {background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #11998e; }
+                    .footer {background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Workspace Invitation</h1>
+                </div>
+                <div class="content">
+                    <h2>You've been invited!</h2>
+                    <p>Hello {{data.InviteeName}},</p>
+                    
+                    <p><strong>{{data.InviterName}}</strong> has invited you to join the <strong>'{{data.WorkspaceName}}'</strong> workspace on {{_templateSettings.CompanyName}}.</p>
+                    
+                    <div class="workspace-info">
+                        <h3>Workspace Details</h3>
+                        <p><strong>Workspace:</strong> {{data.WorkspaceName}}</p>
+                        <p><strong>Invited by:</strong> {{data.InviterName}}</p>
+                        <p><strong>Your role:</strong> {{data.Role}}</p>
+                    </div>
+                    
+                    <p>As a {{data.Role.ToLower()}}, you'll be able to collaborate on certificate management and monitoring within this workspace.</p>
+                    
+                    <div style="text-align: center;">
+                        <a href="{{invitationUrl}}" class="button">Accept Invitation</a>
+                    </div>
+                    
+                    <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+                    <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 5px;">{{invitationUrl}}</p>
+                    
+                    <p><strong>Note:</strong> This invitation link will expire in 7 days. If you don't have a {{_templateSettings.CompanyName}} account yet, you'll be prompted to create one.</p>
+                    
+                    <p>If you have any questions about this invitation, please contact {{data.InviterName}} or our support team at <a href="mailto:{{_templateSettings.SupportEmail}}">{{_templateSettings.SupportEmail}}</a>.</p>
+                    
+                    <p>Best regards,<br>The {{_templateSettings.CompanyName}} Team</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2025 {{_templateSettings.CompanyName}}. All rights reserved.</p>
+                </div>
+            </body>
+            </html>
+            """;
+
+        var textBody = $$"""
+            Workspace Invitation
+
+            Hello {data.InviteeName},
+
+            {data.InviterName} has invited you to join the '{data.WorkspaceName}' workspace on {_templateSettings.CompanyName}.
+
+            Workspace Details:
+            - Workspace: {data.WorkspaceName}
+            - Invited by: {data.InviterName}
+            - Your role: {data.Role}
+
+            To accept this invitation, visit: {invitationUrl}
+
+            This invitation link will expire in 7 days. If you don't have a {_templateSettings.CompanyName} account yet, you'll be prompted to create one.
+
+            If you have any questions, contact us at {_templateSettings.SupportEmail}.
+
+            Best regards,
+            The {_templateSettings.CompanyName} Team
+            """;
+
+        return new EmailTemplate
+        {
+            Subject = subject,
+            HtmlBody = htmlBody,
+            TextBody = textBody
+        };
+    }
+
     private EmailTemplate GenerateCertificateExpiringTemplate(EmailNotificationMessage message)
     {
         var data = ExtractData<CertificateExpiringData>(message.Data);
@@ -330,13 +330,13 @@ public class EmailTemplateService : IEmailTemplateService
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Certificate Expiry Alert</title>
                 <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .header h1 { color: white; margin: 0; font-size: 28px; }
-                    .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
-                    .button { display: inline-block; padding: 15px 30px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
-                    .cert-details { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e74c3c; }
-                    .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+                    body {font - family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header {background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .header h1 {color: white; margin: 0; font-size: 28px; }
+                    .content {background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+                    .button {display: inline-block; padding: 15px 30px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+                    .cert-details {background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e74c3c; }
+                    .footer {background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
                 </style>
             </head>
             <body>
@@ -414,14 +414,14 @@ public class EmailTemplateService : IEmailTemplateService
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Certificate Expired</title>
                 <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .header h1 { color: white; margin: 0; font-size: 28px; }
-                    .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
-                    .button { display: inline-block; padding: 15px 30px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
-                    .cert-details { background: #fff5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e74c3c; }
-                    .urgent { background: #ffebee; border: 2px solid #e74c3c; padding: 20px; border-radius: 8px; margin: 20px 0; }
-                    .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+                    body {font - family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header {background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .header h1 {color: white; margin: 0; font-size: 28px; }
+                    .content {background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+                    .button {display: inline-block; padding: 15px 30px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+                    .cert-details {background: #fff5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e74c3c; }
+                    .urgent {background: #ffebee; border: 2px solid #e74c3c; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                    .footer {background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
                 </style>
             </head>
             <body>
