@@ -254,68 +254,59 @@ public class WorkspaceMembersController : ControllerBase
 
         var existingMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, newOwner.Id);
 
-
-        try
+        //temp :)
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            //temp :)
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            var oldOwnerId = workspace.OwnerId;
+            workspace.TransferOwnership(newOwner.Id);
+            await _unitOfWork.Workspaces.UpdateAsync(workspace);
+
+            if (existingMembership != null)
             {
-                var oldOwnerId = workspace.OwnerId;
-                workspace.TransferOwnership(newOwner.Id);
-                await _unitOfWork.Workspaces.UpdateAsync(workspace);
+                await _unitOfWork.WorkspaceMembers.DeleteAsync(existingMembership.Id);
+            }
 
-                if (existingMembership != null)
-                {
-                    await _unitOfWork.WorkspaceMembers.DeleteAsync(existingMembership.Id);
-                }
+            var oldOwnerMembership = WorkspaceMember.Create(
+                workspaceId,
+                oldOwnerId,
+                Core.Enums.WorkspaceRole.Admin,
+                newOwner.Id
+            );
+            oldOwnerMembership.AcceptInvitation();
 
-                var oldOwnerMembership = WorkspaceMember.Create(
-                    workspaceId,
-                    oldOwnerId,
-                    Core.Enums.WorkspaceRole.Admin,
-                    newOwner.Id
-                );
-                oldOwnerMembership.AcceptInvitation();
+            await _unitOfWork.WorkspaceMembers.AddAsync(oldOwnerMembership);
+        });
 
-                await _unitOfWork.WorkspaceMembers.AddAsync(oldOwnerMembership);
-            });
+        workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
 
-            workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
-
-            var workspaceDto = new WorkspaceDto
-            {
-                Id = workspace!.Id,
-                Name = workspace.Name,
-                Description = workspace.Description,
-                OwnerId = workspace.OwnerId,
-                Owner = new UserDto
-                {
-                    Id = workspace.Owner.Id,
-                    Email = workspace.Owner.Email,
-                    FirstName = workspace.Owner.FirstName,
-                    LastName = workspace.Owner.LastName,
-                    FullName = workspace.Owner.FullName,
-                    IsEmailConfirmed = workspace.Owner.IsEmailConfirmed,
-                    LastLoginAt = workspace.Owner.LastLoginAt,
-                    Status = workspace.Owner.Status.ToString(),
-                    CreatedAt = workspace.Owner.CreatedAt
-                },
-                MaxCertificates = workspace.MaxCertificates,
-                IsPublic = workspace.IsPublic,
-                AllowMemberInvites = workspace.AllowMemberInvites,
-                CertificateCount = await _unitOfWork.Certificates.GetWorkspaceCertificateCountAsync(workspace.Id),
-                MemberCount = workspace.Members.Count + 1,
-                CreatedAt = workspace.CreatedAt,
-                UpdatedAt = workspace.UpdatedAt
-            };
-
-            return Ok(workspaceDto);
-        }
-        catch
+        var workspaceDto = new WorkspaceDto
         {
-            await _unitOfWork.RollbackTransactionAsync();
-            throw;
-        }
+            Id = workspace!.Id,
+            Name = workspace.Name,
+            Description = workspace.Description,
+            OwnerId = workspace.OwnerId,
+            Owner = new UserDto
+            {
+                Id = workspace.Owner.Id,
+                Email = workspace.Owner.Email,
+                FirstName = workspace.Owner.FirstName,
+                LastName = workspace.Owner.LastName,
+                FullName = workspace.Owner.FullName,
+                IsEmailConfirmed = workspace.Owner.IsEmailConfirmed,
+                LastLoginAt = workspace.Owner.LastLoginAt,
+                Status = workspace.Owner.Status.ToString(),
+                CreatedAt = workspace.Owner.CreatedAt
+            },
+            MaxCertificates = workspace.MaxCertificates,
+            IsPublic = workspace.IsPublic,
+            AllowMemberInvites = workspace.AllowMemberInvites,
+            CertificateCount = await _unitOfWork.Certificates.GetWorkspaceCertificateCountAsync(workspace.Id),
+            MemberCount = workspace.Members.Count + 1,
+            CreatedAt = workspace.CreatedAt,
+            UpdatedAt = workspace.UpdatedAt
+        };
+
+        return Ok(workspaceDto);
     }
 
     private async Task<bool> CanAccessWorkspace(Guid workspaceId)
