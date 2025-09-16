@@ -28,14 +28,11 @@
 
 	let showInviteModal = $state(false);
 	let showDeleteModal = $state(false);
-
 	let inviteForm = $state<InviteMemberRequest>({ email: '', role: 'Viewer' });
 	let confirmDeleteName = $state('');
 	let isProcessing = $state(false);
-
 	const workspaceId = $derived($page.params.id);
 	const canManage = $derived(workspace && $auth.user && workspace.ownerId === $auth.user.id);
-
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -50,7 +47,7 @@
 			const [wsRes, certsRes, membersRes] = await Promise.all([
 				api.get<Workspace>(`/v1/workspaces/${workspaceId}`),
 				api.get<PagedResult<Certificate>>(
-					`/v1/certificates?workspaceId=${workspaceId}&pageSize=1&statusFilter=expiring`
+					`/v1/certificates?workspaceId=${workspaceId}&pageSize=5&statusFilter=Expiring`
 				),
 				api.get<WorkspaceMember[]>(`/v1/workspaces/${workspaceId}/members`)
 			]);
@@ -60,7 +57,7 @@
 			if (membersRes.data) members = membersRes.data;
 		} catch (err) {
 			console.error('Failed to load workspace data:', err);
-			errors.load = 'Failed to load workspace data.';
+			errors.load = t('workspaces.loadError', $language);
 		} finally {
 			isLoading = false;
 		}
@@ -80,10 +77,10 @@
 				showInviteModal = false;
 				inviteForm = { email: '', role: 'Viewer' };
 			} else {
-				errors.invite = response.message || 'Failed to send invitation.';
+				errors.invite = response.message || t('errors.general', $language);
 			}
 		} catch (err) {
-			errors.invite = 'A network error occurred.';
+			errors.invite = t('errors.network', $language);
 		} finally {
 			isProcessing = false;
 		}
@@ -97,7 +94,7 @@
 			await api.delete(`/v1/workspaces/${workspaceId}`);
 			goto('/workspaces');
 		} catch (err) {
-			errors.delete = 'Failed to delete workspace.';
+			errors.delete = t('errors.general', $language);
 		} finally {
 			isProcessing = false;
 			showDeleteModal = false;
@@ -107,7 +104,7 @@
 
 	function getRoleBadgeClass(role: string): string {
 		switch (role.toLowerCase()) {
-			case 'administrator':
+			case 'admin':
 				return 'badge-primary';
 			case 'editor':
 				return 'badge-secondary';
@@ -118,7 +115,11 @@
 </script>
 
 <svelte:head>
-	<title>{workspace ? `${workspace.name} Details` : 'Workspace'}</title>
+	<title
+		>{workspace
+			? `${workspace.name} ${t('common.details', $language)}`
+			: t('common.workspace', $language)}</title
+	>
 </svelte:head>
 
 <div class="space-y-6">
@@ -129,11 +130,13 @@
 	{:else if !workspace}
 		<Card>
 			<div class="py-12 text-center">
-				<h3 class="text-xl font-semibold">Workspace not found</h3>
+				<h3 class="text-xl font-semibold">{t('workspaces.notFound', $language)}</h3>
 				<p class="mt-2 text-base-content/60">
-					{errors.load || 'The requested workspace could not be loaded.'}
+					{errors.load || t('workspaces.loadError', $language)}
 				</p>
-				<Button class="mt-6" onclick={() => goto('/workspaces')}>Back to Workspaces</Button>
+				<Button class="mt-6" onclick={() => goto('/workspaces')}
+					>{t('workspaces.back', $language)}</Button
+				>
 			</div>
 		</Card>
 	{:else}
@@ -141,7 +144,11 @@
 			<div>
 				<div class="breadcrumbs text-sm">
 					<ul>
-						<li><a href="/workspaces" class="link hover:link-primary">Workspaces</a></li>
+						<li>
+							<a href="/workspaces" class="link hover:link-primary"
+								>{t('nav.workspaces', $language)}</a
+							>
+						</li>
 						<li><span class="font-semibold">{workspace.name}</span></li>
 					</ul>
 				</div>
@@ -150,10 +157,10 @@
 			</div>
 			<div class="flex gap-2">
 				<Button variant="ghost" onclick={() => goto(`/certificates?workspace=${workspaceId}`)}
-					>View Certificates</Button
+					>{t('workspaces.viewCertificates', $language)}</Button
 				>
 				<Button onclick={() => goto(`/notifications?workspace=${workspaceId}`)}
-					>Manage Notifications</Button
+					>{t('workspaces.manageNotifications', $language)}</Button
 				>
 			</div>
 		</div>
@@ -161,25 +168,25 @@
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
 			<Card
 				><div class="stat">
-					<div class="stat-title">Certificates</div>
+					<div class="stat-title">{t('nav.certificates', $language)}</div>
 					<div class="stat-value">{workspace.certificateCount} / {workspace.maxCertificates}</div>
 				</div></Card
 			>
 			<Card
 				><div class="stat">
-					<div class="stat-title">Members</div>
+					<div class="stat-title">{t('common.members', $language)}</div>
 					<div class="stat-value">{workspace.memberCount}</div>
 				</div></Card
 			>
 			<Card
 				><div class="stat">
-					<div class="stat-title">Owner</div>
+					<div class="stat-title">{t('common.owner', $language)}</div>
 					<div class="stat-value truncate text-lg">{workspace.owner.fullName}</div>
 				</div></Card
 			>
 			<Card
 				><div class="stat">
-					<div class="stat-title">Created</div>
+					<div class="stat-title">{t('common.created', $language)}</div>
 					<div class="stat-value text-lg">{formatDate(workspace.createdAt)}</div>
 				</div></Card
 			>
@@ -187,7 +194,7 @@
 
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<div class="space-y-6 lg:col-span-2">
-				<Card title="Expiring Soon">
+				<Card title={t('workspaces.expiringSoon', $language)}>
 					{#if certificates.length > 0}
 						<div class="overflow-x-auto">
 							<table class="table table-sm">
@@ -201,10 +208,16 @@
 													>{cert.subject}</a
 												>
 											</td>
-											<td>{formatDate(cert.notAfter)} ({cert.daysUntilExpiry} days)</td>
+											<td
+												>{formatDate(cert.notAfter)} ({cert.daysUntilExpiry}
+												{t('certificates.days', $language)})</td
+											>
 											<td
 												><span class="badge badge-sm badge-warning"
-													>{getCertificateStatus(cert.notAfter)}</span
+													>{t(
+														`certificates.${getCertificateStatus(cert.notAfter)}`,
+														$language
+													)}</span
 												></td
 											>
 										</tr>
@@ -214,14 +227,14 @@
 						</div>
 					{:else}
 						<p class="py-4 text-center text-sm text-base-content/70">
-							No certificates are expiring soon.
+							{t('workspaces.noExpiringCertificates', $language)}
 						</p>
 					{/if}
 				</Card>
 			</div>
 
 			<div class="space-y-6">
-				<Card title="Members">
+				<Card title={t('common.members', $language)}>
 					<div class="space-y-2">
 						<div class="flex items-center gap-3">
 							<div class="placeholder avatar">
@@ -233,7 +246,7 @@
 							</div>
 							<div>
 								<div class="font-bold">{workspace.owner.fullName}</div>
-								<div class="text-xs opacity-50">Owner</div>
+								<div class="text-xs opacity-50">{t('common.owner', $language)}</div>
 							</div>
 						</div>
 						{#each members as member}
@@ -249,14 +262,16 @@
 										<div class="text-xs opacity-50">{member.user.email}</div>
 									</div>
 								</div>
-								<span class="badge {getRoleBadgeClass(member.role)}">{member.role}</span>
+								<span class="badge {getRoleBadgeClass(member.role)}"
+									>{t(`workspaces.roles.${member.role.toLowerCase()}`, $language)}</span
+								>
 							</div>
 						{/each}
 					</div>
 					{#if canManage && workspace.allowMemberInvites}
 						<div class="mt-4 card-actions">
 							<Button class="w-full" variant="ghost" onclick={() => (showInviteModal = true)}
-								>Invite Member</Button
+								>{t('workspaces.inviteMember', $language)}</Button
 							>
 						</div>
 					{/if}
@@ -264,13 +279,13 @@
 
 				{#if canManage}
 					<Card class="border-error">
-						<h3 class="card-title text-error">Danger Zone</h3>
+						<h3 class="card-title text-error">{t('workspaces.dangerZone', $language)}</h3>
 						<p class="text-sm text-base-content/70">
-							These actions are permanent and cannot be undone.
+							{t('workspaces.dangerZoneWarning', $language)}
 						</p>
 						<div class="mt-4 card-actions justify-end">
 							<Button variant="danger" onclick={() => (showDeleteModal = true)}
-								>Delete Workspace</Button
+								>{t('workspaces.deleteWorkspace', $language)}</Button
 							>
 						</div>
 					</Card>
@@ -281,7 +296,7 @@
 
 	<Modal
 		isOpen={showInviteModal}
-		title="Invite New Member"
+		title={t('workspaces.inviteNewMember', $language)}
 		onClose={() => (showInviteModal = false)}
 	>
 		<form onsubmit={handleInvite} class="space-y-4">
@@ -289,58 +304,63 @@
 				<div role="alert" class="alert alert-error text-sm"><span>{errors.invite}</span></div>
 			{/if}
 			<Input
-				label="Email Address"
+				label={t('auth.login.email', $language)}
 				type="email"
 				bind:value={inviteForm.email}
 				required
 				placeholder="member@example.com"
 			/>
 			<Select
-				label="Role"
+				label={t('common.role', $language)}
 				bind:value={inviteForm.role}
 				options={[
-					{ value: 'Viewer', label: 'Viewer' },
-					{ value: 'Editor', label: 'Editor' },
-					{ value: 'Administrator', label: 'Administrator' }
+					{ value: 'Viewer', label: t('workspaces.roles.viewer', $language) },
+					{ value: 'Editor', label: t('workspaces.roles.editor', $language) },
+					{ value: 'Admin', label: t('workspaces.roles.admin', $language) }
 				]}
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showInviteModal = false)}
-					>Cancel</Button
+					>{t('common.cancel', $language)}</Button
 				>
-				<Button type="submit" loading={isProcessing} variant="primary">Send Invitation</Button>
+				<Button type="submit" loading={isProcessing} variant="primary"
+					>{t('workspaces.sendInvitation', $language)}</Button
+				>
 			</div>
 		</form>
 	</Modal>
 
 	<Modal
 		isOpen={showDeleteModal}
-		title="Delete Workspace"
+		title={t('workspaces.deleteWorkspace', $language)}
 		onClose={() => (showDeleteModal = false)}
 	>
 		<form onsubmit={handleDelete} class="space-y-4">
 			<p>
-				This action is irreversible. You will lose all certificates and configuration associated
-				with this workspace.
+				{t('workspaces.irreversibleAction', $language)}
+				{t('workspaces.lossOfDataWarning', $language)}
 			</p>
 			<p>
-				To confirm, please type the name of the workspace: <strong class="text-error"
-					>{workspace?.name}</strong
-				>
+				{t('workspaces.confirmDelete', $language)}
+				<strong class="text-error">{workspace?.name}</strong>
 			</p>
 			{#if errors.delete}
 				<div role="alert" class="alert alert-error text-sm"><span>{errors.delete}</span></div>
 			{/if}
-			<Input bind:value={confirmDeleteName} placeholder="Workspace name" />
+			<Input
+				bind:value={confirmDeleteName}
+				placeholder={t('workspaces.workspaceName', $language)}
+			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}
-					>Cancel</Button
+					>{t('common.cancel', $language)}</Button
 				>
 				<Button
 					type="submit"
 					variant="danger"
 					loading={isProcessing}
-					disabled={confirmDeleteName !== workspace?.name}>Delete Workspace</Button
+					disabled={confirmDeleteName !== workspace?.name}
+					>{t('workspaces.deleteWorkspace', $language)}</Button
 				>
 			</div>
 		</form>

@@ -44,7 +44,8 @@ export const translations = {
             workspace: 'Робочий простір',
             of: 'з',
             to: 'до',
-            actions: 'Дії'
+            actions: 'Дії',
+            created: 'Створено'
         },
         nav: {
             dashboard: 'Панель керування',
@@ -66,7 +67,11 @@ export const translations = {
                 forgot: 'Забули пароль?',
                 noAccount: 'Немає акаунту?',
                 registerLink: 'Зареєструватися',
-                rememberMe: 'Запам\'ятати мене'
+                rememberMe: "Запам'ятати мене",
+                welcome: 'З поверненням!',
+                tagline:
+                    'Безпечне та просте управління сертифікатами. З легкістю відстежуйте свої SSL/TLS сертифікати та ніколи більше не пропускайте термін їх дії.',
+                registrationSuccess: 'Реєстрація успішна! Будь ласка, увійдіть.'
             },
             register: {
                 title: 'Реєстрація в CertVal',
@@ -80,7 +85,10 @@ export const translations = {
                 loginLink: 'Увійти',
                 terms: 'Умови використання',
                 privacy: 'Політика конфіденційності',
-                agreeToTerms: 'Я погоджуюся з'
+                agreeToTerms: 'Я погоджуюся з',
+                welcome: 'Приєднуйтесь до CertVal сьогодні!',
+                tagline:
+                    'Почніть моніторинг ваших сертифікатів за хвилини. Отримуйте своєчасні сповіщення про закінчення терміну дії та підтримуйте безпеку та доступність ваших сервісів.'
             },
             forgot: {
                 title: 'Відновлення пароля',
@@ -91,7 +99,7 @@ export const translations = {
         },
         dashboard: {
             title: 'Панель керування',
-            welcome: 'Ласкаво просимо до CertVal',
+            welcome: 'Ласкаво просимо',
             stats: {
                 totalWorkspaces: 'Всього робочих просторів',
                 totalCertificates: 'Всього сертифікатів',
@@ -107,6 +115,7 @@ export const translations = {
         },
         workspaces: {
             title: 'Робочі простори',
+            subtitle: 'Керуйте вашими робочими просторами для сертифікатів',
             create: 'Створити робочий простір',
             name: 'Назва',
             description: 'Опис',
@@ -114,7 +123,7 @@ export const translations = {
             certificates: 'сертифікатів',
             members: 'учасників',
             settings: 'Налаштування',
-            empty: 'Немає робочих просторів',
+            empty: 'Робочих просторів не знайдено',
             createFirst: 'Створіть свій перший робочий простір',
             maxCertificates: 'Максимум сертифікатів',
             isPublic: 'Публічний простір',
@@ -127,7 +136,8 @@ export const translations = {
             editWorkspace: 'Редагувати робочий простір',
             deleteWorkspace: 'Видалити робочий простір',
             confirmDeletion: 'Підтвердити видалення',
-            cannotBeUndone: 'Ця дія не може бути скасована. Всі сертифікати та налаштування будуть втрачені назавжди.',
+            cannotBeUndone:
+                'Ця дія не може бути скасована. Всі сертифікати та налаштування будуть втрачені назавжди.',
             typeWorkspaceName: 'Введіть назву робочого простору',
             toConfirmDeletion: 'для підтвердження видалення',
             workspaceName: 'Назва робочого простору',
@@ -141,10 +151,24 @@ export const translations = {
             inviteFirstMember: 'Запросити першого учасника',
             certificateLimit: 'Ліміт сертифікатів',
             memberInvites: 'Запрошення учасників',
-            manageNotifications: 'Керування сповіщеннями',
+            manageNotifications: 'Керувати сповіщеннями',
             exportData: 'Експорт даних',
             allowMemberInvites: 'Дозволити запрошення учасників',
             unknownWorkspace: 'Невідомий робочий простір',
+            notFound: 'Робочий простір не знайдено',
+            loadError: 'Не вдалося завантажити дані робочого простору.',
+            back: 'Назад до робочих просторів',
+            viewCertificates: 'Переглянути сертифікати',
+            expiringSoon: 'Незабаром закінчується',
+            noExpiringCertificates: 'Немає сертифікатів, термін дії яких скоро закінчується.',
+            dangerZone: 'Небезпечна зона',
+            dangerZoneWarning: 'Ці дії є постійними і не можуть бути скасовані.',
+            inviteNewMember: 'Запросити нового учасника',
+            irreversibleAction: 'Ця дія є незворотною.',
+            lossOfDataWarning:
+                'Ви втратите всі сертифікати та конфігурацію, пов’язану з цим робочим простором.',
+            confirmDelete: 'Для підтвердження, будь ласка, введіть назву робочого простору:',
+            noDescription: 'Опис не надано.',
             roles: {
                 viewer: 'Глядач',
                 editor: 'Редактор',
@@ -155,7 +179,7 @@ export const translations = {
             title: 'Сертифікати',
             subtitle: 'Моніторинг та управління SSL/TLS сертифікатами',
             upload: 'Завантажити сертифікат',
-            subject: 'Суб\'єкт',
+            subject: "Суб'єкт",
             issuer: 'Видавець',
             expires: 'Закінчується',
             status: 'Статус',
@@ -179,7 +203,7 @@ export const translations = {
             downloadCert: 'Скачати сертифікат',
             clearAll: 'Очистити все',
             allWorkspaces: 'Всі робочі простори',
-            searchPlaceholder: 'Пошук за суб\'єктом...',
+            searchPlaceholder: "Пошук за суб'єктом, видавцем...",
             allStatuses: 'Всі статуси',
             allFormats: 'Всі формати',
             sortBy: 'Сортувати за',
@@ -223,15 +247,27 @@ export const translations = {
             lastUpdated: 'Останнє оновлення',
             deleteCertificate: 'Видалити сертифікат',
             confirmDeletion: 'Підтвердити видалення',
-            deletionWarning: 'Ця дія не може бути скасована. Файл сертифіката буде назавжди видалений.',
+            deletionWarning:
+                'Ця дія не може бути скасована. Файл сертифіката буде назавжди видалений.',
             failedToLoad: 'Помилка завантаження сертифіката',
             failedToDelete: 'Помилка видалення сертифіката',
             errorLoading: 'Помилка завантаження сертифіката',
             downloadNotImplemented: 'Функція завантаження буде реалізована пізніше',
-            expiredDaysAgo: 'Прострочений {days} днів тому'
+            expiredDaysAgo: 'Прострочений {days} днів тому',
+            perPage: 'На сторінці',
+            all: 'Всі',
+            certificateFiles: 'Файли сертифікатів',
+            uploadResults: 'Результати завантаження',
+            notFound: 'Сертифікат не знайдено.',
+            daysRemaining: 'залишилось днів',
+            metadata: 'Метадані',
+            uploadedAt: 'Завантажено о',
+            confirmDeleteMessage:
+                'Ви впевнені, що хочете назавжди видалити цей сертифікат? Цю дію неможливо скасувати.'
         },
         notifications: {
             title: 'Сповіщення',
+            subtitle: 'Керуйте правилами для сповіщень про закінчення терміну дії сертифікатів.',
             rules: 'Правила сповіщень',
             history: 'Історія сповіщень',
             createRule: 'Створити правило',
@@ -256,10 +292,16 @@ export const translations = {
             pending: 'В очікуванні',
             noRules: 'Немає правил сповіщень',
             createFirstRule: 'Створіть перше правило сповіщень',
-            noHistory: 'Немає історії сповіщень'
+            noHistory: 'Немає історії сповіщень',
+            viewHistory: 'Переглянути історію',
+            triggers: 'Спрацьовує за',
+            daysBeforeExpirySuffix: 'днів до закінчення.',
+            channel: 'Канал:',
+            confirmDelete: 'Ви впевнені, що хочете видалити це правило?'
         },
         profile: {
             title: 'Профіль користувача',
+            subtitle: 'Керуйте налаштуваннями свого облікового запису та уподобаннями.',
             personalInfo: 'Особиста інформація',
             accountSettings: 'Налаштування акаунту',
             preferences: 'Налаштування',
@@ -272,16 +314,18 @@ export const translations = {
             emailNotifications: 'Email сповіщення',
             language: 'Мова інтерфейсу',
             accountCreated: 'Акаунт створено',
-            lastLogin: 'Останній вхід'
+            lastLogin: 'Останній вхід',
+            joinedOn: 'Приєднався',
+            saveChanges: 'Зберегти зміни'
         },
         errors: {
             general: 'Виникла помилка. Спробуйте знову.',
-            network: 'Помилка мережі. Перевірте з\'єднання.',
+            network: "Помилка мережі. Перевірте з'єднання.",
             unauthorized: 'Необхідна авторизація',
             forbidden: 'Доступ заборонено',
             notFound: 'Не знайдено',
             validation: 'Помилка валідації',
-            required: 'Обов\'язкове поле',
+            required: "Обов'язкове поле",
             invalidEmail: 'Невірний формат електронної пошти',
             passwordTooShort: 'Пароль занадто короткий',
             passwordsNotMatch: 'Паролі не співпадають',
@@ -342,7 +386,8 @@ export const translations = {
             workspace: 'Workspace',
             of: 'of',
             to: 'to',
-            actions: 'Actions'
+            actions: 'Actions',
+            created: 'Created'
         },
         nav: {
             dashboard: 'Dashboard',
@@ -364,7 +409,11 @@ export const translations = {
                 forgot: 'Forgot password?',
                 noAccount: "Don't have an account?",
                 registerLink: 'Sign up',
-                rememberMe: 'Remember me'
+                rememberMe: 'Remember me',
+                welcome: 'Welcome Back!',
+                tagline:
+                    'Secure certificate management made simple. Monitor your SSL/TLS certificates with ease and never miss an expiration again.',
+                registrationSuccess: 'Registration successful! Please sign in.'
             },
             register: {
                 title: 'Register for CertVal',
@@ -378,7 +427,10 @@ export const translations = {
                 loginLink: 'Sign in',
                 terms: 'Terms of Service',
                 privacy: 'Privacy Policy',
-                agreeToTerms: 'I agree to the'
+                agreeToTerms: 'I agree to the',
+                welcome: 'Join CertVal Today!',
+                tagline:
+                    'Start monitoring your certificates in minutes. Get timely expiration alerts and keep your services secure and online.'
             },
             forgot: {
                 title: 'Reset Password',
@@ -389,7 +441,7 @@ export const translations = {
         },
         dashboard: {
             title: 'Dashboard',
-            welcome: 'Welcome to CertVal',
+            welcome: 'Welcome',
             stats: {
                 totalWorkspaces: 'Total Workspaces',
                 totalCertificates: 'Total Certificates',
@@ -405,6 +457,7 @@ export const translations = {
         },
         workspaces: {
             title: 'Workspaces',
+            subtitle: 'Manage your certificate workspaces',
             create: 'Create Workspace',
             name: 'Name',
             description: 'Description',
@@ -425,7 +478,8 @@ export const translations = {
             editWorkspace: 'Edit Workspace',
             deleteWorkspace: 'Delete Workspace',
             confirmDeletion: 'Confirm Deletion',
-            cannotBeUndone: 'This action cannot be undone. All certificates and settings will be permanently lost.',
+            cannotBeUndone:
+                'This action cannot be undone. All certificates and settings will be permanently lost.',
             typeWorkspaceName: 'Type the workspace name',
             toConfirmDeletion: 'to confirm deletion',
             workspaceName: 'Workspace name',
@@ -443,6 +497,20 @@ export const translations = {
             exportData: 'Export Data',
             allowMemberInvites: 'Allow member invites',
             unknownWorkspace: 'Unknown Workspace',
+            notFound: 'Workspace not found',
+            loadError: 'The requested workspace could not be loaded.',
+            back: 'Back to Workspaces',
+            viewCertificates: 'View Certificates',
+            expiringSoon: 'Expiring Soon',
+            noExpiringCertificates: 'No certificates are expiring soon.',
+            dangerZone: 'Danger Zone',
+            dangerZoneWarning: 'These actions are permanent and cannot be undone.',
+            inviteNewMember: 'Invite New Member',
+            irreversibleAction: 'This action is irreversible.',
+            lossOfDataWarning:
+                'You will lose all certificates and configuration associated with this workspace.',
+            confirmDelete: 'To confirm, please type the name of the workspace:',
+            noDescription: 'No description provided.',
             roles: {
                 viewer: 'Viewer',
                 editor: 'Editor',
@@ -477,7 +545,7 @@ export const translations = {
             downloadCert: 'Download Certificate',
             clearAll: 'Clear All',
             allWorkspaces: 'All Workspaces',
-            searchPlaceholder: 'Search by subject...',
+            searchPlaceholder: 'Search by subject, issuer...',
             allStatuses: 'All Statuses',
             allFormats: 'All Formats',
             sortBy: 'Sort By',
@@ -521,15 +589,27 @@ export const translations = {
             lastUpdated: 'Last Updated',
             deleteCertificate: 'Delete Certificate',
             confirmDeletion: 'Confirm Deletion',
-            deletionWarning: 'This action cannot be undone. The certificate file will be permanently removed.',
+            deletionWarning:
+                'This action cannot be undone. The certificate file will be permanently removed.',
             failedToLoad: 'Failed to load certificate',
             failedToDelete: 'Failed to delete certificate',
             errorLoading: 'Error Loading Certificate',
             downloadNotImplemented: 'Download functionality would be implemented here',
-            expiredDaysAgo: 'Expired {days} days ago'
+            expiredDaysAgo: 'Expired {days} days ago',
+            perPage: 'Per Page',
+            all: 'All',
+            certificateFiles: 'Certificate Files',
+            uploadResults: 'Upload Results',
+            notFound: 'Certificate not found.',
+            daysRemaining: 'days remaining',
+            metadata: 'Metadata',
+            uploadedAt: 'Uploaded At',
+            confirmDeleteMessage:
+                'Are you sure you want to permanently delete this certificate? This action cannot be undone.'
         },
         notifications: {
             title: 'Notifications',
+            subtitle: 'Manage rules for certificate expiry alerts.',
             rules: 'Notification Rules',
             history: 'Notification History',
             createRule: 'Create Rule',
@@ -554,10 +634,16 @@ export const translations = {
             pending: 'Pending',
             noRules: 'No notification rules',
             createFirstRule: 'Create your first notification rule',
-            noHistory: 'No notification history'
+            noHistory: 'No notification history',
+            viewHistory: 'View History',
+            triggers: 'Triggers',
+            daysBeforeExpirySuffix: 'days before expiry.',
+            channel: 'Channel:',
+            confirmDelete: 'Are you sure you want to delete this rule?'
         },
         profile: {
             title: 'User Profile',
+            subtitle: 'Manage your account settings and preferences.',
             personalInfo: 'Personal Information',
             accountSettings: 'Account Settings',
             preferences: 'Preferences',
@@ -570,7 +656,9 @@ export const translations = {
             emailNotifications: 'Email Notifications',
             language: 'Interface Language',
             accountCreated: 'Account Created',
-            lastLogin: 'Last Login'
+            lastLogin: 'Last Login',
+            joinedOn: 'Joined on',
+            saveChanges: 'Save Changes'
         },
         errors: {
             general: 'An error occurred. Please try again.',

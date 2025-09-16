@@ -27,7 +27,6 @@
 		language: 'uk',
 		emailNotificationsEnabled: true
 	});
-
 	let passwordForm = $state<ChangePasswordRequest>({
 		currentPassword: '',
 		newPassword: '',
@@ -44,7 +43,6 @@
 		{ value: 'Europe/London', label: 'Europe/London' },
 		{ value: 'America/New_York', label: 'America/New York' }
 	];
-
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -91,10 +89,10 @@
 				user = response.data;
 				successMessage = t('success.profileUpdated', $language);
 			} else {
-				errors.profile = response.message || 'Failed to update profile.';
+				errors.profile = response.message || t('errors.general', $language);
 			}
 		} catch (err) {
-			errors.profile = 'A network error occurred.';
+			errors.profile = t('errors.network', $language);
 		} finally {
 			isSavingProfile = false;
 		}
@@ -104,23 +102,22 @@
 		event.preventDefault();
 		errors = {};
 		successMessage = '';
-
 		if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
 			errors.password = t('errors.passwordsNotMatch', $language);
 			return;
 		}
-		
+
 		isChangingPassword = true;
 		try {
 			const response = await api.post('/v1/users/change-password', passwordForm);
-			if (response.message?.includes('success')) {
+			if (response.data) {
 				successMessage = t('success.passwordChanged', $language);
 				passwordForm = { currentPassword: '', newPassword: '', confirmNewPassword: '' };
 			} else {
-				errors.password = response.message || 'Failed to change password.';
+				errors.password = response.message || t('errors.general', $language);
 			}
-		} catch(err) {
-			errors.password = 'A network error occurred.';
+		} catch (err) {
+			errors.password = t('errors.network', $language);
 		} finally {
 			isChangingPassword = false;
 		}
@@ -134,58 +131,85 @@
 <div class="space-y-6">
 	<div>
 		<h1 class="text-3xl font-bold">{t('profile.title', $language)}</h1>
-		<p class="mt-1 text-base-content/70">Manage your account settings and preferences.</p>
+		<p class="mt-1 text-base-content/70">{t('profile.subtitle', $language)}</p>
 	</div>
 
 	{#if isLoading}
-		<div class="flex justify-center items-center h-96"><span class="loading loading-spinner loading-lg"></span></div>
+		<div class="flex h-96 items-center justify-center">
+			<span class="loading loading-lg loading-spinner"></span>
+		</div>
 	{:else if user}
 		{#if successMessage}
 			<div role="alert" class="alert alert-success"><span>{successMessage}</span></div>
 		{/if}
 
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<div class="lg:col-span-1">
 				<Card>
 					<div class="flex flex-col items-center text-center">
-						<div class="avatar placeholder">
-							<div class="bg-primary text-primary-content rounded-full w-24">
+						<div class="placeholder avatar">
+							<div class="w-24 rounded-full bg-primary text-primary-content">
 								<span class="text-3xl">{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</span>
 							</div>
 						</div>
-						<h2 class="text-xl font-bold mt-4">{user.fullName}</h2>
+						<h2 class="mt-4 text-xl font-bold">{user.fullName}</h2>
 						<p class="text-sm text-base-content/60">{user.email}</p>
-						<div class="text-xs text-base-content/50 mt-4">
-							Joined on {formatDate(user.createdAt)}
+						<div class="mt-4 text-xs text-base-content/50">
+							{t('profile.joinedOn', $language)}
+							{formatDate(user.createdAt)}
 						</div>
 					</div>
 				</Card>
 			</div>
 
-			<div class="lg:col-span-2 space-y-6">
+			<div class="space-y-6 lg:col-span-2">
 				<Card title={t('profile.personalInfo', $language)}>
 					<form onsubmit={handleUpdateProfile} class="space-y-4">
 						{#if errors.profile}
-							<div role="alert" class="alert alert-error text-sm"><span>{errors.profile}</span></div>
+							<div role="alert" class="alert alert-error text-sm">
+								<span>{errors.profile}</span>
+							</div>
 						{/if}
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<Input label={t('auth.register.firstName', $language)} bind:value={profileForm.firstName} required />
-							<Input label={t('auth.register.lastName', $language)} bind:value={profileForm.lastName} required />
+						<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+							<Input
+								label={t('auth.register.firstName', $language)}
+								bind:value={profileForm.firstName}
+								required
+							/>
+							<Input
+								label={t('auth.register.lastName', $language)}
+								bind:value={profileForm.lastName}
+								required
+							/>
 						</div>
-						
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<Select label={t('profile.language', $language)} bind:value={profileForm.language} options={languages} />
-							<Select label={t('profile.timezone', $language)} bind:value={profileForm.timeZone} options={timezones} />
+
+						<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+							<Select
+								label={t('profile.language', $language)}
+								bind:value={profileForm.language}
+								options={languages}
+							/>
+							<Select
+								label={t('profile.timezone', $language)}
+								bind:value={profileForm.timeZone}
+								options={timezones}
+							/>
 						</div>
 
 						<div class="form-control">
 							<label class="label cursor-pointer">
-								<span class="label-text">{t('profile.emailNotifications', $language)}</span> 
-								<input type="checkbox" class="toggle toggle-primary" bind:checked={profileForm.emailNotificationsEnabled} />
+								<span class="label-text">{t('profile.emailNotifications', $language)}</span>
+								<input
+									type="checkbox"
+									class="toggle toggle-primary"
+									bind:checked={profileForm.emailNotificationsEnabled}
+								/>
 							</label>
 						</div>
 						<div class="card-actions justify-end">
-							<Button type="submit" variant="primary" loading={isSavingProfile}>Save Changes</Button>
+							<Button type="submit" variant="primary" loading={isSavingProfile}
+								>{t('profile.saveChanges', $language)}</Button
+							>
 						</div>
 					</form>
 				</Card>
@@ -193,13 +217,32 @@
 				<Card title={t('profile.security', $language)}>
 					<form onsubmit={handleChangePassword} class="space-y-4">
 						{#if errors.password}
-							<div role="alert" class="alert alert-error text-sm"><span>{errors.password}</span></div>
+							<div role="alert" class="alert alert-error text-sm">
+								<span>{errors.password}</span>
+							</div>
 						{/if}
-						<Input label={t('profile.currentPassword', $language)} type="password" bind:value={passwordForm.currentPassword} required />
-						<Input label={t('profile.newPassword', $language)} type="password" bind:value={passwordForm.newPassword} required />
-						<Input label={t('profile.confirmNewPassword', $language)} type="password" bind:value={passwordForm.confirmNewPassword} required />
+						<Input
+							label={t('profile.currentPassword', $language)}
+							type="password"
+							bind:value={passwordForm.currentPassword}
+							required
+						/>
+						<Input
+							label={t('profile.newPassword', $language)}
+							type="password"
+							bind:value={passwordForm.newPassword}
+							required
+						/>
+						<Input
+							label={t('profile.confirmNewPassword', $language)}
+							type="password"
+							bind:value={passwordForm.confirmNewPassword}
+							required
+						/>
 						<div class="card-actions justify-end">
-							<Button type="submit" variant="primary" loading={isChangingPassword}>Change Password</Button>
+							<Button type="submit" variant="primary" loading={isChangingPassword}
+								>{t('profile.changePassword', $language)}</Button
+							>
 						</div>
 					</form>
 				</Card>

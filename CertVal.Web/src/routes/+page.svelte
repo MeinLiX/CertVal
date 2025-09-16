@@ -103,7 +103,7 @@
 						<tr>
 							<th>{t('certificates.subject', $language)}</th>
 							<th>{t('certificates.expires', $language)}</th>
-							<th>{t('certificates.status', $language)}</th>
+							<th>{t('common.status', $language)}</th>
 							<th></th>
 						</tr>
 					</thead>
@@ -117,7 +117,7 @@
 								<td>{formatDate(cert.notAfter)}</td>
 								<td>
 									<span class="badge badge-sm badge-warning"
-										>{getCertificateStatus(cert.notAfter)}</span
+										>{t(`certificates.${getCertificateStatus(cert.notAfter)}`, $language)}</span
 									>
 								</td>
 								<th>
