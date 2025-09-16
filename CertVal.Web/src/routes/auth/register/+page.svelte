@@ -23,7 +23,7 @@
 		event.preventDefault();
 		errors = {};
 		if (formData.password !== formData.confirmPassword) {
-			errors.confirmPassword = 'Passwords do not match';
+			errors.confirmPassword = t('errors.passwordsNotMatch', $language);
 			return;
 		}
 
@@ -34,7 +34,7 @@
 			if (response.data) {
 				goto('/auth/login?registered=true');
 			} else {
-				errors.general = response.message || 'Registration failed.';
+				errors.general = response.message || t('errors.general', $language);
 			}
 		} catch (error) {
 			errors.general = t('errors.network', $language);
@@ -51,11 +51,8 @@
 <div class="hero min-h-screen bg-base-200">
 	<div class="hero-content w-full max-w-4xl flex-col lg:flex-row-reverse">
 		<div class="text-center lg:pl-10 lg:text-left">
-			<h1 class="text-5xl font-bold">Join CertVal Today!</h1>
-			<p class="py-6">
-				Start monitoring your certificates in minutes. Get timely expiration alerts and keep your
-				services secure and online.
-			</p>
+			<h1 class="text-5xl font-bold">{t('auth.register.welcome', $language)}</h1>
+			<p class="py-6">{t('auth.register.tagline', $language)}</p>
 		</div>
 		<div class="card w-full max-w-sm shrink-0 bg-base-100 shadow-2xl">
 			<form class="card-body" onsubmit={handleSubmit}>

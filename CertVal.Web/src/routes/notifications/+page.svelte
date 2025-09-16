@@ -19,7 +19,6 @@
 		Workspace,
 		PagedResult
 	} from '$lib/types';
-
 	let workspaces = $state<Workspace[]>([]);
 	let selectedWorkspaceId = $state<string>('');
 	let rules = $state<NotificationRule[]>([]);
@@ -30,7 +29,6 @@
 
 	let showCreateModal = $state(false);
 	let showHistoryModal = $state(false);
-
 	let createForm = $state<CreateNotificationRuleRequest>({
 		name: '',
 		daysBeforeExpiry: 30,
@@ -39,7 +37,6 @@
 		frequency: 'Once'
 	});
 	let errors = $state<Record<string, string>>({});
-
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -125,18 +122,17 @@
 				rules = [...rules, response.data];
 				showCreateModal = false;
 			} else {
-				errors.general = response.message || 'Failed to create rule.';
+				errors.general = response.message || t('errors.general', $language);
 			}
 		} catch (err) {
-			errors.general = 'A network error occurred.';
+			errors.general = t('errors.network', $language);
 		} finally {
 			isProcessing = false;
 		}
 	}
 
 	async function handleDeleteRule(ruleId: string) {
-		if (!confirm('Are you sure you want to delete this rule?')) return;
-
+		if (!confirm(t('notifications.confirmDelete', $language))) return;
 		try {
 			await api.delete(`/v1/workspaces/${selectedWorkspaceId}/notifications/rules/${ruleId}`);
 			rules = rules.filter((r) => r.id !== ruleId);
@@ -154,7 +150,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold">{t('notifications.title', $language)}</h1>
-			<p class="mt-1 text-base-content/70">Manage rules for certificate expiry alerts.</p>
+			<p class="mt-1 text-base-content/70">{t('notifications.subtitle', $language)}</p>
 		</div>
 		<div>
 			<Button
@@ -163,17 +159,17 @@
 					loadHistoryForWorkspace();
 				}}
 				variant="ghost"
-				class="mr-2">View History</Button
+				class="mr-2">{t('notifications.viewHistory', $language)}</Button
 			>
 			<Button onclick={() => (showCreateModal = true)} disabled={!selectedWorkspaceId}
-				>Create Rule</Button
+				>{t('notifications.createRule', $language)}</Button
 			>
 		</div>
 	</div>
 
 	<Card>
 		<Select
-			label="Workspace"
+			label={t('common.workspace', $language)}
 			bind:value={selectedWorkspaceId}
 			onchange={loadRulesForWorkspace}
 			options={workspaces.map((w) => ({ value: w.id, label: w.name }))}
@@ -200,14 +196,21 @@
 						<div>
 							<p class="font-bold">{rule.name}</p>
 							<p class="text-sm opacity-70">
-								Triggers <strong>{rule.daysBeforeExpiry}</strong> days before expiry. Channel:
-								<strong>{rule.channelType}</strong>. Frequency: <strong>{rule.frequency}</strong>.
+								{t('notifications.triggers', $language)} <strong>{rule.daysBeforeExpiry}</strong>
+								{t('notifications.daysBeforeExpirySuffix', $language)}.
+								{t('notifications.channel', $language)}
+								<strong>{rule.channelType}</strong>. {t('notifications.frequency', $language)}:
+								<strong>{rule.frequency}</strong>.
 							</p>
 						</div>
 						<div class="flex items-center gap-2">
 							<div class="form-control">
 								<label class="label cursor-pointer gap-2">
-									<span class="label-text text-xs">{rule.isEnabled ? 'Enabled' : 'Disabled'}</span>
+									<span class="label-text text-xs"
+										>{rule.isEnabled
+											? t('notifications.enabled', $language)
+											: t('notifications.disabled', $language)}</span
+									>
 									<input
 										type="checkbox"
 										checked={rule.isEnabled}
@@ -216,7 +219,7 @@
 								</label>
 							</div>
 							<Button size="sm" variant="ghost" onclick={() => handleDeleteRule(rule.id)}
-								>Delete</Button
+								>{t('common.delete', $language)}</Button
 							>
 						</div>
 					</div>
@@ -235,42 +238,45 @@
 		{#if errors.general}
 			<div role="alert" class="alert alert-error text-sm"><span>{errors.general}</span></div>
 		{/if}
-		<Input label="Rule Name" bind:value={createForm.name} required />
+		<Input label={t('notifications.ruleName', $language)} bind:value={createForm.name} required />
 		<Input
-			label="Days Before Expiry"
+			label={t('notifications.daysBeforeExpiry', $language)}
 			type="number"
 			bind:value={createForm.daysBeforeExpiry}
 			required
 		/>
 		<Select
-			label="Channel"
+			label={t('notifications.channel', $language)}
 			bind:value={createForm.channelType}
 			options={[
-				{ value: 'Email', label: 'Email' },
-				{ value: 'Webhook', label: 'Webhook' }
+				{ value: 'Email', label: t('notifications.email', $language) },
+				{ value: 'Webhook', label: t('notifications.webhook', $language) }
 			]}
 		/>
 		<Select
-			label="Frequency"
+			label={t('notifications.frequency', $language)}
 			bind:value={createForm.frequency}
 			options={[
-				{ value: 'Once', label: 'Once' },
-				{ value: 'Daily', label: 'Daily' },
-				{ value: 'Weekly', label: 'Weekly' },
-				{ value: 'Monthly', label: 'Monthly' }
+				{ value: 'Once', label: t('notifications.once', $language) },
+				{ value: 'Daily', label: t('notifications.daily', $language) },
+				{ value: 'Weekly', label: t('notifications.weekly', $language) },
+				{ value: 'Monthly', label: t('notifications.monthly', $language) }
 			]}
 		/>
 		<div class="modal-action">
-			<Button type="button" variant="ghost" onclick={() => (showCreateModal = false)}>Cancel</Button
+			<Button type="button" variant="ghost" onclick={() => (showCreateModal = false)}
+				>{t('common.cancel', $language)}</Button
 			>
-			<Button type="submit" loading={isProcessing} variant="primary">Create</Button>
+			<Button type="submit" loading={isProcessing} variant="primary"
+				>{t('common.create', $language)}</Button
+			>
 		</div>
 	</form>
 </Modal>
 
 <Modal
 	isOpen={showHistoryModal}
-	title="Notification History"
+	title={t('notifications.history', $language)}
 	onClose={() => (showHistoryModal = false)}
 >
 	<div class="max-h-96 space-y-2 overflow-y-auto">
@@ -281,18 +287,25 @@
 		{:else}
 			{#each history as item}
 				<div class="rounded-lg border border-base-content/10 p-2 text-sm">
-					<div class="flex justify-between">
+					<div
+						class="flex
+justify-between"
+					>
 						<span class="max-w-xs truncate font-semibold">{item.subject}</span>
 						<span class="badge badge-sm {item.status === 'Sent' ? 'badge-success' : 'badge-error'}"
 							>{item.status}</span
 						>
 					</div>
-					<p class="text-xs opacity-60">{formatDateTime(item.createdAt)} to {item.recipient}</p>
+					<p class="text-xs opacity-60">
+						{formatDateTime(item.createdAt)}
+						{t('common.to', $language)}
+						{item.recipient}
+					</p>
 				</div>
 			{/each}
 		{/if}
 	</div>
 	<div class="modal-action">
-		<Button onclick={() => (showHistoryModal = false)}>Close</Button>
+		<Button onclick={() => (showHistoryModal = false)}>{t('common.close', $language)}</Button>
 	</div>
 </Modal>

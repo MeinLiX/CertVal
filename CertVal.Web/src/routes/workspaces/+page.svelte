@@ -12,7 +12,6 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import type { Workspace, CreateWorkspaceRequest, PagedResult } from '$lib/types';
-
 	let workspaces = $state<Workspace[]>([]);
 	let isLoading = $state(true);
 	let showCreateModal = $state(false);
@@ -25,7 +24,6 @@
 		allowMemberInvites: true
 	});
 	let errors = $state<Record<string, string>>({});
-
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -90,7 +88,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold">{t('workspaces.title', $language)}</h1>
-			<p class="mt-1 text-base-content/70">Manage your certificate workspaces</p>
+			<p class="mt-1 text-base-content/70">{t('workspaces.subtitle', $language)}</p>
 		</div>
 		<Button onclick={openCreateModal}>
 			<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -141,7 +139,10 @@
 					class="cursor-pointer"
 					onclick={() => goto(`/workspaces/${workspace.id}`)}
 				>
-					<div class="mb-4 flex items-center justify-between">
+					<div
+						class="mb-4
+flex items-center justify-between"
+					>
 						<h3 class="card-title text-lg">{workspace.name}</h3>
 						<span class="badge {workspace.isPublic ? 'badge-accent' : 'badge-ghost'} badge-sm">
 							{workspace.isPublic ? t('common.public', $language) : t('common.private', $language)}
@@ -149,7 +150,7 @@
 					</div>
 
 					<p class="line-clamp-2 h-10 text-sm text-base-content/70">
-						{workspace.description || 'No description provided.'}
+						{workspace.description || t('workspaces.noDescription', $language)}
 					</p>
 
 					<div class="mt-4 flex justify-between text-sm">
@@ -170,7 +171,8 @@
 									stroke-linecap="round"
 									stroke-linejoin="round"
 									stroke-width="2"
-									d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+									d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 
+015 0z"
 								/></svg
 							>
 							<span>{workspace.memberCount} {t('workspaces.members', $language)}</span>
@@ -186,7 +188,7 @@
 								goto(`/certificates?workspace=${workspace.id}`);
 							}}
 						>
-							View Certificates
+							{t('workspaces.viewCertificates', $language)}
 						</Button>
 					</div>
 				</Card>
@@ -236,13 +238,13 @@
 				bind:value={createForm.description}
 				rows={3}
 				class="textarea-bordered textarea w-full"
-				placeholder="Optional description for your workspace"
+				placeholder={t('workspaces.description', $language)}
 			></textarea>
 		</div>
 
 		<Input
 			type="number"
-			label="Max Certificates"
+			label={t('workspaces.maxCertificates', $language)}
 			bind:value={createForm.maxCertificates}
 			required
 			error={errors.maxCertificates}
@@ -251,13 +253,13 @@
 		<div class="flex gap-4">
 			<div class="form-control">
 				<label class="label cursor-pointer gap-2">
-					<span class="label-text">Public</span>
+					<span class="label-text">{t('common.public', $language)}</span>
 					<input type="checkbox" bind:checked={createForm.isPublic} class="toggle toggle-primary" />
 				</label>
 			</div>
 			<div class="form-control">
 				<label class="label cursor-pointer gap-2">
-					<span class="label-text">Allow Invites</span>
+					<span class="label-text">{t('workspaces.allowInvites', $language)}</span>
 					<input
 						type="checkbox"
 						bind:checked={createForm.allowMemberInvites}

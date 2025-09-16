@@ -21,7 +21,6 @@
 			goto('/');
 		}
 	});
-
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
 		errors = {};
@@ -50,10 +49,9 @@
 <div class="hero min-h-screen bg-base-200">
 	<div class="hero-content w-full max-w-4xl flex-col lg:flex-row-reverse">
 		<div class="text-center lg:pl-10 lg:text-left">
-			<h1 class="text-5xl font-bold">Welcome Back!</h1>
+			<h1 class="text-5xl font-bold">{t('auth.login.welcome', $language)}</h1>
 			<p class="py-6">
-				Secure certificate management made simple. Monitor your SSL/TLS certificates with ease and
-				never miss an expiration again.
+				{t('auth.login.tagline', $language)}
 			</p>
 		</div>
 		<div class="card w-full max-w-sm shrink-0 bg-base-100 shadow-2xl">
@@ -62,7 +60,7 @@
 
 				{#if isRegistered}
 					<div role="alert" class="alert alert-success text-sm">
-						<span>Registration successful! Please sign in.</span>
+						<span>{t('auth.login.registrationSuccess', $language)}</span>
 					</div>
 				{/if}
 				{#if errors.general}
@@ -83,7 +81,7 @@
 					type="password"
 					bind:value={formData.password}
 					required
-					placeholder="Enter your password"
+					placeholder={t('auth.login.password', $language)}
 				/>
 				<div class="mt-2 flex items-center justify-between text-sm">
 					<label class="label cursor-pointer gap-2">
