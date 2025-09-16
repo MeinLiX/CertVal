@@ -11,14 +11,14 @@ public static class AspireExtensions
         var messagingConfig = configuration.GetSection("Messaging");
 
         return builder
-            .WithEnvironment("Messaging__ExchangeName", messagingConfig["ExchangeName"] ?? throw new Exception())
-            .WithEnvironment("Messaging__EmailQueueName", messagingConfig["EmailQueueName"] ?? throw new Exception())
-            .WithEnvironment("Messaging__EmailRoutingKey", messagingConfig["EmailRoutingKey"] ?? throw new Exception())
-            .WithEnvironment("Messaging__DurableQueues", messagingConfig["DurableQueues"] ?? throw new Exception())
-            .WithEnvironment("Messaging__PersistentMessages", messagingConfig["PersistentMessages"] ?? throw new Exception())
-            .WithEnvironment("Messaging__MaxRetryAttempts", messagingConfig["MaxRetryAttempts"] ?? throw new Exception())
-            .WithEnvironment("Messaging__RetryDelay", messagingConfig["RetryDelay"] ?? throw new Exception())
-            .WithEnvironment("Messaging__ConnectionTimeout", messagingConfig["ConnectionTimeout"] ?? throw new Exception())
-            .WithEnvironment("Messaging__MaxConnectionRetries", messagingConfig["MaxConnectionRetries"] ?? throw new Exception());
+            .WithEnvironment("Messaging__ExchangeName", messagingConfig["ExchangeName"] ?? throw new InvalidOperationException("Missing configuration: Messaging:ExchangeName"))
+            .WithEnvironment("Messaging__EmailQueueName", messagingConfig["EmailQueueName"] ?? throw new InvalidOperationException("Missing configuration: Messaging:EmailQueueName"))
+            .WithEnvironment("Messaging__EmailRoutingKey", messagingConfig["EmailRoutingKey"] ?? throw new InvalidOperationException("Missing configuration: Messaging:EmailRoutingKey"))
+            .WithEnvironment("Messaging__DurableQueues", messagingConfig["DurableQueues"] ?? throw new InvalidOperationException("Missing configuration: Messaging:DurableQueues"))
+            .WithEnvironment("Messaging__PersistentMessages", messagingConfig["PersistentMessages"] ?? throw new InvalidOperationException("Missing configuration: Messaging:PersistentMessages"))
+            .WithEnvironment("Messaging__MaxRetryAttempts", messagingConfig["MaxRetryAttempts"] ?? throw new InvalidOperationException("Missing configuration: Messaging:MaxRetryAttempts"))
+            .WithEnvironment("Messaging__RetryDelay", messagingConfig["RetryDelay"] ?? throw new InvalidOperationException("Missing configuration: Messaging:RetryDelay"))
+            .WithEnvironment("Messaging__ConnectionTimeout", messagingConfig["ConnectionTimeout"] ?? throw new InvalidOperationException("Missing configuration: Messaging:ConnectionTimeout"))
+            .WithEnvironment("Messaging__MaxConnectionRetries", messagingConfig["MaxConnectionRetries"] ?? throw new InvalidOperationException("Missing configuration: Messaging:MaxConnectionRetries"));
     }
 }
