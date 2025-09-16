@@ -165,6 +165,23 @@
 			console.error('Failed to delete rule', err);
 		}
 	}
+
+	function isRuleDisabledForCurrentUser(rule: NotificationRule): boolean {
+		if (!$auth.user || $auth.user.emailNotificationsEnabled) {
+			return false;
+		}
+
+		if (rule.channelType !== 'Email') {
+			return false;
+		}
+
+		try {
+			const config = JSON.parse(rule.channelConfig);
+			return config.email && config.email === $auth.user.email;
+		} catch (e) {
+			return false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -216,6 +233,7 @@
 			</div>
 		{:else}
 			{#each rules as rule (rule.id)}
+				{@const isDisabled = isRuleDisabledForCurrentUser(rule)}
 				<Card>
 					<div class="flex items-center justify-between">
 						<div>
@@ -229,6 +247,11 @@
 								<strong>{rule.channelType}</strong>. {t('notifications.frequency', $language)}:
 								<strong>{rule.frequency}</strong>.
 							</p>
+							{#if isDisabled}
+								<div role="alert" class="mt-2 alert alert-warning p-2 text-xs">
+									<span>{t('notifications.disabledInProfileWarning', $language)}</span>
+								</div>
+							{/if}
 						</div>
 						<div class="flex items-center gap-2">
 							<div class="form-control">
@@ -242,6 +265,7 @@
 										type="checkbox"
 										checked={rule.isEnabled}
 										class="toggle toggle-sm toggle-success"
+										disabled={isDisabled}
 									/>
 								</label>
 							</div>
