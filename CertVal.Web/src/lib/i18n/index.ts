@@ -301,7 +301,8 @@ export const translations = {
             triggers: 'Спрацьовує за',
             daysBeforeExpirySuffix: 'днів до закінчення.',
             channel: 'Канал:',
-            confirmDelete: 'Ви впевнені, що хочете видалити це правило?'
+            confirmDelete: 'Ви впевнені, що хочете видалити це правило?',
+            disabledInProfileWarning: 'Сповіщення вимкнені у вашому профілі, тому це правило для вас неактивне.'
         },
         profile: {
             title: 'Профіль користувача',
@@ -648,7 +649,8 @@ export const translations = {
             triggers: 'Triggers',
             daysBeforeExpirySuffix: 'days before expiry.',
             channel: 'Channel:',
-            confirmDelete: 'Are you sure you want to delete this rule?'
+            confirmDelete: 'Are you sure you want to delete this rule?',
+            disabledInProfileWarning: 'Notifications are disabled in your profile, so this rule is inactive for you.'
         },
         profile: {
             title: 'User Profile',
