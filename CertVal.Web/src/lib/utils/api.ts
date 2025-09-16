@@ -25,11 +25,6 @@ class ApiClient {
                 )
             });
 
-            if (response.status === 401) {
-                auth.logout();
-                throw new Error('Unauthorized');
-            }
-
             let data;
             const contentType = response.headers.get('content-type');
 
@@ -41,13 +36,17 @@ class ApiClient {
             }
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    auth.logout();
+                }
+
                 if (response.status === 400 && data.errors) {
                     const errorMessages = [];
                     for (const [field, messages] of Object.entries(data.errors)) {
                         if (Array.isArray(messages)) {
                             errorMessages.push(...messages);
                         } else {
-                            errorMessages.push(messages);
+                            errorMessages.push(messages as string);
                         }
                     }
                     throw new Error(errorMessages.join(', ') || 'Validation error');
@@ -99,11 +98,6 @@ class ApiClient {
                 body: formData
             });
 
-            if (response.status === 401) {
-                auth.logout();
-                throw new Error('Unauthorized');
-            }
-
             let data;
             const contentType = response.headers.get('content-type');
 
@@ -115,13 +109,17 @@ class ApiClient {
             }
 
             if (!response.ok) {
+                 if (response.status === 401) {
+                    auth.logout();
+                }
+
                 if (response.status === 400 && data.errors) {
                     const errorMessages = [];
                     for (const [field, messages] of Object.entries(data.errors)) {
                         if (Array.isArray(messages)) {
                             errorMessages.push(...messages);
                         } else {
-                            errorMessages.push(messages);
+                            errorMessages.push(messages as string);
                         }
                     }
                     throw new Error(errorMessages.join(', ') || 'Upload failed');
