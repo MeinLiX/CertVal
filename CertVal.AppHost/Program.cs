@@ -1,4 +1,5 @@
 using CertVal.AppHost.Extensions;
+using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -32,10 +33,11 @@ var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-se
     .WaitFor(emailService)
     .PublishAsDockerFile();
 
-var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
+var webPort = builder.Configuration.GetValue<int>("Web:Port");
+var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev", args: ["--port", webPort.ToString()])
     .WithNpmPackageInstallation()
     .WithReference(apiService).WaitFor(apiService)
-    .WithHttpEndpoint(port: 9995, isProxied: false)
+    .WithHttpEndpoint(port: webPort, isProxied: false)
     .PublishAsDockerFile();
 
 await builder.Build().RunAsync();
