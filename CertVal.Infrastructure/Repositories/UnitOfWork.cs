@@ -140,7 +140,10 @@ public class UnitOfWork : IUnitOfWork
     public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
-        ObjectDisposedException.ThrowIf(_transaction == null, new InvalidOperationException("No transaction to rollback"));
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("No transaction to rollback");
+        }
 
         try
         {
