@@ -15,8 +15,7 @@ public class FlexibleEnumConverter<T> : JsonConverter<T> where T : struct, Enum
         {
             case JsonTokenType.String:
                 var stringValue = reader.GetString();
-                if (string.IsNullOrEmpty(stringValue))
-                    throw new JsonException($"Empty string cannot be converted to {typeof(T).Name}");
+                ObjectDisposedException.ThrowIf(string.IsNullOrEmpty(stringValue), new JsonException($"Empty string cannot be converted to {typeof(T).Name}"));
 
                 if (Enum.TryParse<T>(stringValue, ignoreCase: true, out var enumFromString))
                     return enumFromString;

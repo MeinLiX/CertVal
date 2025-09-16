@@ -8,14 +8,20 @@ using System.Text.Json;
 
 namespace CertVal.Infrastructure.Messaging;
 
-public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
+public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, IDisposable
 {
     private readonly IConnection _connection;
-    private readonly MessagingConfiguration _messagingConfig;
-    private readonly IConfiguration _configuration;
+    private readonly MessagingConfiguration _config;
+    private readonly IConfiguration _appConfig;
     private readonly ILogger<RabbitMqEmailNotificationPublisher> _logger;
-    private readonly Lazy<Task<IModel>> _channelLazy;
+    private readonly Lazy<IModel> _channelLazy;
     private bool _disposed;
+
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
 
     public RabbitMqEmailNotificationPublisher(
         IConnection connection,
@@ -23,47 +29,37 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
         IConfiguration configuration,
         ILogger<RabbitMqEmailNotificationPublisher> logger)
     {
-        _connection = connection;
-        _messagingConfig = messagingOptions.Value;
-        _configuration = configuration;
-        _logger = logger;
+        _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+        _config = messagingOptions.Value ?? throw new ArgumentNullException(nameof(messagingOptions));
+        _appConfig = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        _channelLazy = new Lazy<Task<IModel>>(CreateChannelAsync);
+        _channelLazy = new Lazy<IModel>(CreateChannel);
     }
 
     public async Task PublishAsync(EmailNotificationMessage message, CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, nameof(RabbitMqEmailNotificationPublisher));
+
         try
         {
-            var channel = await _channelLazy.Value;
-
-            var messageJson = JsonSerializer.Serialize(message, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
+            var channel = _channelLazy.Value;
+            var messageJson = JsonSerializer.Serialize(message, SerializerOptions);
             var body = Encoding.UTF8.GetBytes(messageJson);
 
-            var properties = channel.CreateBasicProperties();
-            properties.MessageId = message.MessageId;
-            properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            properties.Persistent = _messagingConfig.PersistentMessages;
-            properties.Type = message.Type.ToString();
-
-            if (!string.IsNullOrEmpty(message.CorrelationId))
-            {
-                properties.CorrelationId = message.CorrelationId;
-            }
+            var properties = CreateBasicProperties(channel, message);
 
             channel.BasicPublish(
-                exchange: _messagingConfig.ExchangeName,
-                routingKey: _messagingConfig.RoutingKey,
+                exchange: _config.ExchangeName,
+                routingKey: _config.EmailRoutingKey,
                 mandatory: false,
                 basicProperties: properties,
                 body: body);
 
-            _logger.LogInformation("Published email notification: {MessageId}, Type: {Type}, To: {Email}",
+            _logger.LogDebug("Published email notification: {MessageId}, Type: {Type}, To: {Email}",
                 message.MessageId, message.Type, message.ToEmail);
+
+            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -73,106 +69,93 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
         }
     }
 
-    public async Task PublishUserRegisteredAsync(Guid userId, string email, string firstName, string lastName,
-        string confirmationToken, CancellationToken cancellationToken = default)
+    public async Task PublishUserRegisteredAsync(Guid userId, string email, string firstName,
+        string lastName, string confirmationToken, CancellationToken cancellationToken = default)
     {
-        var baseUrl = _configuration["EmailService:Templates:BaseUrl"] ?? "https://certval.halerka.dev";
-
-        var message = new EmailNotificationMessage
-        {
-            Type = EmailNotificationType.UserRegistered,
-            ToEmail = email,
-            ToName = $"{firstName} {lastName}".Trim(),
-            Data = new Dictionary<string, object>
+        var message = CreateEmailMessage(
+            EmailNotificationType.UserRegistered,
+            email,
+            $"{firstName} {lastName}".Trim(),
+            new Dictionary<string, object>
             {
                 ["FirstName"] = firstName,
                 ["LastName"] = lastName,
                 ["Email"] = email,
                 ["ConfirmationToken"] = confirmationToken,
-                ["BaseUrl"] = baseUrl
+                ["BaseUrl"] = GetBaseUrl()
             },
-            CorrelationId = userId.ToString()
-        };
+            userId.ToString());
 
         await PublishAsync(message, cancellationToken);
     }
 
-    public async Task PublishWorkspaceInvitationAsync(Guid workspaceId, string inviteeName, string inviterName,
-        string workspaceName, string invitationToken, string role, string email,
-        CancellationToken cancellationToken = default)
+    public async Task PublishWorkspaceInvitationAsync(Guid workspaceId, string inviteeName,
+        string inviterName, string workspaceName, string invitationToken, string role,
+        string email, CancellationToken cancellationToken = default)
     {
-        var baseUrl = _configuration["EmailService:Templates:BaseUrl"] ?? "https://certval.halerka.dev";
-
-        var message = new EmailNotificationMessage
-        {
-            Type = EmailNotificationType.WorkspaceInvitation,
-            ToEmail = email,
-            ToName = inviteeName,
-            Data = new Dictionary<string, object>
+        var message = CreateEmailMessage(
+            EmailNotificationType.WorkspaceInvitation,
+            email,
+            inviteeName,
+            new Dictionary<string, object>
             {
                 ["InviteeName"] = inviteeName,
                 ["InviterName"] = inviterName,
                 ["WorkspaceName"] = workspaceName,
                 ["WorkspaceId"] = workspaceId.ToString(),
                 ["InvitationToken"] = invitationToken,
-                ["BaseUrl"] = baseUrl,
+                ["BaseUrl"] = GetBaseUrl(),
                 ["Role"] = role
             },
-            CorrelationId = workspaceId.ToString()
-        };
+            workspaceId.ToString());
 
         await PublishAsync(message, cancellationToken);
     }
 
-    public async Task PublishPasswordResetAsync(string email, string firstName, string resetToken, DateTime expiresAt,
-        CancellationToken cancellationToken = default)
+    public async Task PublishPasswordResetAsync(string email, string firstName, string resetToken,
+        DateTime expiresAt, CancellationToken cancellationToken = default)
     {
-        var baseUrl = _configuration["EmailService:Templates:BaseUrl"] ?? "https://certval.halerka.dev";
-
-        var message = new EmailNotificationMessage
-        {
-            Type = EmailNotificationType.PasswordReset,
-            ToEmail = email,
-            ToName = firstName,
-            Data = new Dictionary<string, object>
+        var message = CreateEmailMessage(
+            EmailNotificationType.PasswordReset,
+            email,
+            firstName,
+            new Dictionary<string, object>
             {
                 ["FirstName"] = firstName,
                 ["ResetToken"] = resetToken,
-                ["BaseUrl"] = baseUrl,
+                ["BaseUrl"] = GetBaseUrl(),
                 ["ExpiresAt"] = expiresAt
-            }
-        };
+            });
 
         await PublishAsync(message, cancellationToken);
     }
 
-    public async Task PublishCertificateExpiringAsync(string email, string workspaceName, string certificateSubject,
-        string certificateIssuer, DateTime expiryDate, int daysUntilExpiry,
-        CancellationToken cancellationToken = default)
+    public async Task PublishCertificateExpiringAsync(string email, string workspaceName,
+        string certificateSubject, string certificateIssuer, DateTime expiryDate,
+        int daysUntilExpiry, CancellationToken cancellationToken = default)
     {
-        var baseUrl = _configuration["EmailService:Templates:BaseUrl"] ?? "https://certval.halerka.dev";
-        var notificationType = daysUntilExpiry <= 0 ? EmailNotificationType.CertificateExpired : EmailNotificationType.CertificateExpiring;
+        var notificationType = daysUntilExpiry <= 0
+            ? EmailNotificationType.CertificateExpired
+            : EmailNotificationType.CertificateExpiring;
 
-        var message = new EmailNotificationMessage
-        {
-            Type = notificationType,
-            ToEmail = email,
-            ToName = string.Empty,
-            Data = new Dictionary<string, object>
+        var message = CreateEmailMessage(
+            notificationType,
+            email,
+            string.Empty,
+            new Dictionary<string, object>
             {
                 ["WorkspaceName"] = workspaceName,
                 ["CertificateSubject"] = certificateSubject,
                 ["CertificateIssuer"] = certificateIssuer,
                 ["ExpiryDate"] = expiryDate,
                 ["DaysUntilExpiry"] = daysUntilExpiry,
-                ["BaseUrl"] = baseUrl
-            }
-        };
+                ["BaseUrl"] = GetBaseUrl()
+            });
 
         await PublishAsync(message, cancellationToken);
     }
 
-    private async Task<IModel> CreateChannelAsync()
+    private IModel CreateChannel()
     {
         try
         {
@@ -180,13 +163,27 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
 
             // Declare exchange
             channel.ExchangeDeclare(
-                exchange: _messagingConfig.ExchangeName,
+                exchange: _config.ExchangeName,
                 type: ExchangeType.Direct,
-                durable: _messagingConfig.DurableQueues);
+                durable: _config.DurableQueues);
 
-            _logger.LogDebug("RabbitMQ channel created and exchange declared: {ExchangeName}", _messagingConfig.ExchangeName);
+            // Declare queue
+            channel.QueueDeclare(
+                queue: _config.EmailQueueName,
+                durable: _config.DurableQueues,
+                exclusive: false,
+                autoDelete: false);
 
-            return await Task.FromResult(channel);
+            // Bind queue
+            channel.QueueBind(
+                queue: _config.EmailQueueName,
+                exchange: _config.ExchangeName,
+                routingKey: _config.EmailRoutingKey);
+
+            _logger.LogDebug("RabbitMQ channel created and configured: Exchange={Exchange}, Queue={Queue}",
+                _config.ExchangeName, _config.EmailQueueName);
+
+            return channel;
         }
         catch (Exception ex)
         {
@@ -195,27 +192,70 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher
         }
     }
 
-    public ValueTask DisposeAsync()
+    private IBasicProperties CreateBasicProperties(IModel channel, EmailNotificationMessage message)
     {
-        if (_disposed) return ValueTask.CompletedTask;
+        var properties = channel.CreateBasicProperties();
+        properties.MessageId = message.MessageId;
+        properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        properties.Persistent = _config.PersistentMessages;
+        properties.Type = message.Type.ToString();
+        properties.ContentType = "application/json";
+        properties.ContentEncoding = "utf-8";
+
+        if (!string.IsNullOrEmpty(message.CorrelationId))
+        {
+            properties.CorrelationId = message.CorrelationId;
+        }
+
+        return properties;
+    }
+
+    private EmailNotificationMessage CreateEmailMessage(
+        EmailNotificationType type,
+        string email,
+        string name,
+        Dictionary<string, object> data,
+        string? correlationId = null)
+    {
+        return new EmailNotificationMessage
+        {
+            MessageId = Guid.NewGuid().ToString(),
+            Type = type,
+            ToEmail = email,
+            ToName = name,
+            Data = data,
+            CreatedAt = DateTime.UtcNow,
+            RetryCount = 0,
+            CorrelationId = correlationId
+        };
+    }
+
+    private string GetBaseUrl() =>
+        _appConfig["EmailService:Templates:BaseUrl"] ?? "https://certval.halerka.dev";
+
+    public void Dispose()
+    {
+        if (_disposed) return;
 
         try
         {
             if (_channelLazy.IsValueCreated)
             {
-                var channelTask = _channelLazy.Value;
-                if (channelTask.IsCompletedSuccessfully)
-                {
-                    channelTask.Result?.Dispose();
-                }
+                _channelLazy.Value?.Dispose();
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error disposing RabbitMQ resources");
+            _logger.LogError(ex, "Error disposing RabbitMQ channel");
         }
 
         _disposed = true;
+        GC.SuppressFinalize(this);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
         return ValueTask.CompletedTask;
     }
 }

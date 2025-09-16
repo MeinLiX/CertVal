@@ -30,7 +30,7 @@ public class EmailWorkerService : BackgroundService
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(300), stoppingToken);
                 _logger.LogDebug("Email Worker Service is running...");
             }
         }

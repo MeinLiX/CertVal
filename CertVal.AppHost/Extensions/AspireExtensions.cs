@@ -12,11 +12,13 @@ public static class AspireExtensions
 
         return builder
             .WithEnvironment("Messaging__ExchangeName", messagingConfig["ExchangeName"] ?? throw new Exception())
-            .WithEnvironment("Messaging__QueueName", messagingConfig["QueueName"] ?? throw new Exception())
-            .WithEnvironment("Messaging__RoutingKey", messagingConfig["RoutingKey"] ?? throw new Exception())
+            .WithEnvironment("Messaging__EmailQueueName", messagingConfig["EmailQueueName"] ?? throw new Exception())
+            .WithEnvironment("Messaging__EmailRoutingKey", messagingConfig["EmailRoutingKey"] ?? throw new Exception())
             .WithEnvironment("Messaging__DurableQueues", messagingConfig["DurableQueues"] ?? throw new Exception())
             .WithEnvironment("Messaging__PersistentMessages", messagingConfig["PersistentMessages"] ?? throw new Exception())
             .WithEnvironment("Messaging__MaxRetryAttempts", messagingConfig["MaxRetryAttempts"] ?? throw new Exception())
-            .WithEnvironment("Messaging__RetryDelay", messagingConfig["RetryDelay"] ?? throw new Exception());
+            .WithEnvironment("Messaging__RetryDelay", messagingConfig["RetryDelay"] ?? throw new Exception())
+            .WithEnvironment("Messaging__ConnectionTimeout", messagingConfig["ConnectionTimeout"] ?? throw new Exception())
+            .WithEnvironment("Messaging__MaxConnectionRetries", messagingConfig["MaxConnectionRetries"] ?? throw new Exception());
     }
 }

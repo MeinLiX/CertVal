@@ -11,7 +11,8 @@ public class UnitOfWork : IUnitOfWork
     private readonly ApplicationDbContext _context;
     private readonly IDomainEventDispatcher? _domainEventDispatcher;
     private IDbContextTransaction? _transaction;
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
+    private bool _disposed = false;
 
     private readonly Lazy<IUserRepository> _users;
     private readonly Lazy<IWorkspaceRepository> _workspaces;
@@ -48,6 +49,8 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
+
         List<DomainEvent> domainEvents;
         int result;
 
@@ -60,7 +63,14 @@ public class UnitOfWork : IUnitOfWork
 
         if (_domainEventDispatcher != null && domainEvents.Any())
         {
-            await _domainEventDispatcher.PublishAsync(domainEvents, cancellationToken);
+            try
+            {
+                await _domainEventDispatcher.PublishAsync(domainEvents, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error publishing domain events: {ex.Message}");
+            }
         }
 
         return result;
@@ -86,6 +96,8 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
+
         lock (_lock)
         {
             if (_transaction != null)
@@ -99,10 +111,8 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
-        if (_transaction == null)
-        {
-            throw new InvalidOperationException("No transaction to commit");
-        }
+        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
+        ObjectDisposedException.ThrowIf(_transaction == null, new InvalidOperationException("No transaction to commit"));
 
         try
         {
@@ -126,10 +136,8 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
-        if (_transaction == null)
-        {
-            throw new InvalidOperationException("No transaction to rollback");
-        }
+        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
+        ObjectDisposedException.ThrowIf(_transaction == null, new InvalidOperationException("No transaction to rollback"));
 
         try
         {
@@ -147,7 +155,10 @@ public class UnitOfWork : IUnitOfWork
 
     public void Dispose()
     {
+        if (_disposed) return;
+
         _transaction?.Dispose();
         _context.Dispose();
+        _disposed = true;
     }
 }

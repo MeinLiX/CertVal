@@ -17,7 +17,9 @@ public static class ServiceRegistration
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
-        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+        services.AddSingleton<IBackgroundDomainEventDispatcher, BackgroundDomainEventDispatcher>();
+        services.AddSingleton<IDomainEventDispatcher, HybridDomainEventDispatcher>();
+        services.AddHostedService<BackgroundDomainEventDispatcher>(sp => (BackgroundDomainEventDispatcher)sp.GetRequiredService<IBackgroundDomainEventDispatcher>());
 
         AddDomainEventHandlers(services);
         AddRepositories(services);
@@ -31,32 +33,37 @@ public static class ServiceRegistration
     private static void AddDomainEventHandlers(IServiceCollection services)
     {
         // User event handlers
-        services.AddScoped<IDomainEventHandler<UserRegisteredEvent>, UserEventHandlers>();
-        services.AddScoped<IDomainEventHandler<UserEmailConfirmedEvent>, UserEventHandlers>();
-        services.AddScoped<IDomainEventHandler<UserPasswordChangedEvent>, UserEventHandlers>();
+        services.AddScoped<UserEventHandlers>();
+        services.AddScoped<IDomainEventHandler<UserRegisteredEvent>>(sp => sp.GetRequiredService<UserEventHandlers>());
+        services.AddScoped<IDomainEventHandler<UserEmailConfirmedEvent>>(sp => sp.GetRequiredService<UserEventHandlers>());
+        services.AddScoped<IDomainEventHandler<UserPasswordChangedEvent>>(sp => sp.GetRequiredService<UserEventHandlers>());
 
         // Workspace event handlers
-        services.AddScoped<IDomainEventHandler<WorkspaceCreatedEvent>, WorkspaceEventHandlers>();
-        services.AddScoped<IDomainEventHandler<WorkspaceUpdatedEvent>, WorkspaceEventHandlers>();
-        services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>, WorkspaceEventHandlers>();
-        services.AddScoped<IDomainEventHandler<WorkspaceMemberJoinedEvent>, WorkspaceEventHandlers>();
-        services.AddScoped<IDomainEventHandler<WorkspaceMemberRemovedEvent>, WorkspaceEventHandlers>();
+        services.AddScoped<WorkspaceEventHandlers>();
+        services.AddScoped<IDomainEventHandler<WorkspaceCreatedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
+        services.AddScoped<IDomainEventHandler<WorkspaceUpdatedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
+        services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
+        services.AddScoped<IDomainEventHandler<WorkspaceMemberJoinedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
+        services.AddScoped<IDomainEventHandler<WorkspaceMemberRemovedEvent>>(sp => sp.GetRequiredService<WorkspaceEventHandlers>());
 
         // Certificate event handlers
-        services.AddScoped<IDomainEventHandler<CertificateUploadedEvent>, CertificateEventHandlers>();
-        services.AddScoped<IDomainEventHandler<CertificateExpiringEvent>, CertificateEventHandlers>();
-        services.AddScoped<IDomainEventHandler<CertificateExpiredEvent>, CertificateEventHandlers>();
-        services.AddScoped<IDomainEventHandler<CertificateBundleProcessedEvent>, CertificateEventHandlers>();
+        services.AddScoped<CertificateEventHandlers>();
+        services.AddScoped<IDomainEventHandler<CertificateUploadedEvent>>(sp => sp.GetRequiredService<CertificateEventHandlers>());
+        services.AddScoped<IDomainEventHandler<CertificateExpiringEvent>>(sp => sp.GetRequiredService<CertificateEventHandlers>());
+        services.AddScoped<IDomainEventHandler<CertificateExpiredEvent>>(sp => sp.GetRequiredService<CertificateEventHandlers>());
+        services.AddScoped<IDomainEventHandler<CertificateBundleProcessedEvent>>(sp => sp.GetRequiredService<CertificateEventHandlers>());
 
         // Notification event handlers
-        services.AddScoped<IDomainEventHandler<NotificationRuleCreatedEvent>, NotificationEventHandlers>();
-        services.AddScoped<IDomainEventHandler<NotificationSentEvent>, NotificationEventHandlers>();
-        services.AddScoped<IDomainEventHandler<NotificationFailedEvent>, NotificationEventHandlers>();
+        services.AddScoped<NotificationEventHandlers>();
+        services.AddScoped<IDomainEventHandler<NotificationRuleCreatedEvent>>(sp => sp.GetRequiredService<NotificationEventHandlers>());
+        services.AddScoped<IDomainEventHandler<NotificationSentEvent>>(sp => sp.GetRequiredService<NotificationEventHandlers>());
+        services.AddScoped<IDomainEventHandler<NotificationFailedEvent>>(sp => sp.GetRequiredService<NotificationEventHandlers>());
 
         // API token event handlers
-        services.AddScoped<IDomainEventHandler<ApiTokenCreatedEvent>, ApiTokenEventHandlers>();
-        services.AddScoped<IDomainEventHandler<ApiTokenUsedEvent>, ApiTokenEventHandlers>();
-        services.AddScoped<IDomainEventHandler<ApiTokenRevokedEvent>, ApiTokenEventHandlers>();
+        services.AddScoped<ApiTokenEventHandlers>();
+        services.AddScoped<IDomainEventHandler<ApiTokenCreatedEvent>>(sp => sp.GetRequiredService<ApiTokenEventHandlers>());
+        services.AddScoped<IDomainEventHandler<ApiTokenUsedEvent>>(sp => sp.GetRequiredService<ApiTokenEventHandlers>());
+        services.AddScoped<IDomainEventHandler<ApiTokenRevokedEvent>>(sp => sp.GetRequiredService<ApiTokenEventHandlers>());
 
         // Email notification event handlers
         services.AddScoped<IDomainEventHandler<UserRegisteredEvent>, EmailNotificationEventHandlers>();
@@ -101,13 +108,11 @@ public static class ServiceRegistration
 
     public static IServiceCollection AddMessaging(this IServiceCollection services)
     {
-        // Add messaging configuration from Core
         services.AddOptions<MessagingConfiguration>()
             .BindConfiguration(MessagingConfiguration.SectionName)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        // Register the RabbitMQ implementation
         services.AddSingleton<IEmailNotificationPublisher, RabbitMqEmailNotificationPublisher>();
 
         return services;
