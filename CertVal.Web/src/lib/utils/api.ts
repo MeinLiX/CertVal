@@ -2,7 +2,7 @@ import { auth } from '$lib/stores/auth';
 import { get } from 'svelte/store';
 import type { ApiResponse } from '$lib/types';
 
-const API_BASE = 'http://localhost:9990/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 class ApiClient {
     private getAuthHeader() {
