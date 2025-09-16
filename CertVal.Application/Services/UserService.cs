@@ -127,7 +127,6 @@ public class UserService : IUserService
         await _unitOfWork.Users.UpdateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // TODO: Send email with reset token
         return Result.Success();
     }
 

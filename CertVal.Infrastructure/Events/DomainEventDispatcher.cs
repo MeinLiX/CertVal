@@ -1,6 +1,8 @@
 ﻿using CertVal.Core.Events;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 
 namespace CertVal.Infrastructure.Events;
 
@@ -10,15 +12,32 @@ public interface IDomainEventDispatcher
     Task PublishAsync(IEnumerable<DomainEvent> domainEvents, CancellationToken cancellationToken = default);
 }
 
-public class DomainEventDispatcher : IDomainEventDispatcher
+public interface IBackgroundDomainEventDispatcher
+{
+    void EnqueueEvent(DomainEvent domainEvent);
+    Task PublishAsync(DomainEvent domainEvent, CancellationToken cancellationToken = default);
+    Task PublishAsync(IEnumerable<DomainEvent> domainEvents, CancellationToken cancellationToken = default);
+}
+
+public class BackgroundDomainEventDispatcher : BackgroundService, IBackgroundDomainEventDispatcher
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<DomainEventDispatcher> _logger;
+    private readonly ILogger<BackgroundDomainEventDispatcher> _logger;
+    private readonly ConcurrentQueue<DomainEvent> _eventQueue = new();
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-    public DomainEventDispatcher(IServiceProvider serviceProvider, ILogger<DomainEventDispatcher> logger)
+    public BackgroundDomainEventDispatcher(
+        IServiceProvider serviceProvider,
+        ILogger<BackgroundDomainEventDispatcher> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+    }
+
+    public void EnqueueEvent(DomainEvent domainEvent)
+    {
+        _eventQueue.Enqueue(domainEvent);
+        _semaphore.Release();
     }
 
     public async Task PublishAsync(DomainEvent domainEvent, CancellationToken cancellationToken = default)
@@ -29,45 +48,129 @@ public class DomainEventDispatcher : IDomainEventDispatcher
                 domainEvent.GetType().Name, domainEvent.Id);
 
             var handlerType = typeof(IDomainEventHandler<>).MakeGenericType(domainEvent.GetType());
-            var handlers = _serviceProvider.GetServices(handlerType);
 
-            var tasks = new List<Task>();
+            using var scope = _serviceProvider.CreateScope();
+            var handlers = scope.ServiceProvider.GetServices(handlerType);
+
             foreach (var handler in handlers)
             {
-                var handleMethod = handlerType.GetMethod("HandleAsync");
-                if (handleMethod != null)
+                try
                 {
-                    var task = (Task)handleMethod.Invoke(handler, [domainEvent, cancellationToken])!;
-                    tasks.Add(task);
+                    var handleMethod = handlerType.GetMethod("HandleAsync");
+                    if (handleMethod != null)
+                    {
+                        var result = handleMethod.Invoke(handler, [domainEvent, cancellationToken]);
+                        if (result is Task taskResult)
+                        {
+                            await taskResult;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in domain event handler {HandlerType} for event {EventType}",
+                        handler?.GetType().Name, domainEvent.GetType().Name);
                 }
             }
 
-            await Task.WhenAll(tasks);
-
             _logger.LogDebug("Successfully published domain event: {EventType} with {HandlerCount} handlers",
-                domainEvent.GetType().Name, tasks.Count);
+                domainEvent.GetType().Name, handlers.Count());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error publishing domain event: {EventType} with ID {EventId}",
                 domainEvent.GetType().Name, domainEvent.Id);
-            throw;
         }
     }
 
     public async Task PublishAsync(IEnumerable<DomainEvent> domainEvents, CancellationToken cancellationToken = default)
     {
         var events = domainEvents.ToList();
-        if (!events.Any())
-        {
-            return;
-        }
+        if (!events.Any()) return;
 
         _logger.LogDebug("Publishing {EventCount} domain events", events.Count);
 
-        var tasks = events.Select(domainEvent => PublishAsync(domainEvent, cancellationToken));
-        await Task.WhenAll(tasks);
+        foreach (var domainEvent in events)
+        {
+            await PublishAsync(domainEvent, cancellationToken);
+        }
 
         _logger.LogDebug("Successfully published {EventCount} domain events", events.Count);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Background Domain Event Dispatcher started");
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await _semaphore.WaitAsync(stoppingToken);
+
+                while (_eventQueue.TryDequeue(out var domainEvent))
+                {
+                    await PublishAsync(domainEvent, stoppingToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in background domain event processing");
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
+        }
+
+        _logger.LogInformation("Background Domain Event Dispatcher stopped");
+    }
+}
+
+public class HybridDomainEventDispatcher : IDomainEventDispatcher
+{
+    private readonly IBackgroundDomainEventDispatcher _backgroundDispatcher;
+
+    private static readonly HashSet<Type> ImmediateEvents =
+    [
+        typeof(UserRegisteredEvent),
+        typeof(WorkspaceMemberInvitedEvent)
+    ];
+
+    public HybridDomainEventDispatcher(
+        IBackgroundDomainEventDispatcher backgroundDispatcher,
+        ILogger<HybridDomainEventDispatcher> logger)
+    {
+        _backgroundDispatcher = backgroundDispatcher;
+    }
+
+    public async Task PublishAsync(DomainEvent domainEvent, CancellationToken cancellationToken = default)
+    {
+        if (ImmediateEvents.Contains(domainEvent.GetType()))
+        {
+            await _backgroundDispatcher.PublishAsync(domainEvent, cancellationToken);
+        }
+        else
+        {
+            _backgroundDispatcher.EnqueueEvent(domainEvent);
+        }
+    }
+
+    public async Task PublishAsync(IEnumerable<DomainEvent> domainEvents, CancellationToken cancellationToken = default)
+    {
+        var events = domainEvents.ToList();
+        var immediateEvents = events.Where(e => ImmediateEvents.Contains(e.GetType())).ToList();
+        var backgroundEvents = events.Except(immediateEvents).ToList();
+
+        if (immediateEvents.Any())
+        {
+            await _backgroundDispatcher.PublishAsync(immediateEvents, cancellationToken);
+        }
+
+        foreach (var bgEvent in backgroundEvents)
+        {
+            _backgroundDispatcher.EnqueueEvent(bgEvent);
+        }
     }
 }

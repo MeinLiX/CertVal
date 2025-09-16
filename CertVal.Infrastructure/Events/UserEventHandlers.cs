@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 
 namespace CertVal.Infrastructure.Events;
 
-// User event handlers
 public class UserEventHandlers :
     IDomainEventHandler<UserRegisteredEvent>,
     IDomainEventHandler<UserEmailConfirmedEvent>,

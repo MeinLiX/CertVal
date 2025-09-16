@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11010.61 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.AppHost", "CertVal.AppHost\CertVal.AppHost.csproj", "{24195A0C-F989-4FB5-9B5B-C01CF5413815}"
 EndProject
@@ -18,6 +18,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Infrastructure", "CertVal.Infrastructure\CertVal.Infrastructure.csproj", "{68BC43B3-91AF-4096-B1E6-2CABF52D1153}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Application", "CertVal.Application\CertVal.Application.csproj", "{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.EmailService", "CertVal.EmailService\CertVal.EmailService.csproj", "{C910F184-0DA0-454B-A591-2299CB62849A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +51,10 @@ Global
 		{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6D6E74D-CAA1-4347-9E33-BDABCD26203F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C910F184-0DA0-454B-A591-2299CB62849A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C910F184-0DA0-454B-A591-2299CB62849A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C910F184-0DA0-454B-A591-2299CB62849A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C910F184-0DA0-454B-A591-2299CB62849A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

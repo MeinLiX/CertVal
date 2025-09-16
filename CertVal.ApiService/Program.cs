@@ -12,6 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+builder.AddRabbitMQClient("rabbitmq");
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -88,7 +90,6 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddScoped<ICertificateService, CertificateService>();
 builder.Services.AddScoped<ICertificateProcessorService, CertificateProcessorService>();
-builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddCustomAuthentication(builder.Configuration);
 
@@ -115,7 +116,6 @@ builder.Services.AddCors(options =>
 
 // Register background services
 builder.Services.AddHostedService<CertificateExpiryCheckerService>();
-builder.Services.AddHostedService<NotificationBackgroundService>();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("database");

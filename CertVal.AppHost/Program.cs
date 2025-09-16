@@ -1,3 +1,5 @@
+using CertVal.AppHost.Extensions;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 var sqlportParametr = builder.AddParameter("database-port", secret: false);
@@ -10,9 +12,24 @@ var db = builder.AddSqlServer("CertVal-sql-server", port: sqlport, password: sql
     .WithLifetime(ContainerLifetime.Persistent)
     .AddDatabase("CertVal-database");
 
+var rabbitmq = builder.AddRabbitMQ("rabbitmq")
+    .WithManagementPlugin()
+    .WithLifetime(ContainerLifetime.Persistent);
+
+var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-service")
+    .WithReference(rabbitmq)
+    .WithMessagingConfig(builder.Configuration)
+    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development")
+    .WithEnvironment("DOTNET_ENVIRONMENT", "Development")
+    .WaitFor(rabbitmq);
+
 var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-server")
     .WithReference(db)
+    .WithReference(rabbitmq)
+    .WithMessagingConfig(builder.Configuration)
     .WaitFor(db)
+    .WaitFor(rabbitmq)
+    .WaitFor(emailService)
     .PublishAsDockerFile();
 
 var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
@@ -21,4 +38,4 @@ var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
-builder.Build().Run();
+await builder.Build().RunAsync();
