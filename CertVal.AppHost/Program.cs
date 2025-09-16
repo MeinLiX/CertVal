@@ -1,3 +1,4 @@
+using Aspire.Hosting;
 using CertVal.AppHost.Extensions;
 using Microsoft.Extensions.Configuration;
 
@@ -37,6 +38,7 @@ var webPort = builder.Configuration.GetValue<int>("Web:Port");
 var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev", args: ["--port", webPort.ToString()])
     .WithNpmPackageInstallation()
     .WithReference(apiService).WaitFor(apiService)
+    .WithEnvironment("VITE_API_BASE_URL", builder.Configuration.GetValue<string>("Web:ApiUrl") ?? throw new InvalidOperationException("Missing configuration: Web:ApiUrl"))
     .WithHttpEndpoint(port: webPort, isProxied: false)
     .PublishAsDockerFile();
 
