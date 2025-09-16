@@ -5,13 +5,13 @@ using System.Text.Json;
 
 namespace CertVal.Infrastructure.Events;
 
-public class WebhookNotificationEventHandler :
+public class WebhookNotificationEventHandlers :
     IDomainEventHandler<CertificateExpiringEvent>,
     IDomainEventHandler<CertificateExpiredEvent>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<WebhookNotificationEventHandler> _logger;
+    private readonly ILogger<WebhookNotificationEventHandlers> _logger;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -19,10 +19,10 @@ public class WebhookNotificationEventHandler :
         WriteIndented = false
     };
 
-    public WebhookNotificationEventHandler(
+    public WebhookNotificationEventHandlers(
         IUnitOfWork unitOfWork,
         IHttpClientFactory httpClientFactory,
-        ILogger<WebhookNotificationEventHandler> logger)
+        ILogger<WebhookNotificationEventHandlers> logger)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
@@ -83,13 +83,12 @@ public class WebhookNotificationEventHandler :
     }
 
     private async Task<(Core.Entities.Certificate?, Core.Entities.Workspace?)> LoadEntitiesAsync(
-        Guid certificateId, Guid workspaceId, CancellationToken cancellationToken)
+    Guid certificateId, Guid workspaceId, CancellationToken cancellationToken)
     {
-        var certificateTask = _unitOfWork.Certificates.GetByIdAsync(certificateId, cancellationToken);
-        var workspaceTask = _unitOfWork.Workspaces.GetByIdAsync(workspaceId, cancellationToken);
+        var certificate = await _unitOfWork.Certificates.GetByIdAsync(certificateId, cancellationToken);
+        var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId, cancellationToken);
 
-        await Task.WhenAll(certificateTask, workspaceTask);
-        return (await certificateTask, await workspaceTask);
+        return (certificate, workspace);
     }
 
     private async Task<List<Core.Entities.NotificationRule>> GetActiveWebhookRulesAsync(

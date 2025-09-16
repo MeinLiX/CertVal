@@ -66,10 +66,16 @@ public static class ServiceRegistration
         services.AddScoped<IDomainEventHandler<ApiTokenRevokedEvent>>(sp => sp.GetRequiredService<ApiTokenEventHandlers>());
 
         // Email notification event handlers
-        services.AddScoped<IDomainEventHandler<UserRegisteredEvent>, EmailNotificationEventHandlers>();
-        services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>, EmailNotificationEventHandlers>();
-        services.AddScoped<IDomainEventHandler<CertificateExpiringEvent>, EmailNotificationEventHandlers>();
-        services.AddScoped<IDomainEventHandler<CertificateExpiredEvent>, EmailNotificationEventHandlers>();
+        services.AddScoped<EmailNotificationEventHandlers>();
+        services.AddScoped<IDomainEventHandler<UserRegisteredEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
+        services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
+        services.AddScoped<IDomainEventHandler<CertificateExpiringEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
+        services.AddScoped<IDomainEventHandler<CertificateExpiredEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
+
+        // Webhook notification event handlers
+        services.AddScoped<WebhookNotificationEventHandlers>();
+        services.AddScoped<IDomainEventHandler<CertificateExpiringEvent>>(sp => sp.GetRequiredService<WebhookNotificationEventHandlers>());
+        services.AddScoped<IDomainEventHandler<CertificateExpiredEvent>>(sp => sp.GetRequiredService<WebhookNotificationEventHandlers>());
     }
 
     private static void AddRepositories(IServiceCollection services)
