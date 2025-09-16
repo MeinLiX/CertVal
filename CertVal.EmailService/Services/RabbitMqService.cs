@@ -38,7 +38,7 @@ public class RabbitMqService : IRabbitMqService
 
     public async Task StartConsumingAsync(CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(RabbitMqService)));
+        ObjectDisposedException.ThrowIf(_disposed, nameof(RabbitMqService));
 
         try
         {
