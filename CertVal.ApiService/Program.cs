@@ -154,14 +154,6 @@ if (app.Environment.IsDevelopment())
         if (!db.EnsureDelete()) return Results.BadRequest("Failed to delete database");
         return Results.Ok("Database deleted successfully");
     }).WithDescription("Delete database (Development only)");
-
-    dbGroup.MapPost("/seed", async (IServiceProvider serviceProvider) =>
-    {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await context.SeedDevelopmentDataAsync();
-        return Results.Ok("Database seeded successfully");
-    }).WithDescription("Seed database with sample data (Development only)");
 }
 
 app.UseCors("DefaultPolicy");
