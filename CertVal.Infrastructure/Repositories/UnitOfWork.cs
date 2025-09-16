@@ -112,7 +112,10 @@ public class UnitOfWork : IUnitOfWork
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
-        ObjectDisposedException.ThrowIf(_transaction == null, new InvalidOperationException("No transaction to commit"));
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("No transaction to commit");
+        }
 
         try
         {
