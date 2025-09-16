@@ -27,6 +27,10 @@
 	let isUploading = $state(false);
 	let uploadResults = $state<BulkUploadResultDto | null>(null);
 	let errors = $state<Record<string, string>>({});
+	let uploadForm = $state({
+		workspaceId: ''
+	});
+
 	const filters = $derived({
 		searchTerm: $page.url.searchParams.get('search') || '',
 		status: $page.url.searchParams.get('status') || 'All',
@@ -108,6 +112,14 @@
 		goto(`?${params.toString()}`, { keepFocus: true, noScroll: true, replaceState: true });
 	}
 
+	function openUploadModal() {
+		const defaultWorkspace =
+			filters.workspaceId || (workspaceList.length > 0 ? workspaceList[0].id : '');
+		uploadForm.workspaceId = defaultWorkspace;
+		errors = {};
+		showUploadModal = true;
+	}
+
 	async function handleUploadCertificates(event: Event) {
 		event.preventDefault();
 		const form = event.target as HTMLFormElement;
@@ -145,7 +157,7 @@
 			<h1 class="text-3xl font-bold">{t('certificates.title', $language)}</h1>
 			<p class="mt-1 text-base-content/70">{t('certificates.subtitle', $language)}</p>
 		</div>
-		<Button onclick={() => (showUploadModal = true)}>
+		<Button onclick={openUploadModal}>
 			<Icon name="upload" />
 			{t('certificates.upload', $language)}
 		</Button>
@@ -301,6 +313,7 @@
 			label={t('common.workspace', $language)}
 			name="workspaceId"
 			options={workspaceList.map((w) => ({ value: w.id, label: w.name }))}
+			bind:value={uploadForm.workspaceId}
 			required
 		/>
 		<Input
