@@ -155,12 +155,14 @@ public class EmailNotificationEventHandlers :
 
         var notificationRules = await _unitOfWork.NotificationRules.GetByWorkspaceAsync(workspaceId, cancellationToken);
         var activeRules = notificationRules
-            .Where(r => r.IsEnabled && r.DaysBeforeExpiry >= daysUntilExpiry)
+            .Where(r => r.IsEnabled &&
+                        r.ChannelType == NotificationChannelType.Email && 
+                        r.DaysBeforeExpiry >= daysUntilExpiry)
             .ToList();
 
         if (!activeRules.Any())
         {
-            _logger.LogDebug("No active notification rules found for certificate {CertificateId} expiring in {Days} days",
+            _logger.LogDebug("No active email notification rules found for certificate {CertificateId} expiring in {Days} days",
                 certificateId, daysUntilExpiry);
             return;
         }
@@ -188,7 +190,7 @@ public class EmailNotificationEventHandlers :
 
         foreach (var rule in activeRules)
         {
-            foreach (var (email, name) in recipients)
+            foreach (var (email, name) in recipients.Distinct())
             {
                 var lastNotification = await _unitOfWork.NotificationHistory
                     .GetLastNotificationAsync(certificateId, rule.Id, cancellationToken);
