@@ -1,6 +1,7 @@
 ﻿using CertVal.Application.DTOs;
 using CertVal.Application.Services;
 using CertVal.Core.Repositories;
+using CertVal.Core.Messaging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -18,12 +19,18 @@ public class AuthController : ControllerBase
     private readonly IUserService _userService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConfiguration _configuration;
+    private readonly IEmailNotificationPublisher _emailPublisher;
 
-    public AuthController(IUserService userService, IUnitOfWork unitOfWork, IConfiguration configuration)
+    public AuthController(
+        IUserService userService,
+        IUnitOfWork unitOfWork,
+        IConfiguration configuration,
+        IEmailNotificationPublisher emailPublisher)
     {
         _userService = userService;
         _unitOfWork = unitOfWork;
         _configuration = configuration;
+        _emailPublisher = emailPublisher;
     }
 
     [HttpPost("register")]
@@ -49,9 +56,8 @@ public class AuthController : ControllerBase
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return Unauthorized(new { message = "Invalid email or password" });
 
-        // temp disable email confirmation requirement
-        //if (!user.IsEmailConfirmed)
-        //    return BadRequest(new { message = "Email not confirmed" });
+        if (!user.IsEmailConfirmed)
+            return BadRequest(new { message = "Email not confirmed" });
 
         user.UpdateLastLogin();
         await _unitOfWork.Users.UpdateAsync(user);
@@ -108,11 +114,54 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Email confirmed successfully" });
     }
 
+    [HttpPost("resend-confirmation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResendEmailConfirmation(ResendConfirmationRequest request)
+    {
+        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
+        if (user == null)
+            return Ok(new { message = "If the email exists and is not confirmed, a confirmation link has been sent" });
+
+        if (user.IsEmailConfirmed)
+            return BadRequest(new { message = "Email is already confirmed" });
+
+        var newToken = Guid.NewGuid().ToString();
+        user.SetEmailConfirmationToken(newToken);
+        await _unitOfWork.Users.UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        await _emailPublisher.PublishUserRegisteredAsync(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            newToken);
+
+        return Ok(new { message = "If the email exists and is not confirmed, a confirmation link has been sent" });
+    }
+
     [HttpPost("forgot-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword(Application.DTOs.ForgotPasswordRequest request)
     {
-        await _userService.RequestPasswordResetAsync(request.Email);
+        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
+        if (user != null)
+        {
+            var resetToken = Guid.NewGuid().ToString();
+            var expiresAt = DateTime.UtcNow.AddHours(24);
+
+            user.SetPasswordResetToken(resetToken, expiresAt);
+            await _unitOfWork.Users.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            await _emailPublisher.PublishPasswordResetAsync(
+                user.Email,
+                user.FirstName,
+                resetToken,
+                expiresAt);
+        }
+
         return Ok(new { message = "If the email exists, a password reset link has been sent" });
     }
 
@@ -127,6 +176,23 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = result.Error });
 
         return Ok(new { message = "Password reset successfully" });
+    }
+
+    [HttpPost("validate-reset-token")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ValidateResetToken(ValidateResetTokenRequest request)
+    {
+        var user = await _unitOfWork.Users.GetByPasswordResetTokenAsync(request.Token);
+        if (user == null)
+            return BadRequest(new { message = "Invalid or expired reset token" });
+
+        return Ok(new
+        {
+            message = "Token is valid",
+            email = user.Email,
+            expiresAt = user.PasswordResetTokenExpiresAt
+        });
     }
 
     private string GenerateJwtToken(Core.Entities.User user)

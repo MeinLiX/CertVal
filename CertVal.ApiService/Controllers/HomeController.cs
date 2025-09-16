@@ -48,6 +48,7 @@ public class HomeController : ControllerBase
                 ApiTokens = "/api/v1/apitokens",
                 Search = "/api/v1/search",
                 Notifications = "/api/v1/workspaces/{workspaceId}/notifications",
+                WorkspaceMembers = "/api/v1/workspaces/{workspaceId}/members",
                 BulkOperations = "/api/v1/bulk",
                 Exports = "/api/v1/exports"
             },
@@ -128,6 +129,7 @@ public record EndpointsInfo
     public string ApiTokens { get; init; } = string.Empty;
     public string Search { get; init; } = string.Empty;
     public string Notifications { get; init; } = string.Empty;
+    public string WorkspaceMembers { get; init; } = string.Empty;
     public string BulkOperations { get; init; } = string.Empty;
     public string Exports { get; init; } = string.Empty;
 }

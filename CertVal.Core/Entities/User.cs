@@ -67,6 +67,15 @@ public class User : BaseEntity
         AddDomainEvent(new UserEmailConfirmedEvent(Id, Email));
     }
 
+    public void SetEmailConfirmationToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ArgumentException("Token cannot be empty", nameof(token));
+
+        EmailConfirmationToken = token;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void UpdatePassword(string newPasswordHash)
     {
         PasswordHash = newPasswordHash;
