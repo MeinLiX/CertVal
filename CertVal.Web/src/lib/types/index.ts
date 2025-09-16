@@ -199,6 +199,15 @@ export interface ChangePasswordRequest {
     confirmNewPassword: string;
 }
 
+export interface TransferOwnershipRequest {
+    newOwnerEmail: string;
+}
+
+export interface ResetPasswordRequest {
+    token: string;
+    newPassword: string;
+}
+
 export type Language = 'uk' | 'en';
 
 export type Theme = 'light' | 'dark';
