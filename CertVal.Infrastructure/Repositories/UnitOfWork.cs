@@ -2,6 +2,7 @@
 using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Events;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CertVal.Infrastructure.Repositories;
@@ -157,6 +158,30 @@ public class UnitOfWork : IUnitOfWork
                 _transaction = null;
             }
         }
+    }
+
+    public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                await operation();
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
     }
 
     public void Dispose()

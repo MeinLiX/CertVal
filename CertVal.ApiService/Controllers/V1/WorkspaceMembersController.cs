@@ -254,30 +254,31 @@ public class WorkspaceMembersController : ControllerBase
 
         var existingMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, newOwner.Id);
 
-        await _unitOfWork.BeginTransactionAsync();
 
         try
         {
-            var oldOwnerId = workspace.OwnerId;
-            workspace.TransferOwnership(newOwner.Id);
-            await _unitOfWork.Workspaces.UpdateAsync(workspace);
-
-            if (existingMembership != null)
+            //temp :)
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                await _unitOfWork.WorkspaceMembers.DeleteAsync(existingMembership.Id);
-            }
+                var oldOwnerId = workspace.OwnerId;
+                workspace.TransferOwnership(newOwner.Id);
+                await _unitOfWork.Workspaces.UpdateAsync(workspace);
 
-            var oldOwnerMembership = WorkspaceMember.Create(
-                workspaceId,
-                oldOwnerId,
-                Core.Enums.WorkspaceRole.Admin,
-                newOwner.Id
-            );
-            oldOwnerMembership.AcceptInvitation();
+                if (existingMembership != null)
+                {
+                    await _unitOfWork.WorkspaceMembers.DeleteAsync(existingMembership.Id);
+                }
 
-            await _unitOfWork.WorkspaceMembers.AddAsync(oldOwnerMembership);
+                var oldOwnerMembership = WorkspaceMember.Create(
+                    workspaceId,
+                    oldOwnerId,
+                    Core.Enums.WorkspaceRole.Admin,
+                    newOwner.Id
+                );
+                oldOwnerMembership.AcceptInvitation();
 
-            await _unitOfWork.CommitTransactionAsync();
+                await _unitOfWork.WorkspaceMembers.AddAsync(oldOwnerMembership);
+            });
 
             workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
 
