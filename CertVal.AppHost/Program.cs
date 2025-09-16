@@ -35,7 +35,7 @@ var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-se
 var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev")
     .WithNpmPackageInstallation()
     .WithReference(apiService).WaitFor(apiService)
-    .WithExternalHttpEndpoints()
+    .WithHttpEndpoint(port: 9995, isProxied: false)
     .PublishAsDockerFile();
 
 await builder.Build().RunAsync();
