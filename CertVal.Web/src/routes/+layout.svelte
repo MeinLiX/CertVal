@@ -15,20 +15,22 @@
 		language.initialize();
 		theme.initialize();
 	});
-
 	const isAuthPage = $derived($page.url.pathname.startsWith('/auth'));
 </script>
 
 <div class="min-h-screen bg-base-200 text-base-content">
 	{#if isAuthPage}
-		<div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
-			<div
-				class="absolute inset-0 bg-base-100 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
-			></div>
-			<div
-				class="absolute inset-0 bg-base-200 [mask-image:radial-gradient(100%_100%_at_bottom_left,white,transparent)]"
-			></div>
-			{@render children?.()}
+		<div class="flex min-h-screen flex-col">
+			<Navbar />
+			<main class="relative flex grow flex-col items-center justify-center overflow-hidden p-4">
+				<div
+					class="absolute inset-0 bg-base-100 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
+				></div>
+				<div
+					class="absolute inset-0 bg-base-200 [mask-image:radial-gradient(100%_100%_at_bottom_left,white,transparent)]"
+				></div>
+				{@render children?.()}
+			</main>
 		</div>
 	{:else}
 		<div class="drawer lg:drawer-open">
