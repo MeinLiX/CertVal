@@ -1,5 +1,6 @@
 ﻿
 namespace CertVal.Application.DTOs;
+
 public record BulkUploadResultDto
 {
     public int TotalFiles { get; init; }

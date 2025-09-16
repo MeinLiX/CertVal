@@ -11,56 +11,66 @@ public class UnitOfWork : IUnitOfWork
     private readonly ApplicationDbContext _context;
     private readonly IDomainEventDispatcher? _domainEventDispatcher;
     private IDbContextTransaction? _transaction;
+    private readonly Lock _lock = new();
+    private bool _disposed = false;
 
-    // Lazy initialization of repositories
-    private IUserRepository? _users;
-    private IWorkspaceRepository? _workspaces;
-    private ICertificateRepository? _certificates;
-    private INotificationRuleRepository? _notificationRules;
-    private INotificationHistoryRepository? _notificationHistory;
-    private IWorkspaceMemberRepository? _workspaceMembers;
-    private IApiTokenRepository? _apiTokens;
-    private IEventStoreRepository? _eventStore;
+    private readonly Lazy<IUserRepository> _users;
+    private readonly Lazy<IWorkspaceRepository> _workspaces;
+    private readonly Lazy<ICertificateRepository> _certificates;
+    private readonly Lazy<INotificationRuleRepository> _notificationRules;
+    private readonly Lazy<INotificationHistoryRepository> _notificationHistory;
+    private readonly Lazy<IWorkspaceMemberRepository> _workspaceMembers;
+    private readonly Lazy<IApiTokenRepository> _apiTokens;
+    private readonly Lazy<IEventStoreRepository> _eventStore;
 
     public UnitOfWork(ApplicationDbContext context, IDomainEventDispatcher? domainEventDispatcher = null)
     {
         _context = context;
         _domainEventDispatcher = domainEventDispatcher;
+
+        _users = new Lazy<IUserRepository>(() => new UserRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _workspaces = new Lazy<IWorkspaceRepository>(() => new WorkspaceRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _certificates = new Lazy<ICertificateRepository>(() => new CertificateRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _notificationRules = new Lazy<INotificationRuleRepository>(() => new NotificationRuleRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _notificationHistory = new Lazy<INotificationHistoryRepository>(() => new NotificationHistoryRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _workspaceMembers = new Lazy<IWorkspaceMemberRepository>(() => new WorkspaceMemberRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _apiTokens = new Lazy<IApiTokenRepository>(() => new ApiTokenRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _eventStore = new Lazy<IEventStoreRepository>(() => new EventStoreRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
-    public IUserRepository Users =>
-        _users ??= new UserRepository(_context);
-
-    public IWorkspaceRepository Workspaces =>
-        _workspaces ??= new WorkspaceRepository(_context);
-
-    public ICertificateRepository Certificates =>
-        _certificates ??= new CertificateRepository(_context);
-
-    public INotificationRuleRepository NotificationRules =>
-        _notificationRules ??= new NotificationRuleRepository(_context);
-
-    public INotificationHistoryRepository NotificationHistory =>
-        _notificationHistory ??= new NotificationHistoryRepository(_context);
-
-    public IWorkspaceMemberRepository WorkspaceMembers =>
-        _workspaceMembers ??= new WorkspaceMemberRepository(_context);
-
-    public IApiTokenRepository ApiTokens =>
-        _apiTokens ??= new ApiTokenRepository(_context);
-
-    public IEventStoreRepository EventStore =>
-        _eventStore ??= new EventStoreRepository(_context);
+    public IUserRepository Users => _users.Value;
+    public IWorkspaceRepository Workspaces => _workspaces.Value;
+    public ICertificateRepository Certificates => _certificates.Value;
+    public INotificationRuleRepository NotificationRules => _notificationRules.Value;
+    public INotificationHistoryRepository NotificationHistory => _notificationHistory.Value;
+    public IWorkspaceMemberRepository WorkspaceMembers => _workspaceMembers.Value;
+    public IApiTokenRepository ApiTokens => _apiTokens.Value;
+    public IEventStoreRepository EventStore => _eventStore.Value;
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var domainEvents = CollectDomainEvents();
+        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
 
-        var result = await _context.SaveChangesAsync(cancellationToken);
+        List<DomainEvent> domainEvents;
+        int result;
+
+        lock (_lock)
+        {
+            domainEvents = CollectDomainEvents();
+        }
+
+        result = await _context.SaveChangesAsync(cancellationToken);
 
         if (_domainEventDispatcher != null && domainEvents.Any())
         {
-            await _domainEventDispatcher.PublishAsync(domainEvents, cancellationToken);
+            try
+            {
+                await _domainEventDispatcher.PublishAsync(domainEvents, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error publishing domain events: {ex.Message}");
+            }
         }
 
         return result;
@@ -86,9 +96,14 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
-        if (_transaction != null)
+        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
+
+        lock (_lock)
         {
-            throw new InvalidOperationException("Transaction already started");
+            if (_transaction != null)
+            {
+                throw new InvalidOperationException("Transaction already started");
+            }
         }
 
         _transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -96,6 +111,7 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
         if (_transaction == null)
         {
             throw new InvalidOperationException("No transaction to commit");
@@ -114,12 +130,16 @@ public class UnitOfWork : IUnitOfWork
         finally
         {
             await _transaction.DisposeAsync();
-            _transaction = null;
+            lock (_lock)
+            {
+                _transaction = null;
+            }
         }
     }
 
     public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, new ObjectDisposedException(nameof(UnitOfWork)));
         if (_transaction == null)
         {
             throw new InvalidOperationException("No transaction to rollback");
@@ -132,13 +152,19 @@ public class UnitOfWork : IUnitOfWork
         finally
         {
             await _transaction.DisposeAsync();
-            _transaction = null;
+            lock (_lock)
+            {
+                _transaction = null;
+            }
         }
     }
 
     public void Dispose()
     {
+        if (_disposed) return;
+
         _transaction?.Dispose();
         _context.Dispose();
+        _disposed = true;
     }
 }
