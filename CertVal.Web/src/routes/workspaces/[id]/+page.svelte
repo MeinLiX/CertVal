@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
 	import { language } from '$lib/stores/language';
 	import { api } from '$lib/utils/api';
@@ -38,7 +38,7 @@
 	let confirmDeleteName = $state('');
 	let isProcessing = $state(false);
 
-	const workspaceId = $derived($page.params.id);
+	const workspaceId = $derived(page.params.id);
 	const canManage = $derived(workspace && $auth.user && workspace.ownerId === $auth.user.id);
 
 	onMount(async () => {

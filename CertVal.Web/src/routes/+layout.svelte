@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
 	import { language } from '$lib/stores/language';
 	import { theme } from '$lib/stores/theme';
@@ -15,7 +15,7 @@
 		language.initialize();
 		theme.initialize();
 	});
-	const isAuthPage = $derived($page.url.pathname.startsWith('/auth'));
+	const isAuthPage = $derived(page.url.pathname.startsWith('/auth'));
 </script>
 
 <div class="min-h-screen bg-base-200 text-base-content">

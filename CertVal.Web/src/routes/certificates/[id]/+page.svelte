@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { language } from '$lib/stores/language';
 	import { auth } from '$lib/stores/auth';
@@ -17,7 +17,7 @@
 	let showDeleteModal = $state(false);
 	let isDeleting = $state(false);
 
-	const certificateId = $derived($page.params.id);
+	const certificateId = $derived(page.params.id);
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
