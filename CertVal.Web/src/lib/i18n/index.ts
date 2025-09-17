@@ -311,7 +311,7 @@ export const translations = {
             certificateFiles: 'Файли сертифікатів',
             uploadResults: 'Результати завантаження',
             notFound: 'Сертифікат не знайдено.',
-            daysRemaining: 'залишилось днів',
+            daysRemaining: 'днів залишилось',
             metadata: 'Метадані',
             uploadedAt: 'Завантажено о',
             confirmDeleteMessage:

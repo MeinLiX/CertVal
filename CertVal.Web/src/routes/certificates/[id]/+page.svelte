@@ -2,8 +2,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { language } from '$lib/stores/language';
 	import { auth } from '$lib/stores/auth';
+	import { language } from '$lib/stores/language';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import { formatDate, formatDateTime, getCertificateStatus } from '$lib/utils/date';
@@ -16,8 +16,9 @@
 	let isLoading = $state(true);
 	let showDeleteModal = $state(false);
 	let isDeleting = $state(false);
+	let isDownloading = $state(false);
 
-	const certificateId = $derived(page.params.id);
+	const certificateId = page.params.id;
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -53,6 +54,32 @@
 		}
 	}
 
+	async function handleDownload() {
+		if (!certificate) return;
+		isDownloading = true;
+		try {
+			const response = await api.download(`/v1/certificates/${certificate.id}/download`);
+
+			if ('blob' in response) {
+				const url = window.URL.createObjectURL(response.blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = response.filename;
+				document.body.appendChild(a);
+				a.click();
+				a.remove();
+				window.URL.revokeObjectURL(url);
+			} else {
+				alert(response.message);
+			}
+		} catch (err) {
+			console.error('Failed to download certificate:', err);
+			alert('Download failed.');
+		} finally {
+			isDownloading = false;
+		}
+	}
+
 	function copyToClipboard(text: string | undefined) {
 		if (text) navigator.clipboard.writeText(text);
 	}
@@ -84,14 +111,12 @@
 			<div class="mt-2 flex items-center justify-between">
 				<h1 class="max-w-lg truncate text-2xl font-bold">{certificate.subject}</h1>
 				<div class="flex gap-2">
-					<Button
-						variant="ghost"
-						onclick={() => alert(t('certificates.downloadNotImplemented', $language))}
-						>{t('common.download', $language)}</Button
-					>
-					<Button variant="danger" onclick={() => (showDeleteModal = true)}
-						>{t('common.delete', $language)}</Button
-					>
+					<Button variant="ghost" onclick={handleDownload} loading={isDownloading}>
+						{t('common.download', $language)}
+					</Button>
+					<Button variant="danger" onclick={() => (showDeleteModal = true)}>
+						{t('common.delete', $language)}
+					</Button>
 				</div>
 			</div>
 		</div>
@@ -201,11 +226,11 @@
 >
 	<p>{t('certificates.confirmDeleteMessage', $language)}</p>
 	<div class="modal-action">
-		<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}
-			>{t('common.cancel', $language)}</Button
-		>
-		<Button variant="danger" loading={isDeleting} onclick={handleDelete}
-			>{t('common.delete', $language)}</Button
-		>
+		<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}>
+			{t('common.cancel', $language)}
+		</Button>
+		<Button variant="danger" loading={isDeleting} onclick={handleDelete}>
+			{t('common.delete', $language)}
+		</Button>
 	</div>
 </Modal>
