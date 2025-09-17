@@ -187,10 +187,14 @@ public class WorkspaceMembersController : ControllerBase
 
         var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
         if (workspace?.OwnerId == member.UserId && member.UserId == _currentUser.UserId)
-            return BadRequest(new { message = "Workspace owner cannot remove themselves. Transfer ownership first." });
+        {
+            return BadRequest(new
+            {
+                message = "Workspace owner cannot remove themselves. Transfer ownership first."
+            });
+        }
 
-        member.Deactivate();
-        await _unitOfWork.WorkspaceMembers.UpdateAsync(member);
+        await _unitOfWork.WorkspaceMembers.DeleteAsync(member.Id);
         await _unitOfWork.SaveChangesAsync();
 
         return NoContent();
