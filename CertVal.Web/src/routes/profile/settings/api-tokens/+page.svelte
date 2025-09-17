@@ -111,11 +111,9 @@
 </svelte:head>
 
 <div class="space-y-6">
-	<div class="flex items-center justify-between">
-		<h2 class="text-xl font-bold">{t('nav.apiTokens', $language)}</h2>
-		<Button onclick={openCreateModal}>
-			<Icon name="plus" class="h-4 w-4" />
-			{t('common.createToken', $language)}
+	<div class="fab" role="button">
+		<Button outline variant="primary" class="btn-circle shadow-lg" onclick={openCreateModal}>
+			<Icon name="plus" class="h-6 w-6" />
 		</Button>
 	</div>
 
