@@ -453,6 +453,29 @@ public class CertificateService : ICertificateService
         return Result.Success(certificateDtos);
     }
 
+    public async Task<Result<(byte[] fileContents, string fileName, string contentType)>> GetCertificateFileAsync(Guid certificateId, CancellationToken cancellationToken = default)
+    {
+        if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
+            return Result.Failure<(byte[], string, string)>("User not authenticated");
+
+        var certificate = await _unitOfWork.Certificates.GetByIdAsync(certificateId, cancellationToken);
+        if (certificate == null)
+            return Result.Failure<(byte[], string, string)>("Certificate not found");
+
+        if (!await CanAccessWorkspace(certificate.WorkspaceId, cancellationToken))
+            return Result.Failure<(byte[], string, string)>("Access denied to this certificate");
+
+        if (!File.Exists(certificate.FilePath))
+        {
+            return Result.Failure<(byte[], string, string)>("Certificate file not found on server.");
+        }
+
+        var fileContents = await File.ReadAllBytesAsync(certificate.FilePath, cancellationToken);
+        var contentType = "application/octet-stream";
+
+        return Result.Success((fileContents, certificate.OriginalFileName, contentType));
+    }
+
     private IEnumerable<Certificate> ApplySorting(IEnumerable<Certificate> certificates, string? sortBy, bool sortDescending)
     {
         var query = certificates.AsQueryable();
