@@ -77,7 +77,6 @@ public class WorkspaceMembersController : ControllerBase
         if (workspace?.OwnerId == user.Id)
             return BadRequest(new { message = "Workspace owner cannot invite themselves" });
 
-        //fix bug re-add user
         var existingMember = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, user.Id);
         if (existingMember != null)
             return BadRequest(new { message = "User is already a member of this workspace" });
