@@ -299,15 +299,18 @@ public class CertificateService : ICertificateService
                 }
 
                 var parsedCertificates = parseResult.Value.ToList();
-                var mainCertificate = parsedCertificates.First();
 
-                if (existingThumbprints.Contains(mainCertificate.Thumbprint))
+                var newCertificates = parsedCertificates
+                    .Where(cert => !existingThumbprints.Contains(cert.Thumbprint))
+                    .ToList();
+
+                if (!newCertificates.Any())
                 {
                     results.Add(new BulkUploadItemResult
                     {
                         FileName = file.FileName,
                         Success = false,
-                        ErrorMessage = "Certificate with this thumbprint already exists in this workspace",
+                        ErrorMessage = "All certificates in this file already exist in the workspace",
                         IsSkipped = true
                     });
                     skippedCount++;
@@ -315,18 +318,18 @@ public class CertificateService : ICertificateService
                 }
 
                 var filePath = await SaveCertificateFileInWorkspace(certificateData, file.FileName, request.WorkspaceId);
-
                 Certificate? certificate;
 
                 if (parsedCertificates.Count > 1)
                 {
+                    var mainCertificate = newCertificates.First();
                     certificate = Certificate.Create(
                         request.WorkspaceId,
                         $"Bundle: {file.FileName}",
                         "Certificate Bundle",
                         $"BUNDLE_{Guid.NewGuid():N}",
-                        parsedCertificates.Min(c => c.NotBefore),
-                        parsedCertificates.Max(c => c.NotAfter),
+                        newCertificates.Min(c => c.NotBefore),
+                        newCertificates.Max(c => c.NotAfter),
                         file.FileName,
                         filePath,
                         mainCertificate.Format,
@@ -339,7 +342,8 @@ public class CertificateService : ICertificateService
                     await _unitOfWork.Certificates.AddAsync(certificate, cancellationToken);
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                    foreach (var parsedCert in parsedCertificates)
+                    var addedChildCertificates = new List<Certificate>();
+                    foreach (var parsedCert in newCertificates)
                     {
                         var childCert = Certificate.Create(
                             request.WorkspaceId,
@@ -356,11 +360,34 @@ public class CertificateService : ICertificateService
                             certificate.Id
                         );
 
+                        addedChildCertificates.Add(childCert);
                         await _unitOfWork.Certificates.AddAsync(childCert, cancellationToken);
+                        existingThumbprints.Add(parsedCert.Thumbprint);
                     }
+
+                    if (addedChildCertificates.Any())
+                    {
+                        Certificate.CreateBundle(certificate.Id, request.WorkspaceId, addedChildCertificates);
+                    }
+
+                    var skippedInBundle = parsedCertificates.Count - newCertificates.Count;
+                    var message = skippedInBundle > 0
+                        ? $"Bundle created with {newCertificates.Count} new certificates, {skippedInBundle} already existed"
+                        : $"Bundle created with {newCertificates.Count} certificates";
+
+                    results.Add(new BulkUploadItemResult
+                    {
+                        FileName = file.FileName,
+                        Success = true,
+                        CertificateId = certificate.Id,
+                        Subject = certificate.Subject,
+                        ErrorMessage = skippedInBundle > 0 ? message : null,
+                        IsSkipped = false
+                    });
                 }
                 else
                 {
+                    var mainCertificate = newCertificates.First();
                     certificate = Certificate.Create(
                         request.WorkspaceId,
                         mainCertificate.Subject,
@@ -376,20 +403,19 @@ public class CertificateService : ICertificateService
                     );
 
                     await _unitOfWork.Certificates.AddAsync(certificate, cancellationToken);
+                    existingThumbprints.Add(mainCertificate.Thumbprint);
+
+                    results.Add(new BulkUploadItemResult
+                    {
+                        FileName = file.FileName,
+                        Success = true,
+                        CertificateId = certificate.Id,
+                        Subject = certificate.Subject,
+                        IsSkipped = false
+                    });
                 }
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-                existingThumbprints.Add(mainCertificate.Thumbprint);
-
-                results.Add(new BulkUploadItemResult
-                {
-                    FileName = file.FileName,
-                    Success = true,
-                    CertificateId = certificate.Id,
-                    Subject = certificate.Subject,
-                    IsSkipped = false
-                });
                 successCount++;
             }
             catch (Exception ex)
@@ -417,6 +443,11 @@ public class CertificateService : ICertificateService
 
     public async Task<Result> DeleteCertificateAsync(Guid certificateId, CancellationToken cancellationToken = default)
     {
+        return await DeleteCertificateAsync(certificateId, true, cancellationToken);
+    }
+
+    public async Task<Result> DeleteCertificateAsync(Guid certificateId, bool deleteBundleChildren = true, CancellationToken cancellationToken = default)
+    {
         if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
             return Result.Failure("User not authenticated");
 
@@ -427,10 +458,28 @@ public class CertificateService : ICertificateService
         if (!await CanManageCertificates(certificate.WorkspaceId, cancellationToken))
             return Result.Failure("Access denied - insufficient permissions");
 
-        await _unitOfWork.Certificates.DeleteAsync(certificateId, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                if (certificate.IsBundle && deleteBundleChildren)
+                {
+                    var childCertificates = await _unitOfWork.Certificates.GetBundleContentsAsync(certificateId, cancellationToken);
+                    foreach (var child in childCertificates)
+                    {
+                        await _unitOfWork.Certificates.DeleteAsync(child.Id, cancellationToken);
+                    }
+                }
 
-        return Result.Success();
+                await _unitOfWork.Certificates.DeleteAsync(certificateId, cancellationToken);
+            }, cancellationToken);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure($"Error deleting certificate: {ex.Message}");
+        }
     }
 
     public async Task<Result<IEnumerable<CertificateDto>>> GetExpiringCertificatesAsync(int daysAhead = 30, CancellationToken cancellationToken = default)

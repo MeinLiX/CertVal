@@ -99,9 +99,11 @@ public class CertificatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> DeleteCertificate(Guid id)
+    public async Task<IActionResult> DeleteCertificate(
+        Guid id,
+        [FromQuery] bool deleteBundleChildren = true)
     {
-        var result = await _certificateService.DeleteCertificateAsync(id);
+        var result = await _certificateService.DeleteCertificateAsync(id, deleteBundleChildren);
 
         if (!result.IsSuccess)
         {
