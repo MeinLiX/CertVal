@@ -11,4 +11,5 @@ public interface ICertificateService
     Task<Result<BulkUploadResultDto>> UploadMultipleCertificatesAsync(UploadMultipleCertificatesRequest request, CancellationToken cancellationToken = default);
     Task<Result> DeleteCertificateAsync(Guid certificateId, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<CertificateDto>>> GetExpiringCertificatesAsync(int daysAhead = 30, CancellationToken cancellationToken = default);
+    Task<Result<(byte[] fileContents, string fileName, string contentType)>> GetCertificateFileAsync(Guid certificateId, CancellationToken cancellationToken = default);
 }

@@ -128,4 +128,27 @@ public class CertificatesController : ControllerBase
 
         return Ok(result.Value);
     }
+
+    [HttpGet("{id:guid}/download")]
+    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DownloadCertificate(Guid id)
+    {
+        var result = await _certificateService.GetCertificateFileAsync(id);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error.Contains("not found"))
+                return NotFound(new { message = result.Error });
+            if (result.Error.Contains("Access denied"))
+                return Forbid();
+
+            return BadRequest(new { message = result.Error });
+        }
+
+        var (fileContents, fileName, contentType) = result.Value;
+
+        return File(fileContents, contentType, fileName);
+    }
 }
