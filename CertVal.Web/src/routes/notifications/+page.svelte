@@ -12,6 +12,7 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 	import type {
 		CreateNotificationRuleRequest,
 		NotificationHistory,
@@ -19,7 +20,6 @@
 		Workspace,
 		PagedResult
 	} from '$lib/types';
-
 	let workspaces = $state<Workspace[]>([]);
 	let selectedWorkspaceId = $state<string>('');
 	let rules = $state<NotificationRule[]>([]);
@@ -39,7 +39,6 @@
 	});
 	let webhookUrl = $state('');
 	let errors = $state<Record<string, string>>({});
-
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -56,12 +55,14 @@
 			const response = await api.get<PagedResult<Workspace>>('/v1/workspaces');
 			if (response.data) {
 				workspaces = response.data.items;
-				if (defaultId && workspaces.some((w) => w.id === defaultId)) {
-					selectedWorkspaceId = defaultId;
-				} else if (workspaces.length > 0) {
-					selectedWorkspaceId = workspaces[0].id;
+				if (workspaces.length > 0) {
+					if (defaultId && workspaces.some((w) => w.id === defaultId)) {
+						selectedWorkspaceId = defaultId;
+					} else {
+						selectedWorkspaceId = workspaces[0].id;
+					}
+					await loadRulesForWorkspace();
 				}
-				await loadRulesForWorkspace();
 			}
 		} catch (error) {
 			console.error('Failed to load workspaces:', error);
@@ -201,83 +202,101 @@
 					loadHistoryForWorkspace();
 				}}
 				variant="ghost"
-				class="mr-2">{t('notifications.viewHistory', $language)}</Button
+				class="mr-2"
+				disabled={workspaces.length === 0}
 			>
-			<Button onclick={openCreateModal} disabled={!selectedWorkspaceId}
-				>{t('notifications.createRule', $language)}</Button
-			>
+				{t('notifications.viewHistory', $language)}
+			</Button>
+			<Button onclick={openCreateModal} disabled={!selectedWorkspaceId}>
+				{t('notifications.createRule', $language)}
+			</Button>
 		</div>
 	</div>
 
-	<Card>
-		<Select
-			label={t('common.workspace', $language)}
-			bind:value={selectedWorkspaceId}
-			onchange={loadRulesForWorkspace}
-			options={workspaces.map((w) => ({ value: w.id, label: w.name }))}
-		/>
-	</Card>
-
-	<div class="space-y-4">
-		{#if isLoading}
-			{#each { length: 3 } as _}
-				<div class="h-20 w-full skeleton"></div>
-			{/each}
-		{:else if rules.length === 0}
-			<div class="py-16 text-center">
-				<h3 class="text-xl font-semibold">{t('notifications.noRules', $language)}</h3>
-				<p class="mt-2 text-base-content/60">{t('notifications.createFirstRule', $language)}</p>
-				<Button class="mt-6" onclick={openCreateModal}
-					>{t('notifications.createRule', $language)}</Button
-				>
+	{#if isLoading}
+		<div class="flex justify-center py-16">
+			<span class="loading loading-lg loading-spinner"></span>
+		</div>
+	{:else if workspaces.length === 0}
+		<div class="py-16 text-center">
+			<div class="placeholder avatar">
+				<div class="w-24 rounded-full bg-base-200 text-base-content/50">
+					<Icon name="workspaces" class="h-12 w-12" />
+				</div>
 			</div>
-		{:else}
-			{#each rules as rule (rule.id)}
-				{@const isDisabled = isRuleDisabledForCurrentUser(rule)}
-				<Card>
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="font-bold">{rule.name}</p>
-							<p class="text-sm opacity-70">
-								{t('notifications.triggers', $language)} <strong>{rule.daysBeforeExpiry}</strong>
-								{t('notifications.daysBeforeExpirySuffix', $language)}. {t(
-									'notifications.channel',
-									$language
-								)}
-								<strong>{rule.channelType}</strong>. {t('notifications.frequency', $language)}:
-								<strong>{rule.frequency}</strong>.
-							</p>
-							{#if isDisabled}
-								<div role="alert" class="mt-2 alert alert-warning p-2 text-xs">
-									<span>{t('notifications.disabledInProfileWarning', $language)}</span>
-								</div>
-							{/if}
-						</div>
-						<div class="flex items-center gap-2">
-							<div class="form-control">
-								<label class="label cursor-pointer gap-2">
-									<span class="label-text text-xs"
-										>{rule.isEnabled
-											? t('notifications.enabled', $language)
-											: t('notifications.disabled', $language)}</span
-									>
-									<input
-										type="checkbox"
-										checked={rule.isEnabled}
-										class="toggle toggle-sm toggle-success"
-										disabled={isDisabled}
-									/>
-								</label>
+			<h3 class="mt-4 text-xl font-semibold">{t('notifications.noWorkspaces', $language)}</h3>
+			<p class="mt-2 text-base-content/60">{t('notifications.createFirstWorkspace', $language)}</p>
+			<div class="mt-6">
+				<Button onclick={() => goto('/workspaces')}>
+					{t('workspaces.create', $language)}
+				</Button>
+			</div>
+		</div>
+	{:else}
+		<Card>
+			<Select
+				label={t('common.workspace', $language)}
+				bind:value={selectedWorkspaceId}
+				onchange={loadRulesForWorkspace}
+				options={workspaces.map((w) => ({ value: w.id, label: w.name }))}
+			/>
+		</Card>
+
+		<div class="space-y-4">
+			{#if rules.length === 0}
+				<div class="py-16 text-center">
+					<h3 class="text-xl font-semibold">{t('notifications.noRules', $language)}</h3>
+					<p class="mt-2 text-base-content/60">{t('notifications.createFirstRule', $language)}</p>
+					<Button class="mt-6" onclick={openCreateModal}>
+						{t('notifications.createRule', $language)}
+					</Button>
+				</div>
+			{:else}
+				{#each rules as rule (rule.id)}
+					{@const isDisabled = isRuleDisabledForCurrentUser(rule)}
+					<Card>
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="font-bold">{rule.name}</p>
+								<p class="text-sm opacity-70">
+									{t('notifications.triggers', $language)} <strong>{rule.daysBeforeExpiry}</strong>
+									{t('notifications.daysBeforeExpirySuffix', $language)}.
+									{t('notifications.channel', $language)}
+									<strong>{rule.channelType}</strong>. {t('notifications.frequency', $language)}:
+									<strong>{rule.frequency}</strong>.
+								</p>
+								{#if isDisabled}
+									<div role="alert" class="mt-2 alert alert-warning p-2 text-xs">
+										<span>{t('notifications.disabledInProfileWarning', $language)}</span>
+									</div>
+								{/if}
 							</div>
-							<Button size="sm" variant="ghost" onclick={() => handleDeleteRule(rule.id)}
-								>{t('common.delete', $language)}</Button
-							>
+							<div class="flex items-center gap-2">
+								<div class="form-control">
+									<label class="label cursor-pointer gap-2">
+										<span class="label-text text-xs">
+											{rule.isEnabled
+												? t('notifications.enabled', $language)
+												: t('notifications.disabled', $language)}
+										</span>
+										<input
+											type="checkbox"
+											checked={rule.isEnabled}
+											class="toggle toggle-sm toggle-success"
+											disabled={isDisabled}
+										/>
+									</label>
+								</div>
+								<Button size="sm" variant="ghost" onclick={() => handleDeleteRule(rule.id)}>
+									{t('common.delete', $language)}
+								</Button>
+							</div>
 						</div>
-					</div>
-				</Card>
-			{/each}
-		{/if}
-	</div>
+					</Card>
+				{/each}
+			{/if}
+		</div>
+	{/if}
 </div>
 
 <Modal
@@ -349,10 +368,7 @@
 		{:else}
 			{#each history as item}
 				<div class="rounded-lg border border-base-content/10 p-2 text-sm">
-					<div
-						class="flex
-justify-between"
-					>
+					<div class="flex justify-between">
 						<span class="max-w-xs truncate font-semibold">{item.subject}</span>
 						<span class="badge badge-sm {item.status === 'Sent' ? 'badge-success' : 'badge-error'}"
 							>{item.status}</span
