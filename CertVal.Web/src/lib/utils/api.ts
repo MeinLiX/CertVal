@@ -109,7 +109,7 @@ class ApiClient {
             }
 
             if (!response.ok) {
-                 if (response.status === 401) {
+                if (response.status === 401) {
                     auth.logout();
                 }
 
@@ -133,6 +133,42 @@ class ApiClient {
             console.error('Upload Error:', error);
             return {
                 message: error instanceof Error ? error.message : 'Upload failed'
+            };
+        }
+    }
+
+    async download(endpoint: string): Promise<{ blob: Blob; filename: string } | { message: string }> {
+        try {
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                headers: Object.assign(
+                    this.getAuthHeader(),
+                ),
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    auth.logout();
+                }
+                const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
+                throw new Error(errorData.message || 'Download failed');
+            }
+
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'downloaded_file';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (filenameMatch && filenameMatch.length > 1) {
+                    filename = filenameMatch[1];
+                }
+            }
+
+            const blob = await response.blob();
+            return { blob, filename };
+
+        } catch (error) {
+            console.error('API Download Error:', error);
+            return {
+                message: error instanceof Error ? error.message : 'Unknown error'
             };
         }
     }
