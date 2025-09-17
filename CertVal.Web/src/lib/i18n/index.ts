@@ -48,7 +48,26 @@ export const translations = {
             created: 'Створено',
             clickToUpload: 'Натисніть, щоб завантажити',
             orDragAndDrop: 'або перетягніть файли',
-            selectedFiles: 'Обрані файли:'
+            selectedFiles: 'Обрані файли:',
+            openInNewTab: 'Відкрити в новій вкладці',
+            createToken: 'Створити токен',
+            noTokens: 'У вас ще немає API токенів.',
+            name: 'Назва',
+            prefix: 'Префікс',
+            scope: 'Scope',
+            lastUsed: 'Останнє використання',
+            active: 'Активний',
+            revoked: 'Відкликаний',
+            never: 'Ніколи',
+            revoke: 'Відкликати',
+            createTokenTitle: 'Створити новий API токен',
+            tokenName: 'Назва токену',
+            newTokenTitle: 'Ваш новий API токен',
+            copyTokenWarning: 'Скопіюйте цей токен. Ви не зможете побачити його знову.',
+            copy: 'Копіювати',
+            revokeTokenTitle: 'Відкликати API токен',
+            revokeTokenWarning: 'Ви впевнені, що хочете відкликати токен "{tokenName}"? Ця дія не може бути скасована.',
+            openDocsInNewTab: 'Відкрити документацію в новій вкладці'
         },
         nav: {
             dashboard: 'Панель керування',
@@ -59,7 +78,9 @@ export const translations = {
             profile: 'Профіль',
             logout: 'Вихід',
             login: 'Вхід',
-            register: 'Реєстрація'
+            register: 'Реєстрація',
+            apiTokens: 'API Токени',
+            documentation: 'Документація'
         },
         auth: {
             login: {
@@ -336,7 +357,7 @@ export const translations = {
         },
         profile: {
             title: 'Профіль користувача',
-            subtitle: 'Керуйте налаштуваннями свого облікового запису та уподобаннями.',
+            subtitle: 'Керуйте налаштуваннями свого облікового запису.',
             personalInfo: 'Особиста інформація',
             accountSettings: 'Налаштування акаунту',
             preferences: 'Налаштування',
@@ -351,7 +372,8 @@ export const translations = {
             accountCreated: 'Акаунт створено',
             lastLogin: 'Останній вхід',
             joinedOn: 'Приєднався',
-            saveChanges: 'Зберегти зміни'
+            saveChanges: 'Зберегти зміни',
+            editProfile: 'Редагувати профіль',
         },
         errors: {
             general: 'Виникла помилка. Спробуйте знову.',
@@ -426,7 +448,26 @@ export const translations = {
             created: 'Created',
             clickToUpload: 'Click to upload',
             orDragAndDrop: 'or drag and drop',
-            selectedFiles: 'Selected files:'
+            selectedFiles: 'Selected files:',
+            openInNewTab: 'Open in new tab',
+            createToken: 'Create Token',
+            noTokens: 'You do not have any API tokens yet.',
+            name: 'Name',
+            prefix: 'Prefix',
+            scope: 'Scope',
+            lastUsed: 'Last Used',
+            active: 'Active',
+            revoked: 'Revoked',
+            never: 'Never',
+            revoke: 'Revoke',
+            createTokenTitle: 'Create New API Token',
+            tokenName: 'Token Name',
+            newTokenTitle: 'Your New API Token',
+            copyTokenWarning: 'Please copy this token now. You won’t be able to see it again.',
+            copy: 'Copy',
+            revokeTokenTitle: 'Revoke API Token',
+            revokeTokenWarning: 'Are you sure you want to revoke the token "{tokenName}"? This action cannot be undone.',
+            openDocsInNewTab: 'Open documentation in a new tab'
         },
         nav: {
             dashboard: 'Dashboard',
@@ -437,7 +478,9 @@ export const translations = {
             profile: 'Profile',
             logout: 'Logout',
             login: 'Login',
-            register: 'Register'
+            register: 'Register',
+            apiTokens: 'API Tokens',
+            documentation: 'Documentation'
         },
         auth: {
             login: {
@@ -714,7 +757,7 @@ export const translations = {
         },
         profile: {
             title: 'User Profile',
-            subtitle: 'Manage your account settings and preferences.',
+            subtitle: 'Manage your account settings.',
             personalInfo: 'Personal Information',
             accountSettings: 'Account Settings',
             preferences: 'Preferences',
@@ -729,7 +772,8 @@ export const translations = {
             accountCreated: 'Account Created',
             lastLogin: 'Last Login',
             joinedOn: 'Joined on',
-            saveChanges: 'Save Changes'
+            saveChanges: 'Save Changes',
+            editProfile: 'Edit Profile'
         },
         errors: {
             general: 'An error occurred. Please try again.',
