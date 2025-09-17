@@ -13,6 +13,7 @@
 		disabled?: boolean;
 		required?: boolean;
 		multiple?: boolean;
+		readonly?: boolean;
 		id?: string;
 		icon?: IconName;
 		accept?: string;
@@ -29,6 +30,7 @@
 		disabled = false,
 		required = false,
 		multiple = false,
+		readonly = false,
 		id = '',
 		icon,
 		accept = '',
@@ -145,6 +147,7 @@
 					{name}
 					{type}
 					{disabled}
+					{readonly}
 					{required}
 					{multiple}
 					{accept}

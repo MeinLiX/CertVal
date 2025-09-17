@@ -208,6 +208,33 @@ export interface ResetPasswordRequest {
     newPassword: string;
 }
 
+export interface ApiToken {
+    id: string;
+    name: string;
+    tokenPrefix: string;
+    scope: string;
+    isActive: boolean;
+    lastUsedAt?: string;
+    expiresAt?: string;
+    createdAt: string;
+}
+
+export interface CreateApiTokenRequest {
+    name: string;
+    scope: 'ReadOnly' | 'ReadWrite';
+    expiresAt?: string;
+}
+
+export interface CreateApiTokenResponse {
+    id: string;
+    name: string;
+    token: string;
+    tokenPrefix: string;
+    scope: string;
+    expiresAt?: string;
+    createdAt: string;
+}
+
 export type Language = 'uk' | 'en';
 
 export type Theme = 'light' | 'dark';

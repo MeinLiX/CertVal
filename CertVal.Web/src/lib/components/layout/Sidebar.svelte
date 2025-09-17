@@ -7,6 +7,7 @@
 	import logoUrl from '$lib/assets/favicon.svg?url';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { IconName } from '$lib/icons';
+	import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
 
 	const menuItems: { label: string; href: string; icon: IconName }[] = [
 		{ label: 'nav.dashboard', href: '/', icon: 'menu' },
@@ -75,13 +76,7 @@
 			<div class="border-t border-base-content/10 p-2">
 				<div class="dropdown dropdown-top w-full">
 					<div tabindex="0" role="button" class="btn h-auto w-full justify-start p-2 btn-ghost">
-						<div class="placeholder avatar">
-							<div class="w-10 rounded-full bg-primary text-primary-content">
-								<span class="text-sm font-semibold">
-									{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
-								</span>
-							</div>
-						</div>
+						<UserAvatar firstName={user.firstName} lastName={user.lastName} size="w-10" />
 						<div class="text-left">
 							<div class="text-sm font-semibold">{user.fullName}</div>
 							<div class="text-xs text-base-content/60">{user.email}</div>
@@ -95,6 +90,12 @@ border border-base-content/10 bg-base-100 p-2 shadow-lg"
 							<a href="/profile">
 								<Icon name="profile" class="h-4 w-4" />
 								{t('nav.profile', $language)}
+							</a>
+						</li>
+						<li>
+							<a href="/profile/settings">
+								<Icon name="settings" class="h-4 w-4" />
+								{t('nav.settings', $language)}
 							</a>
 						</li>
 						<div class="divider my-1"></div>
