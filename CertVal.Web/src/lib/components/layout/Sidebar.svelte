@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { language } from '$lib/stores/language';
 	import { auth } from '$lib/stores/auth';
 	import { t } from '$lib/i18n';
@@ -27,7 +27,7 @@
 			icon: 'notifications'
 		}
 	];
-	const currentPath = $derived($page.url.pathname);
+	const currentPath = $derived(page.url.pathname);
 	const user = $derived($auth.user);
 
 	function isActive(href: string): boolean {

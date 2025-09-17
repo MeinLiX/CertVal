@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
 	import { workspaces as workspacesStore } from '$lib/stores/workspaces';
 	import { language } from '$lib/stores/language';
@@ -32,11 +32,11 @@
 	});
 
 	const filters = $derived({
-		searchTerm: $page.url.searchParams.get('search') || '',
-		status: $page.url.searchParams.get('status') || 'All',
-		workspaceId: $page.url.searchParams.get('workspace') || '',
-		page: parseInt($page.url.searchParams.get('page') || '1'),
-		pageSize: parseInt($page.url.searchParams.get('pageSize') || '10')
+		searchTerm: page.url.searchParams.get('search') || '',
+		status: page.url.searchParams.get('status') || 'All',
+		workspaceId: page.url.searchParams.get('workspace') || '',
+		page: parseInt(page.url.searchParams.get('page') || '1'),
+		pageSize: parseInt(page.url.searchParams.get('pageSize') || '10')
 	});
 	const totalPages = $derived(Math.ceil(totalCount / filters.pageSize) || 1);
 	const workspaceOptions = $derived([
@@ -97,7 +97,7 @@
 	}
 
 	function updateUrlParams(newParams: Record<string, string | number>) {
-		const params = new URLSearchParams($page.url.searchParams);
+		const params = new URLSearchParams(page.url.searchParams);
 		for (const [key, value] of Object.entries(newParams)) {
 			if (value) {
 				params.set(key, String(value));

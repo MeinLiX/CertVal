@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
@@ -11,13 +11,13 @@
 	//let message = $state(t('workspaces.join.processing', $language));
 	let message = $state(t('workspaces.join.success', $language));
 	let isSuccess = $state(false);
-	const workspaceId = $derived($page.params.id);
+	const workspaceId = $derived(page.params.id);
 
 	onMount(async () => {
 		isSuccess = true;
 		//Temporarily disabled joining via token (TODO BACKEND)
 
-		/*const token = $page.url.searchParams.get('token');
+		/*const token = page.url.searchParams.get('token');
 		if (!token) {
 			message = t('workspaces.join.invalidToken', $language);
 			return;

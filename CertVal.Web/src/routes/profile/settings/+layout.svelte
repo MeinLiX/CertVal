@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { t } from '$lib/i18n';
 	import { language } from '$lib/stores/language';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -14,7 +14,7 @@
 		{ href: '/profile/settings/docs', label: 'nav.documentation', icon: 'document' }
 	];
 
-	const currentPath = $derived($page.url.pathname);
+	const currentPath = $derived(page.url.pathname);
 </script>
 
 <div class="space-y-6">
