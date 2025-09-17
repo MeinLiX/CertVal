@@ -57,7 +57,7 @@
 	{:else if user}
 		<Card>
 			<div class="flex flex-col items-center gap-6 p-4 text-center md:flex-row md:text-left">
-				<UserAvatar firstName={user.firstName} lastName={user.lastName} size="w-24" />
+				<UserAvatar firstName={user.firstName} lastName={user.lastName} />
 				<div class="flex-1">
 					<h2 class="text-2xl font-bold">{user.fullName}</h2>
 					<p class="text-base-content/60">{user.email}</p>
