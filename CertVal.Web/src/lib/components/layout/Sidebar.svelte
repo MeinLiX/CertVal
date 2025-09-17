@@ -76,7 +76,12 @@
 			<div class="border-t border-base-content/10 p-2">
 				<div class="dropdown dropdown-top w-full">
 					<div tabindex="0" role="button" class="btn h-auto w-full justify-start p-2 btn-ghost">
-						<UserAvatar firstName={user.firstName} lastName={user.lastName} size="w-10" />
+						<UserAvatar
+							firstName={user.firstName}
+							lastName={user.lastName}
+							size="w-10"
+							textSize="text-1xl"
+						/>
 						<div class="text-left">
 							<div class="text-sm font-semibold">{user.fullName}</div>
 							<div class="text-xs text-base-content/60">{user.email}</div>
