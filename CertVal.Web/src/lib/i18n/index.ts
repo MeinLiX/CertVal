@@ -330,7 +330,9 @@ export const translations = {
             daysBeforeExpirySuffix: 'днів до закінчення.',
             channel: 'Канал:',
             confirmDelete: 'Ви впевнені, що хочете видалити це правило?',
-            disabledInProfileWarning: 'Сповіщення вимкнені у вашому профілі, тому це правило для вас неактивне.'
+            disabledInProfileWarning: 'Сповіщення вимкнені у вашому профілі, тому це правило для вас неактивне.',
+            noWorkspaces: 'У вас ще немає робочих просторів.',
+            createFirstWorkspace: 'Створіть свій перший робочий простір, щоб керувати сповіщеннями.'
         },
         profile: {
             title: 'Профіль користувача',
@@ -706,7 +708,9 @@ export const translations = {
             daysBeforeExpirySuffix: 'days before expiry.',
             channel: 'Channel:',
             confirmDelete: 'Are you sure you want to delete this rule?',
-            disabledInProfileWarning: 'Notifications are disabled in your profile, so this rule is inactive for you.'
+            disabledInProfileWarning: 'Notifications are disabled in your profile, so this rule is inactive for you.',
+            noWorkspaces: "You don't have any workspaces yet.",
+            createFirstWorkspace: 'Create your first workspace to manage notifications.'
         },
         profile: {
             title: 'User Profile',

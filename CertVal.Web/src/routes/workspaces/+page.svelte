@@ -107,7 +107,7 @@
 		<div class="py-16 text-center">
 			<div class="placeholder avatar">
 				<div class="w-24 rounded-full bg-base-200 text-base-content/50">
-					<Icon name="workspaceIcon" class="h-12 w-12" />
+					<Icon name="workspaces" class="h-12 w-12" />
 				</div>
 			</div>
 			<h3 class="mt-4 text-xl font-semibold">{t('workspaces.empty', $language)}</h3>
