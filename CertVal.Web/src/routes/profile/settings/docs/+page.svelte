@@ -20,7 +20,7 @@
 		class="tooltip fixed tooltip-left right-6 bottom-6 z-50"
 		data-tip={t('common.openDocsInNewTab', $language)}
 	>
-		<Button variant="primary" class="btn-circle shadow-lg">
+		<Button outline variant="primary" class="btn-circle shadow-lg">
 			<Icon name="externalLink" class="h-6 w-6" />
 		</Button>
 	</a>
