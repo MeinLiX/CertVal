@@ -1,69 +1,242 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+
 	type ButtonVariant =
 		| 'primary'
 		| 'secondary'
 		| 'accent'
 		| 'success'
-		| 'danger'
 		| 'warning'
+		| 'error'
+		| 'danger'
 		| 'info'
 		| 'ghost'
-		| 'link';
-	type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
+		| 'link'
+		| 'outline';
+
+	type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+	type ButtonShape = 'square' | 'circle' | 'wide' | 'block';
+
+	interface ButtonProps {
+		variant?: ButtonVariant;
+		size?: ButtonSize;
+		shape?: ButtonShape;
+		disabled?: boolean;
+		loading?: boolean;
+		type?: 'button' | 'submit' | 'reset';
+		class?: string;
+		onclick?: (event: MouseEvent) => void | Promise<void> | any;
+		children?: Snippet;
+		'data-testid'?: string;
+		'aria-label'?: string;
+		'aria-describedby'?: string;
+		id?: string;
+		name?: string;
+		value?: string;
+		form?: string;
+		formaction?: string;
+		formnovalidate?: boolean;
+		formtarget?: string;
+	}
 
 	let {
 		variant = 'primary',
 		size = 'md',
+		shape,
 		disabled = false,
 		loading = false,
 		type = 'button',
-		wide = false,
-		outline = false,
 		class: className = '',
 		onclick,
-		children
-	}: {
-		variant?: ButtonVariant;
-		size?: ButtonSize;
-		disabled?: boolean;
-		loading?: boolean;
-		type?: 'button' | 'submit' | 'reset';
-		wide?: boolean;
-		outline?: boolean;
-		class?: string;
-		onclick?: (event: MouseEvent) => void;
-		children?: any;
-	} = $props();
+		children,
+		'data-testid': testId,
+		'aria-label': ariaLabel,
+		'aria-describedby': ariaDescribedBy,
+		id,
+		name,
+		value,
+		form,
+		formaction,
+		formnovalidate,
+		formtarget
+	}: ButtonProps = $props();
 
-	const baseClasses = 'btn transition-all duration-200 ease-in-out transform hover:scale-105';
+	const baseClasses = 'btn transition-all duration-200 ease-in-out';
 
-	const variantMap = {
-		primary: 'btn-primary',
-		secondary: 'btn-secondary',
-		accent: 'btn-accent',
-		success: 'btn-success',
-		danger: 'btn-error',
-		warning: 'btn-warning',
-		info: 'btn-info',
-		ghost: 'btn-ghost',
-		link: 'btn-link'
-	};
+	const variantClasses = $derived(() => {
+		const classes = {
+			primary: 'btn-primary',
+			secondary: 'btn-secondary',
+			accent: 'btn-accent',
+			success: 'btn-success',
+			warning: 'btn-warning',
+			error: 'btn-error',
+			danger: 'btn-error',
+			info: 'btn-info',
+			ghost: 'btn-ghost',
+			link: 'btn-link',
+			outline: 'btn-outline'
+		};
+		return classes[variant];
+	});
 
-	const sizeMap = {
-		xs: 'btn-xs',
-		sm: 'btn-sm',
-		md: 'btn-md',
-		lg: 'btn-lg'
-	};
+	const sizeClasses = $derived(() => {
+		const classes = {
+			xs: 'btn-xs',
+			sm: 'btn-sm',
+			md: 'btn-md',
+			lg: 'btn-lg',
+			xl: 'btn-xl'
+		};
+		return classes[size];
+	});
 
-	const classes = $derived(
-		`${baseClasses} ${variantMap[variant]} ${sizeMap[size]} ${wide ? 'btn-wide' : ''} ${outline ? 'btn-outline' : ''} ${className}`
-	);
+	const shapeClasses = $derived(() => {
+		if (!shape) return '';
+
+		const classes = {
+			square: 'btn-square',
+			circle: 'btn-circle',
+			wide: 'btn-wide',
+			block: 'btn-block'
+		};
+		return classes[shape];
+	});
+
+	const computedClasses = $derived(() => {
+		return [
+			baseClasses,
+			variantClasses(),
+			sizeClasses(),
+			shapeClasses(),
+			loading ? 'loading' : '',
+			className
+		]
+			.filter(Boolean)
+			.join(' ');
+	});
+
+	const isInteractive = $derived(!disabled && !loading);
+
+	let isProcessing = $state(false);
+
+	async function handleClick(event: MouseEvent) {
+		if (!onclick || !isInteractive || isProcessing) return;
+
+		try {
+			isProcessing = true;
+			await onclick(event);
+		} catch (error) {
+			console.error('Button click handler error:', error);
+		} finally {
+			isProcessing = false;
+		}
+	}
+
+	const effectiveAriaLabel = $derived(() => {
+		if (ariaLabel) return ariaLabel;
+		if (loading) return 'Завантаження...';
+		return undefined;
+	});
+
+	const effectiveDisabled = $derived(disabled || loading || isProcessing);
 </script>
 
-<button {type} {disabled} class={classes} {onclick} class:loading>
-	{#if loading}
-		<span class="loading loading-spinner"></span>
+<button
+	{id}
+	{name}
+	{value}
+	{type}
+	{form}
+	{formaction}
+	{formnovalidate}
+	{formtarget}
+	class={computedClasses()}
+	disabled={effectiveDisabled}
+	aria-label={effectiveAriaLabel()}
+	aria-describedby={ariaDescribedBy}
+	aria-busy={loading || isProcessing}
+	data-testid={testId}
+	onclick={handleClick}
+	onkeydown={(e) => {
+		if ((e.key === 'Enter' || e.key === ' ') && isInteractive) {
+			e.preventDefault();
+			handleClick(e as any);
+		}
+	}}
+>
+	{#if loading || isProcessing}
+		<span class="loading loading-sm loading-spinner" aria-hidden="true"></span>
 	{/if}
-	{@render children?.()}
+
+	{#if children}
+		{@render children()}
+	{/if}
 </button>
+
+<style>
+	.btn {
+		--btn-focus-scale: 1.05;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.btn:focus-visible {
+		transform: scale(var(--btn-focus-scale));
+		outline: 2px solid oklch(from var(--color-primary) l c h);
+		outline-offset: 2px;
+	}
+
+	.btn::after {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 0;
+		height: 0;
+		background: rgba(255, 255, 255, 0.3);
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+		transition:
+			width 0.3s ease,
+			height 0.3s ease;
+		pointer-events: none;
+	}
+
+	.btn:active::after {
+		width: 200px;
+		height: 200px;
+		transition:
+			width 0.1s ease,
+			height 0.1s ease;
+	}
+
+	.btn.loading {
+		pointer-events: none;
+	}
+
+	.btn.loading .loading-spinner {
+		margin-right: 0.5rem;
+	}
+
+	@media (prefers-contrast: high) {
+		.btn {
+			border-width: 2px;
+		}
+
+		.btn:focus-visible {
+			outline-width: 3px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.btn {
+			--btn-focus-scale: 1.02;
+			transition-duration: 0.05s;
+		}
+
+		.btn::after {
+			display: none;
+		}
+	}
+</style>
