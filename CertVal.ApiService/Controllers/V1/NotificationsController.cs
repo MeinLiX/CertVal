@@ -63,6 +63,8 @@ public class NotificationsController : ControllerBase
 
         string channelConfig;
 
+        var existingRules = (await _unitOfWork.NotificationRules.GetByWorkspaceAsync(workspaceId)).ToList();
+
         if (request.ChannelType == NotificationChannelType.Email)
         {
             if (request.RecipientUserIds == null || !request.RecipientUserIds.Any())
@@ -86,17 +88,97 @@ public class NotificationsController : ControllerBase
                 return BadRequest(new { message = $"The following user IDs are not members of this workspace: {string.Join(", ", invalidUserIds)}" });
             }
 
-            var existingRules = await _unitOfWork.NotificationRules.GetByWorkspaceAsync(workspaceId);
-            foreach (var userId in distinctUserIds)
-            {
-                if (existingRules.Any(r => r.ChannelType == NotificationChannelType.Email && r.ChannelConfig.Contains($"\"{userId}\"")))
+            var existingEmailUserIds = existingRules
+                .Where(r => r.ChannelType == NotificationChannelType.Email)
+                .SelectMany(r =>
                 {
-                    var user = await _unitOfWork.Users.GetByIdAsync(userId);
-                    return BadRequest(new { message = $"A notification rule already exists for the user: {user?.FullName ?? userId.ToString()}" });
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(r.ChannelConfig);
+                        if (doc.RootElement.TryGetProperty("userIds", out var arr) && arr.ValueKind == JsonValueKind.Array)
+                        {
+                            var list = new List<Guid>();
+                            foreach (var el in arr.EnumerateArray())
+                            {
+                                if (el.ValueKind == JsonValueKind.String &&
+                                    Guid.TryParse(el.GetString(), out var g))
+                                {
+                                    list.Add(g);
+                                }
+                            }
+                            return list;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                    return [];
+                })
+                .ToHashSet();
+
+            var duplicateUserIds = distinctUserIds.Where(existingEmailUserIds.Contains).ToList();
+            if (duplicateUserIds.Any())
+            {
+                var userNames = new List<string>();
+                foreach (var dupId in duplicateUserIds)
+                {
+                    var user = await _unitOfWork.Users.GetByIdAsync(dupId);
+                    userNames.Add(user?.FullName != null
+                        ? $"{user.FullName}"
+                        : dupId.ToString());
                 }
+
+                return BadRequest(new
+                {
+                    message = $"Notification rule already exists for the following users: {string.Join(", ", userNames)}"
+                });
             }
 
             channelConfig = JsonSerializer.Serialize(new { userIds = distinctUserIds });
+        }
+        else if (request.ChannelType == NotificationChannelType.Webhook)
+        {
+            try
+            {
+                using var newDoc = JsonDocument.Parse(request.ChannelConfig);
+                if (!newDoc.RootElement.TryGetProperty("url", out var urlElement) || string.IsNullOrWhiteSpace(urlElement.GetString()))
+                {
+                    return BadRequest(new { message = "Webhook URL is missing in channel configuration." });
+                }
+
+                var newUrl = urlElement.GetString()!.Trim();
+
+                var existingWebhookUrls = existingRules
+                    .Where(r => r.ChannelType == NotificationChannelType.Webhook)
+                    .Select(r =>
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(r.ChannelConfig);
+                            return doc.RootElement.TryGetProperty("url", out var existingUrlEl)
+                                ? existingUrlEl.GetString()
+                                : null;
+                        }
+                        catch
+                        {
+                            return null;
+                        }
+                    })
+                    .Where(u => !string.IsNullOrWhiteSpace(u))
+                    .Select(u => u!.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                if (existingWebhookUrls.Contains(newUrl))
+                {
+                    return BadRequest(new { message = $"A notification rule with the URL '{newUrl}' already exists in this workspace." });
+                }
+
+                channelConfig = request.ChannelConfig;
+            }
+            catch (JsonException)
+            {
+                return BadRequest(new { message = "Invalid JSON format for webhook channel configuration." });
+            }
         }
         else
         {
