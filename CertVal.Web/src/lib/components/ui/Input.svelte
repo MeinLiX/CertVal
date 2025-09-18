@@ -278,7 +278,7 @@
 
 				<input
 					bind:this={inputElement}
-					{id}
+					id={inputId}
 					{name}
 					{type}
 					{disabled}
@@ -315,7 +315,7 @@
 	{:else}
 		<div class="relative">
 			{#if icon && iconPosition === 'left'}
-				<span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+				<span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-3">
 					<svg
 						class="h-5 w-5 text-base-content/50"
 						fill="none"
@@ -331,7 +331,7 @@
 			<input
 				bind:this={inputElement}
 				bind:value
-				{id}
+				id={inputId}
 				{name}
 				{type}
 				{placeholder}
@@ -355,7 +355,7 @@
 			/>
 
 			{#if icon && iconPosition === 'right'}
-				<span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+				<span class="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-3">
 					<svg
 						class="h-5 w-5 text-base-content/50"
 						fill="none"
