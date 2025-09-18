@@ -20,6 +20,7 @@
 		InviteMemberRequest,
 		TransferOwnershipRequest
 	} from '$lib/types';
+	import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
 
 	let workspace = $state<Workspace | null>(null);
 	let certificates = $state<Certificate[]>([]);
@@ -292,13 +293,12 @@
 				<Card title={t('common.members', $language)}>
 					<div class="space-y-2">
 						<div class="flex items-center gap-3">
-							<div class="placeholder avatar">
-								<div class="w-10 rounded-full bg-primary text-primary-content">
-									<span
-										>{workspace.owner.firstName.charAt(0)}{workspace.owner.lastName.charAt(0)}</span
-									>
-								</div>
-							</div>
+							<UserAvatar
+								firstName={workspace.owner.firstName}
+								lastName={workspace.owner.lastName}
+								size="w-10"
+								textSize="text-1xl"
+							/>
 							<div>
 								<div class="font-bold">{workspace.owner.fullName}</div>
 								<div class="text-xs opacity-50">{t('common.owner', $language)}</div>
