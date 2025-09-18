@@ -43,7 +43,7 @@
 {#if isVisible}
 	<dialog
 		bind:this={dialog}
-		class="modal modal-bottom sm:modal-middle {className}"
+		class="modal {className}"
 		onclose={onClose}
 		oncancel={(e) => {
 			e.preventDefault();
@@ -68,6 +68,30 @@
 {/if}
 
 <style>
+	dialog.modal {
+		position: fixed;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+		margin: 0;
+		z-index: 60;
+	}
+
+	dialog.modal::backdrop {
+		background-color: rgba(0, 0, 0, 0.45);
+		backdrop-filter: none;
+	}
+
+	.modal-box {
+		max-width: min(720px, 95vw);
+		width: 100%;
+		margin: 0 auto;
+		border-radius: 0.5rem;
+		box-shadow: 0 10px 30px rgba(2, 6, 23, 0.2);
+	}
+
 	.modal {
 		animation: fade-in 0.2s ease-out forwards;
 	}

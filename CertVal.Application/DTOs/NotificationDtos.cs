@@ -29,8 +29,9 @@ public record CreateNotificationRuleRequest
     [Required]
     public NotificationChannelType ChannelType { get; init; }
 
-    [Required]
     public string ChannelConfig { get; init; } = "{}";
+
+    public List<Guid>? RecipientUserIds { get; init; }
 
     public NotificationFrequency Frequency { get; init; } = NotificationFrequency.Once;
 }

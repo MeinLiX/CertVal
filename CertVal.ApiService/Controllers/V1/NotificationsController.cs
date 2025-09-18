@@ -1,9 +1,11 @@
 ﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Application.DTOs;
 using CertVal.Core.Entities;
+using CertVal.Core.Enums;
 using CertVal.Core.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace CertVal.ApiService.Controllers.V1;
 
@@ -59,12 +61,54 @@ public class NotificationsController : ControllerBase
         if (!await CanManageWorkspace(workspaceId))
             return Forbid();
 
+        string channelConfig;
+
+        if (request.ChannelType == NotificationChannelType.Email)
+        {
+            if (request.RecipientUserIds == null || !request.RecipientUserIds.Any())
+            {
+                return BadRequest(new { message = "Recipient user IDs are required for email notifications." });
+            }
+
+            var distinctUserIds = request.RecipientUserIds.Distinct().ToList();
+
+            var workspaceMembers = await _unitOfWork.WorkspaceMembers.GetByWorkspaceAsync(workspaceId);
+            var workspaceOwner = (await _unitOfWork.Workspaces.GetByIdAsync(workspaceId))?.Owner;
+            var validUserIds = workspaceMembers.Select(m => m.UserId).ToList();
+            if (workspaceOwner != null)
+            {
+                validUserIds.Add(workspaceOwner.Id);
+            }
+
+            var invalidUserIds = distinctUserIds.Except(validUserIds).ToList();
+            if (invalidUserIds.Any())
+            {
+                return BadRequest(new { message = $"The following user IDs are not members of this workspace: {string.Join(", ", invalidUserIds)}" });
+            }
+
+            var existingRules = await _unitOfWork.NotificationRules.GetByWorkspaceAsync(workspaceId);
+            foreach (var userId in distinctUserIds)
+            {
+                if (existingRules.Any(r => r.ChannelType == NotificationChannelType.Email && r.ChannelConfig.Contains($"\"{userId}\"")))
+                {
+                    var user = await _unitOfWork.Users.GetByIdAsync(userId);
+                    return BadRequest(new { message = $"A notification rule already exists for the user: {user?.FullName ?? userId.ToString()}" });
+                }
+            }
+
+            channelConfig = JsonSerializer.Serialize(new { userIds = distinctUserIds });
+        }
+        else
+        {
+            channelConfig = request.ChannelConfig;
+        }
+
         var rule = NotificationRule.Create(
             workspaceId,
             request.Name,
             request.DaysBeforeExpiry,
             request.ChannelType,
-            request.ChannelConfig,
+            channelConfig,
             request.Frequency
         );
 
