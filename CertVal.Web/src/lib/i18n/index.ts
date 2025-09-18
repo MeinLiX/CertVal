@@ -10,6 +10,8 @@ export const translations = {
             edit: 'Редагувати',
             close: 'Закрити',
             confirm: 'Підтвердити',
+            confirmDelete: 'Видалити',
+            confirmDeleteMessage: 'Ви впевнені, що хочете видалити {name}? Це дія не може бути скасована.',
             back: 'Назад',
             next: 'Далі',
             previous: 'Попередня',
@@ -353,7 +355,9 @@ export const translations = {
             confirmDelete: 'Ви впевнені, що хочете видалити це правило?',
             disabledInProfileWarning: 'Сповіщення вимкнені у вашому профілі, тому це правило для вас неактивне.',
             noWorkspaces: 'У вас ще немає робочих просторів.',
-            createFirstWorkspace: 'Створіть свій перший робочий простір, щоб керувати сповіщеннями.'
+            createFirstWorkspace: 'Створіть свій перший робочий простір, щоб керувати сповіщеннями.',
+            recipients: 'Отримувачі',
+            viewRecipients: 'Переглянути отримувачів'
         },
         profile: {
             title: 'Профіль користувача',
@@ -410,6 +414,8 @@ export const translations = {
             edit: 'Edit',
             close: 'Close',
             confirm: 'Confirm',
+            confirmDelete: 'Delete',
+            confirmDeleteMessage: 'Are you sure you want to delete {name}? This action cannot be undone.',
             back: 'Back',
             next: 'Next',
             previous: 'Previous',
@@ -753,7 +759,9 @@ export const translations = {
             confirmDelete: 'Are you sure you want to delete this rule?',
             disabledInProfileWarning: 'Notifications are disabled in your profile, so this rule is inactive for you.',
             noWorkspaces: "You don't have any workspaces yet.",
-            createFirstWorkspace: 'Create your first workspace to manage notifications.'
+            createFirstWorkspace: 'Create your first workspace to manage notifications.',
+            recipients: 'Recipients',
+            viewRecipients: 'View Recipients'
         },
         profile: {
             title: 'User Profile',

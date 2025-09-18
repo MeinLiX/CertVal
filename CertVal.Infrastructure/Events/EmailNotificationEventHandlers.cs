@@ -1,9 +1,10 @@
-﻿using CertVal.Core.Events;
+﻿using CertVal.Core.Entities;
+using CertVal.Core.Enums;
+using CertVal.Core.Events;
 using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
-using CertVal.Core.Entities;
-using CertVal.Core.Enums;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace CertVal.Infrastructure.Events;
 
@@ -140,77 +141,77 @@ public class EmailNotificationEventHandlers :
         DateTime expiryDate, int daysUntilExpiry, bool isExpired, CancellationToken cancellationToken)
     {
         var certificate = await _unitOfWork.Certificates.GetByIdAsync(certificateId, cancellationToken);
-        if (certificate == null)
-        {
-            _logger.LogWarning("Certificate not found for notification: {CertificateId}", certificateId);
-            return;
-        }
+        if (certificate == null) return;
 
         var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId, cancellationToken);
-        if (workspace == null)
-        {
-            _logger.LogWarning("Workspace not found for notification: {WorkspaceId}", workspaceId);
-            return;
-        }
+        if (workspace == null) return;
 
         var notificationRules = await _unitOfWork.NotificationRules.GetByWorkspaceAsync(workspaceId, cancellationToken);
         var activeRules = notificationRules
             .Where(r => r.IsEnabled &&
-                        r.ChannelType == NotificationChannelType.Email && 
+                        r.ChannelType == NotificationChannelType.Email &&
                         r.DaysBeforeExpiry >= daysUntilExpiry)
             .ToList();
 
-        if (!activeRules.Any())
-        {
-            _logger.LogDebug("No active email notification rules found for certificate {CertificateId} expiring in {Days} days",
-                certificateId, daysUntilExpiry);
-            return;
-        }
-
-        var recipients = new List<(string Email, string Name)>();
-
-        if (workspace.Owner.EmailNotificationsEnabled)
-        {
-            recipients.Add((workspace.Owner.Email, workspace.Owner.FullName));
-        }
-
-        var members = await _unitOfWork.WorkspaceMembers.GetByWorkspaceAsync(workspaceId, cancellationToken);
-        var membersWithNotifications = members
-            .Where(m => m.Status == WorkspaceMemberStatus.Active && m.User.EmailNotificationsEnabled)
-            .Select(m => (m.User.Email, m.User.FullName))
-            .ToList();
-
-        recipients.AddRange(membersWithNotifications);
-
-        if (!recipients.Any())
-        {
-            _logger.LogDebug("No recipients with notifications enabled for certificate {CertificateId}", certificateId);
-            return;
-        }
+        if (!activeRules.Any()) return;
 
         foreach (var rule in activeRules)
         {
-            foreach (var (email, name) in recipients.Distinct())
+            var lastNotification = await _unitOfWork.NotificationHistory
+                   .GetLastNotificationAsync(certificateId, rule.Id, cancellationToken);
+
+            if (!ShouldSendNotification(lastNotification, rule.Frequency))
             {
-                var lastNotification = await _unitOfWork.NotificationHistory
-                    .GetLastNotificationAsync(certificateId, rule.Id, cancellationToken);
+                continue;
+            }
 
-                var shouldSend = ShouldSendNotification(lastNotification, rule.Frequency);
-
-                if (!shouldSend)
+            List<Guid> recipientUserIds;
+            try
+            {
+                var config = JsonSerializer.Deserialize<JsonElement>(rule.ChannelConfig);
+                if (config.TryGetProperty("userIds", out var idsElement) && idsElement.ValueKind == JsonValueKind.Array)
                 {
-                    _logger.LogDebug("Skipping notification for certificate {CertificateId}, rule {RuleId}, recipient {Email} - already sent or frequency not met",
-                        certificateId, rule.Id, email);
+                    recipientUserIds = idsElement.EnumerateArray()
+                        .Select(e => e.TryGetGuid(out var guid) ? guid : Guid.Empty)
+                        .Where(g => g != Guid.Empty).ToList();
+                }
+                else
+                {
+                    _logger.LogWarning("Invalid ChannelConfig for email rule {RuleId}: 'userIds' array not found.", rule.Id);
                     continue;
                 }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse ChannelConfig for email rule {RuleId}", rule.Id);
+                continue;
+            }
 
+            if (!recipientUserIds.Any()) continue;
+
+            var recipients = new List<User>();
+            foreach (var userId in recipientUserIds)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+                if (user != null && user.EmailNotificationsEnabled)
+                {
+                    recipients.Add(user);
+                }
+            }
+
+            if (!recipients.Any())
+            {
+                _logger.LogDebug("No recipients with notifications enabled for rule {RuleId}", rule.Id);
+                continue;
+            }
+
+            foreach (var user in recipients)
+            {
                 try
                 {
                     var notification = NotificationHistory.Create(
-                        rule.Id,
-                        certificateId,
-                        NotificationChannelType.Email,
-                        email,
+                        rule.Id, certificateId, NotificationChannelType.Email,
+                        user.Email,
                         GenerateEmailSubject(certificate, daysUntilExpiry, isExpired),
                         GenerateEmailMessage(certificate, workspace, daysUntilExpiry, isExpired),
                         DateTime.UtcNow
@@ -220,7 +221,7 @@ public class EmailNotificationEventHandlers :
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
 
                     await _emailPublisher.PublishCertificateExpiringAsync(
-                        email,
+                        user.Email,
                         workspace.Name,
                         certificate.Subject,
                         certificate.Issuer,
@@ -232,12 +233,12 @@ public class EmailNotificationEventHandlers :
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
 
                     _logger.LogInformation("Sent certificate notification for certificate {CertificateId} to {Email} via rule {RuleId}",
-                        certificateId, email, rule.Id);
+                       certificateId, user.Email, rule.Id);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to send certificate notification for certificate {CertificateId} to {Email}",
-                        certificateId, email);
+                        certificateId, user.Email);
 
                     var failedNotification = await _unitOfWork.NotificationHistory
                         .GetLastNotificationAsync(certificateId, rule.Id, cancellationToken);
