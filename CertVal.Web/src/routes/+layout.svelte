@@ -47,3 +47,115 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	:global(.theme-preload *) {
+		transition: none !important;
+	}
+
+	:global(::selection) {
+		background-color: oklch(from var(--color-primary) l c h / 0.2);
+		color: var(--color-primary-content);
+	}
+
+	:global(html) {
+		scroll-behavior: smooth;
+	}
+
+	:global(*:focus:not(:focus-visible)) {
+		outline: none;
+	}
+
+	:global(*:focus-visible) {
+		outline: 2px solid oklch(from var(--color-primary) l c h);
+		outline-offset: 2px;
+		border-radius: 2px;
+	}
+
+	:global(::-webkit-scrollbar) {
+		width: 8px;
+		height: 8px;
+	}
+
+	:global(::-webkit-scrollbar-track) {
+		background: oklch(from var(--color-base-200) l c h);
+		border-radius: 4px;
+	}
+
+	:global(::-webkit-scrollbar-thumb) {
+		background: oklch(from var(--color-base-content) l c h / 0.3);
+		border-radius: 4px;
+		transition: background-color 200ms ease;
+	}
+
+	:global(::-webkit-scrollbar-thumb:hover) {
+		background: oklch(from var(--color-base-content) l c h / 0.5);
+	}
+
+	.drawer-content {
+		position: relative;
+	}
+
+	main .absolute.inset-0 {
+		background:
+			radial-gradient(
+				circle at 20% 80%,
+				oklch(from var(--color-primary) l c h / 0.1) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 80% 20%,
+				oklch(from var(--color-secondary) l c h / 0.1) 0%,
+				transparent 50%
+			);
+	}
+
+	@media (max-width: 768px) {
+		.mx-auto.max-w-7xl {
+			padding-left: 1rem;
+			padding-right: 1rem;
+		}
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:global(input[type='search']::-webkit-search-cancel-button) {
+			filter: invert(1);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(*) {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+		}
+
+		:global(html) {
+			scroll-behavior: auto;
+		}
+	}
+
+	@media (prefers-contrast: high) {
+		:global(.drawer-content) {
+			border-width: 2px;
+		}
+
+		:global(.border) {
+			border-width: 2px;
+		}
+	}
+
+	:global(.loading-overlay) {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: oklch(from var(--color-base-100) l c h / 0.8);
+		backdrop-filter: blur(4px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 9999;
+	}
+</style>
