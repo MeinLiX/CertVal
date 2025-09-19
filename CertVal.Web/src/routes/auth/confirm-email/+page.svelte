@@ -5,12 +5,10 @@
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import { language } from '$lib/stores/language';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
 	let message = $state(t('auth.confirm.processing', $language));
 	let isSuccess = $state(false);
-
 	onMount(async () => {
 		const token = page.url.searchParams.get('token');
 		if (!token) {
@@ -36,16 +34,21 @@
 	<title>{t('auth.confirm.title', $language)} - CertVal</title>
 </svelte:head>
 
-<div class="hero">
-	<Card class="w-full max-w-md">
-		<div class="py-12 text-center">
-			<h3 class="text-xl font-semibold">{t('auth.confirm.title', $language)}</h3>
+<div class="hero min-h-full">
+	<div
+		class="card w-full max-w-md glass shadow-2xl"
+		style="background-color: oklch(from var(--color-base-100) l c h / 0.2);"
+	>
+		<div class="card-body items-center p-8 text-center">
+			<h2 class="card-title text-2xl font-bold">{t('auth.confirm.title', $language)}</h2>
 			<p class="mt-4">{message}</p>
 			{#if isSuccess}
-				<Button class="mt-6" onclick={() => goto('/auth/login')}>
-					{t('auth.confirm.login', $language)}
-				</Button>
+				<div class="mt-6 card-actions">
+					<Button variant="primary" onclick={() => goto('/auth/login')}>
+						{t('auth.confirm.login', $language)}
+					</Button>
+				</div>
 			{/if}
 		</div>
-	</Card>
+	</div>
 </div>

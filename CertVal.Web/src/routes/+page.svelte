@@ -47,7 +47,7 @@
 
 <div class="space-y-8">
 	<div>
-		<h1 class="text-3xl font-bold">
+		<h1 class="text-gradient text-3xl font-bold">
 			{t('dashboard.welcome', $language)}{userFirstName ? `, ${userFirstName}` : ''}!
 		</h1>
 		<p class="mt-1 text-base-content/70">
@@ -66,34 +66,41 @@
 		</div>
 	{:else if stats}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			<Card class="bg-primary text-primary-content">
+			<Card
+				class="animate-fade-in-up bg-primary text-primary-content"
+				style="animation-delay: 100ms;"
+			>
 				<h3 class="text-xl font-semibold">{t('dashboard.stats.totalWorkspaces', $language)}</h3>
 				<p class="text-5xl font-bold">{stats.totalWorkspaces}</p>
 			</Card>
-			<Card>
+			<Card class="animate-fade-in-up" style="animation-delay: 150ms;">
 				<h3 class="text-lg font-semibold">{t('dashboard.stats.totalCertificates', $language)}</h3>
 				<p class="text-4xl font-bold">{stats.totalCertificates}</p>
 			</Card>
-			<Card>
+			<Card class="animate-fade-in-up" style="animation-delay: 200ms;">
 				<h3 class="text-lg font-semibold">{t('dashboard.stats.validCertificates', $language)}</h3>
 				<p class="text-4xl font-bold text-success">{stats.validCertificates}</p>
 			</Card>
-			<Card class="md:col-span-2 lg:col-span-1">
+			<Card class="animate-fade-in-up md:col-span-2 lg:col-span-1" style="animation-delay: 250ms;">
 				<h3 class="text-lg font-semibold">{t('dashboard.stats.expiringIn30Days', $language)}</h3>
 				<p class="text-4xl font-bold text-warning">{stats.expiringIn30Days}</p>
 			</Card>
-			<Card>
+			<Card class="animate-fade-in-up" style="animation-delay: 300ms;">
 				<h3 class="text-lg font-semibold">{t('dashboard.stats.expiringIn7Days', $language)}</h3>
 				<p class="text-4xl font-bold text-warning">{stats.expiringIn7Days}</p>
 			</Card>
-			<Card>
+			<Card class="animate-fade-in-up" style="animation-delay: 350ms;">
 				<h3 class="text-lg font-semibold">{t('dashboard.stats.expiredCertificates', $language)}</h3>
 				<p class="text-4xl font-bold text-error">{stats.expiredCertificates}</p>
 			</Card>
 		</div>
 	{/if}
 
-	<Card title={t('dashboard.expiringCertificates', $language)}>
+	<Card
+		title={t('dashboard.expiringCertificates', $language)}
+		class="animate-fade-in-up"
+		style="animation-delay: 400ms;"
+	>
 		{#if isLoading}
 			<div class="h-40 w-full skeleton"></div>
 		{:else if expiringCerts.length > 0}
@@ -132,7 +139,7 @@
 			</div>
 		{:else}
 			<div class="py-8 text-center">
-				<p>✅ {t('certificates.empty', $language)}</p>
+				<p>{t('certificates.empty', $language)}</p>
 			</div>
 		{/if}
 	</Card>
