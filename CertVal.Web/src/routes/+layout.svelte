@@ -1,6 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
 	import { language } from '$lib/stores/language';
@@ -8,13 +7,14 @@
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
 	$effect(() => {
 		auth.initialize();
 		language.initialize();
-		theme.initialize();
+		theme.initialize(data.theme);
 	});
+
 	const isAuthPage = $derived(page.url.pathname.startsWith('/auth'));
 </script>
 
@@ -49,6 +49,10 @@
 </div>
 
 <style>
+	:global(html.theme-preload, html.theme-preload *) {
+		transition: none !important;
+	}
+
 	:global(.theme-preload *) {
 		transition: none !important;
 	}
