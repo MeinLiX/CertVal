@@ -9,10 +9,11 @@
 
 	let { children, data } = $props();
 
+	language.set(data.language);
+	theme.set(data.theme);
+
 	$effect(() => {
 		auth.initialize();
-		language.initialize();
-		theme.initialize(data.theme);
 	});
 
 	const isAuthPage = $derived(page.url.pathname.startsWith('/auth'));
