@@ -298,10 +298,10 @@
 		</div>
 	{:else if workspaces.length === 0}
 		<div class="py-16 text-center">
-			<div class="placeholder avatar">
-				<div class="w-24 rounded-full bg-base-200 text-base-content/50">
-					<Icon name="workspaces" class="h-12 w-12" />
-				</div>
+			<div
+				class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-base-100 text-base-content/50 shadow-inner"
+			>
+				<Icon name="workspaces" class="h-12 w-12" />
 			</div>
 			<h3 class="mt-4 text-xl font-semibold">{t('notifications.noWorkspaces', $language)}</h3>
 			<p class="mt-2 text-base-content/60">{t('notifications.createFirstWorkspace', $language)}</p>
