@@ -46,7 +46,7 @@
 	<title>{t('auth.login.title', $language)} - CertVal</title>
 </svelte:head>
 
-<div class="hero min-h-screen bg-base-200">
+<div class="hero">
 	<div class="hero-content w-full max-w-4xl flex-col lg:flex-row-reverse">
 		<div class="text-center lg:pl-10 lg:text-left">
 			<h1 class="text-5xl font-bold">{t('auth.login.welcome', $language)}</h1>
