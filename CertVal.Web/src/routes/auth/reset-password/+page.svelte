@@ -53,7 +53,7 @@
 	<title>{t('auth.reset.title', $language)} - CertVal</title>
 </svelte:head>
 
-<div class="hero min-h-screen bg-base-200">
+<div class="hero">
 	<div class="card w-full max-w-sm shrink-0 bg-base-100 shadow-2xl">
 		<form class="card-body" onsubmit={handleSubmit}>
 			<h2 class="mb-4 text-center text-2xl font-bold">{t('auth.reset.title', $language)}</h2>

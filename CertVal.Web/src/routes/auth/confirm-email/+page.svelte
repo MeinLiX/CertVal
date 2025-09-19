@@ -36,7 +36,7 @@
 	<title>{t('auth.confirm.title', $language)} - CertVal</title>
 </svelte:head>
 
-<div class="hero min-h-screen bg-base-200">
+<div class="hero">
 	<Card class="w-full max-w-md">
 		<div class="py-12 text-center">
 			<h3 class="text-xl font-semibold">{t('auth.confirm.title', $language)}</h3>
