@@ -1,24 +1,18 @@
 import { writable } from 'svelte/store';
 import type { Language } from '$lib/types';
+import { browser } from '$app/environment';
 
 function createLanguageStore() {
     const { subscribe, set } = writable<Language>('uk');
 
     return {
         subscribe,
+        set,
         setLanguage: (lang: Language) => {
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('language', lang);
+            if (browser) {
+                document.cookie = `language=${lang}; path=/; max-age=31536000; samesite=lax`;
             }
             set(lang);
-        },
-        initialize: () => {
-            if (typeof window !== 'undefined') {
-                const saved = localStorage.getItem('language') as Language;
-                if (saved && ['uk', 'en'].includes(saved)) {
-                    set(saved);
-                }
-            }
         }
     };
 }
