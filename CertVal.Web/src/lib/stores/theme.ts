@@ -1,11 +1,16 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
-
-export type Theme = 'light' | 'dark';
+import type { Theme } from '$lib/types';
 
 interface ThemeState {
     theme: Theme;
     resolved: 'light' | 'dark';
+}
+
+function applyTheme(theme: Theme) {
+    if (!browser) return;
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
 }
 
 function createThemeStore() {
@@ -19,7 +24,8 @@ function createThemeStore() {
         setTheme: (newTheme: Theme) => {
             if (!browser) return;
 
-            localStorage.setItem('theme', newTheme);
+            document.cookie = `theme=${newTheme}; path=/; max-age=31536000; samesite=lax`;
+
             applyTheme(newTheme);
 
             update(state => ({
@@ -28,34 +34,18 @@ function createThemeStore() {
                 resolved: newTheme
             }));
         },
-        initialize: () => {
+        initialize: (initialTheme: Theme) => {
             if (!browser) return;
 
-            const savedTheme = localStorage.getItem('theme') as Theme;
-            const defaultTheme: Theme = savedTheme === 'dark' ? 'dark' : 'light';
-
-            applyTheme(defaultTheme);
+            const themeToApply = initialTheme || 'light';
+            applyTheme(themeToApply);
 
             set({
-                theme: defaultTheme,
-                resolved: defaultTheme
+                theme: themeToApply,
+                resolved: themeToApply
             });
         }
     };
-}
-
-function applyTheme(theme: Theme) {
-    if (!browser) return;
-
-    const root = document.documentElement;
-
-    if (theme === 'dark') {
-        root.classList.add('dark');
-        root.setAttribute('data-theme', 'dark');
-    } else {
-        root.classList.remove('dark');
-        root.setAttribute('data-theme', 'light');
-    }
 }
 
 export const theme = createThemeStore();
