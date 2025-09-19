@@ -12,6 +12,7 @@
 		hover?: boolean;
 		clickable?: boolean;
 		class?: string;
+		style?: string;
 		onclick?: (event: MouseEvent) => void | Promise<void>;
 		children?: Snippet;
 		header?: Snippet;
@@ -33,6 +34,7 @@
 		hover = false,
 		clickable = false,
 		class: className = '',
+		style = '',
 		onclick,
 		children,
 		header,
@@ -45,7 +47,6 @@
 		'aria-labelledby': ariaLabelledBy,
 		role
 	}: CardProps = $props();
-
 	const baseClasses = 'card bg-base-100 transition-all duration-300';
 
 	const variantClasses = $derived(() => {
@@ -58,7 +59,6 @@
 		};
 		return classes[variant];
 	});
-
 	const shadowClasses = $derived(() => {
 		const classes = {
 			none: '',
@@ -69,17 +69,14 @@
 		};
 		return classes[shadow];
 	});
-
 	const hoverClasses = $derived(() => {
 		if (!hover && !clickable) return '';
 		return 'hover:shadow-xl hover:-translate-y-1 transform';
 	});
-
 	const clickableClasses = $derived(() => {
 		if (!clickable && !onclick) return '';
 		return 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
 	});
-
 	const computedClasses = $derived(() => {
 		return [
 			baseClasses,
@@ -94,7 +91,6 @@
 	});
 
 	let isProcessing = $state(false);
-
 	async function handleClick(event: MouseEvent) {
 		if (!onclick || isProcessing) return;
 
@@ -122,7 +118,6 @@
 		if (clickable || onclick) return 'button';
 		return undefined;
 	});
-
 	const roleValue = $derived(() => effectiveRole());
 
 	const cardId = $derived(id || `card-${Math.random().toString(36).substring(2, 9)}`);
@@ -134,6 +129,7 @@
 		type="button"
 		{id}
 		class={computedClasses()}
+		{style}
 		aria-label={ariaLabel}
 		aria-labelledby={ariaLabelledBy || titleId}
 		aria-busy={isProcessing}
@@ -141,57 +137,12 @@
 		onclick={handleClick}
 		onkeydown={handleKeydown}
 	>
-		{#if image}
-			<figure class="card-image">
-				{@render image()}
-			</figure>
-		{/if}
-
-		{#if header}
-			<div class="card-header">
-				{@render header()}
-			</div>
-		{/if}
-
-		<div class="card-body">
-			{#if title || subtitle}
-				<div class="card-header-content">
-					{#if title}
-						<h2 id={titleId} class="card-title text-lg font-semibold text-base-content">
-							{title}
-						</h2>
-					{/if}
-					{#if subtitle}
-						<p class="card-subtitle mt-1 text-sm text-base-content/70">
-							{subtitle}
-						</p>
-					{/if}
-				</div>
-			{/if}
-
-			{#if children}
-				<div class="card-content">
-					{@render children()}
-				</div>
-			{/if}
-
-			{#if actions}
-				<div class="mt-4 card-actions">
-					{@render actions()}
-				</div>
-			{/if}
-		</div>
-
-		{#if footer}
-			<div class="card-footer">
-				{@render footer()}
-			</div>
-		{/if}
 	</button>
 {:else}
 	<div
 		{id}
 		class={computedClasses()}
+		{style}
 		role={roleValue()}
 		aria-label={ariaLabel}
 		aria-labelledby={ariaLabelledBy || titleId}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { language } from '$lib/stores/language';
 	import { theme } from '$lib/stores/theme';
+	import { auth } from '$lib/stores/auth';
 	import type { Language, Theme } from '$lib/types';
 	import Icon from '$lib/components/ui/Icon.svelte';
 
@@ -22,15 +23,23 @@
 
 	const currentLanguageData = $derived(languages.find((l) => l.code === $language) ?? languages[0]);
 	const currentThemeData = $derived(themes.find((t) => t.value === $theme.theme) ?? themes[0]);
+
+	const isAuthenticated = $derived($auth.isAuthenticated);
+
+	const navbarClass = $derived(
+		isAuthenticated
+			? 'sticky top-0 z-30 navbar border-b border-base-content/10 bg-base-100'
+			: 'sticky top-0 z-30 navbar border-b border-base-100/50 bg-base-100/60 backdrop-blur-lg'
+	);
 </script>
 
-<div
-	class="sticky top-0 z-30 navbar border-b border-base-content/10 bg-base-100/80 backdrop-blur-lg"
->
+<div class={navbarClass}>
 	<div class="navbar-start">
-		<label for="drawer-toggle" class="btn btn-circle btn-ghost lg:hidden">
-			<Icon name="menu" />
-		</label>
+		{#if isAuthenticated}
+			<label for="drawer-toggle" class="btn btn-circle btn-ghost lg:hidden">
+				<Icon name="menu" />
+			</label>
+		{/if}
 	</div>
 	<div class="navbar-center"></div>
 	<div class="navbar-end gap-2">

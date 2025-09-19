@@ -6,7 +6,6 @@
 	import { theme } from '$lib/stores/theme';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
-
 	let { children, data } = $props();
 
 	language.set(data.language);
@@ -17,19 +16,21 @@
 	});
 
 	const isAuthPage = $derived(page.url.pathname.startsWith('/auth'));
+	const isAuthenticated = $derived($auth.isAuthenticated);
 </script>
 
-<div class="min-h-screen bg-base-200 text-base-content">
+<div class="relative min-h-screen overflow-hidden bg-base-200 text-base-content">
+	<div class="aurora-background z-[-1]" class:subtle={isAuthenticated}>
+		<div class="aurora-dot"></div>
+		<div class="aurora-dot"></div>
+		<div class="aurora-dot"></div>
+		<div class="aurora-dot"></div>
+	</div>
+
 	{#if isAuthPage}
-		<div class="flex min-h-screen flex-col">
+		<div class="relative flex min-h-screen flex-col">
 			<Navbar />
-			<main class="relative flex grow flex-col items-center justify-center overflow-hidden p-4">
-				<div
-					class="absolute inset-0 bg-base-100 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
-				></div>
-				<div
-					class="absolute inset-0 bg-base-200 [mask-image:radial-gradient(100%_100%_at_bottom_left,white,transparent)]"
-				></div>
+			<main class="relative z-10 flex grow flex-col items-center justify-center p-4">
 				{@render children?.()}
 			</main>
 		</div>
@@ -38,7 +39,7 @@
 			<input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
 			<div class="drawer-content flex flex-col">
 				<Navbar />
-				<main class="flex-1 p-4 sm:p-6 lg:p-8">
+				<main class="relative flex-1 p-4 sm:p-6 lg:p-8">
 					<div class="mx-auto max-w-7xl">
 						{@render children?.()}
 					</div>

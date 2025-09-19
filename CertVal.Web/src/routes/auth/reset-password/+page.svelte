@@ -14,7 +14,6 @@
 	let isLoading = $state(false);
 	let successMessage = $state('');
 	let token = $state('');
-
 	onMount(() => {
 		token = page.url.searchParams.get('token') || '';
 		if (!token) {
@@ -26,7 +25,6 @@
 		event.preventDefault();
 		errors = {};
 		isLoading = true;
-
 		if (password !== confirmPassword) {
 			errors.confirmPassword = t('errors.passwordsNotMatch', $language);
 			isLoading = false;
@@ -37,7 +35,7 @@
 			const response = await api.post('/v1/auth/reset-password', { token, newPassword: password });
 			if (response.data) {
 				successMessage = t('success.passwordChanged', $language);
-				setTimeout(() => goto('/auth/login'), 1000);
+				setTimeout(() => goto('/auth/login'), 2000);
 			} else {
 				errors.general = response.message || t('errors.general', $language);
 			}
@@ -53,10 +51,15 @@
 	<title>{t('auth.reset.title', $language)} - CertVal</title>
 </svelte:head>
 
-<div class="hero">
-	<div class="card w-full max-w-sm shrink-0 bg-base-100 shadow-2xl">
-		<form class="card-body" onsubmit={handleSubmit}>
-			<h2 class="mb-4 text-center text-2xl font-bold">{t('auth.reset.title', $language)}</h2>
+<div class="hero min-h-full">
+	<div
+		class="card w-full max-w-sm shrink-0 glass shadow-2xl"
+		style="background-color: oklch(from var(--color-base-100) l c h / 0.2);"
+	>
+		<form class="card-body p-8" onsubmit={handleSubmit}>
+			<h2 class="mb-4 card-title justify-center text-2xl font-bold">
+				{t('auth.reset.title', $language)}
+			</h2>
 
 			{#if successMessage}
 				<div role="alert" class="alert alert-success text-sm">

@@ -48,15 +48,20 @@
 	<title>{t('auth.register.title', $language)} - CertVal</title>
 </svelte:head>
 
-<div class="hero">
+<div class="hero min-h-full">
 	<div class="hero-content w-full max-w-4xl flex-col lg:flex-row-reverse">
 		<div class="text-center lg:pl-10 lg:text-left">
 			<h1 class="text-5xl font-bold">{t('auth.register.welcome', $language)}</h1>
-			<p class="py-6">{t('auth.register.tagline', $language)}</p>
+			<p class="py-6 text-lg opacity-80">{t('auth.register.tagline', $language)}</p>
 		</div>
-		<div class="card w-full max-w-sm shrink-0 bg-base-100 shadow-2xl">
-			<form class="card-body" onsubmit={handleSubmit}>
-				<h2 class="mb-4 text-center text-2xl font-bold">{t('auth.register.title', $language)}</h2>
+		<div
+			class="card w-full max-w-sm shrink-0 glass shadow-2xl"
+			style="background-color: oklch(from var(--color-base-100) l c h / 0.2);"
+		>
+			<form class="card-body p-8" onsubmit={handleSubmit}>
+				<h2 class="mb-4 card-title justify-center text-2xl font-bold">
+					{t('auth.register.title', $language)}
+				</h2>
 
 				{#if errors.general}
 					<div role="alert" class="alert alert-error text-sm">
@@ -101,10 +106,11 @@
 						{t('auth.register.submit', $language)}
 					</Button>
 				</div>
-				<div class="mt-4 text-center text-sm">
+				<div class="divider text-xs"></div>
+				<div class="text-center text-sm">
 					<p>
 						{t('auth.register.hasAccount', $language)}
-						<a href="/auth/login" class="link link-primary"
+						<a href="/auth/login" class="link font-semibold link-primary"
 							>{t('auth.register.loginLink', $language)}</a
 						>
 					</p>
