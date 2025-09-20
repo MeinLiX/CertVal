@@ -137,6 +137,52 @@
 		onclick={handleClick}
 		onkeydown={handleKeydown}
 	>
+		{#if image}
+			<figure class="card-image">
+				{@render image()}
+			</figure>
+		{/if}
+
+		{#if header}
+			<div class="card-header">
+				{@render header()}
+			</div>
+		{/if}
+
+		<div class="card-body">
+			{#if title || subtitle}
+				<div class="card-header-content">
+					{#if title}
+						<h2 id={titleId} class="card-title text-lg font-semibold text-base-content">
+							{title}
+						</h2>
+					{/if}
+					{#if subtitle}
+						<p class="card-subtitle mt-1 text-sm text-base-content/70">
+							{subtitle}
+						</p>
+					{/if}
+				</div>
+			{/if}
+
+			{#if children}
+				<div class="card-content">
+					{@render children()}
+				</div>
+			{/if}
+
+			{#if actions}
+				<div class="mt-4 card-actions">
+					{@render actions()}
+				</div>
+			{/if}
+		</div>
+
+		{#if footer}
+			<div class="card-footer">
+				{@render footer()}
+			</div>
+		{/if}
 	</button>
 {:else}
 	<div

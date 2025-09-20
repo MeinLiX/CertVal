@@ -118,6 +118,7 @@
 				</Button>
 			</div>
 		</div>
+	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			{#each workspaces as workspace (workspace.id)}
 				<Card
@@ -125,10 +126,7 @@
 					class="cursor-pointer"
 					onclick={() => goto(`/workspaces/${workspace.id}`)}
 				>
-					<div
-						class="mb-4
-flex items-center justify-between"
-					>
+					<div class="mb-4 flex items-center justify-between">
 						<h3 class="card-title text-lg">{workspace.name}</h3>
 						<span class="badge {workspace.isPublic ? 'badge-accent' : 'badge-ghost'} badge-sm">
 							{workspace.isPublic ? t('common.public', $language) : t('common.private', $language)}
