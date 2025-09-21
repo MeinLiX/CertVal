@@ -47,7 +47,7 @@ public class ApiTokenConfiguration : IEntityTypeConfiguration<ApiToken>
 
         builder.HasIndex(at => at.ExpiresAt)
             .HasDatabaseName("IX_ApiTokens_ExpiresAt")
-            .HasFilter("[ExpiresAt] IS NOT NULL");
+            .HasFilter("\"ExpiresAt\" IS NOT NULL");
 
         // Relationships
         builder.HasOne(at => at.User)

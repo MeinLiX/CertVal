@@ -26,7 +26,7 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
         // Indexes
         builder.HasIndex(wm => wm.InvitationToken)
             .HasDatabaseName("IX_WorkspaceMembers_InvitationToken")
-            .HasFilter("[InvitationToken] IS NOT NULL");
+            .HasFilter("\"InvitationToken\" IS NOT NULL");
 
         builder.HasIndex(wm => wm.WorkspaceId)
             .HasDatabaseName("IX_WorkspaceMembers_WorkspaceId");
@@ -40,7 +40,7 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
 
         builder.HasIndex(wm => wm.InvitedByUserId)
             .HasDatabaseName("IX_WorkspaceMembers_InvitedBy")
-            .HasFilter("[InvitedByUserId] IS NOT NULL");
+            .HasFilter("\"InvitedByUserId\" IS NOT NULL");
 
         // Relationships
         builder.HasOne(wm => wm.Workspace)

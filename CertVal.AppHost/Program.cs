@@ -1,22 +1,19 @@
-using Aspire.Hosting;
 using CertVal.AppHost.Extensions;
 using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var sqlportParametr = builder.AddParameter("database-port", secret: false);
-var sqlportValue = await sqlportParametr.Resource.GetValueAsync(CancellationToken.None);
-int sqlport = int.TryParse(sqlportValue, out var p) ? p : 1433;
-
 var sqlpwd = builder.AddParameter("database-pwd", secret: true);
 
-var db = builder.AddSqlServer("CertVal-sql-server", port: sqlport, password: sqlpwd)
+var db = builder.AddPostgres("CertVal-sql-server", password: sqlpwd)
     .WithLifetime(ContainerLifetime.Persistent)
+    //.WithVolume("CertVal-sql-data")
     .AddDatabase("CertVal-database");
 
-var rabbitmq = builder.AddRabbitMQ("rabbitmq")
+var rabbitmq = builder.AddRabbitMQ("CertVal-rabbitmq")
     .WithManagementPlugin()
     .WithLifetime(ContainerLifetime.Persistent);
+    //.WithVolume("CertVal-rabbitmq-data");
 
 var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-service")
     .WithReference(rabbitmq)

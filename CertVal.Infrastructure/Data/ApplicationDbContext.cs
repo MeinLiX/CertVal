@@ -38,6 +38,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<User>().HasQueryFilter(u => u.Status != Core.Enums.UserStatus.Deleted);
         modelBuilder.Entity<Certificate>().HasQueryFilter(c => c.Status != Core.Enums.CertificateStatus.Invalid);
         modelBuilder.Entity<WorkspaceMember>().HasQueryFilter(wm => wm.Status != Core.Enums.WorkspaceMemberStatus.Inactive);
+        modelBuilder.Entity<ApiToken>().HasQueryFilter(at => at.User.Status != Core.Enums.UserStatus.Deleted);
+        modelBuilder.Entity<Workspace>().HasQueryFilter(w => w.Owner.Status != Core.Enums.UserStatus.Deleted);
+        modelBuilder.Entity<NotificationHistory>().HasQueryFilter(nh => nh.Certificate.Status != Core.Enums.CertificateStatus.Invalid);
+        modelBuilder.Entity<NotificationRule>().HasQueryFilter(nr => nr.Workspace.Owner.Status != Core.Enums.UserStatus.Deleted);
 
         ConfigureAdditionalIndexes(modelBuilder);
     }
