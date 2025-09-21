@@ -14,7 +14,7 @@ public record UserPasswordChangedEvent(Guid UserId) : DomainEvent;
 public record WorkspaceCreatedEvent(Guid WorkspaceId, Guid OwnerId, string Name) : DomainEvent;
 public record WorkspaceUpdatedEvent(Guid WorkspaceId, string Name) : DomainEvent;
 public record WorkspaceOwnershipTransferredEvent(Guid WorkspaceId, Guid OldOwnerId, Guid NewOwnerId) : DomainEvent;
-public record WorkspaceMemberInvitedEvent(Guid WorkspaceId, Guid UserId, Guid InvitedByUserId) : DomainEvent;
+public record WorkspaceMemberInvitedEvent(Guid WorkspaceId, Guid UserId, Guid InvitedByUserId, string InvitationToken) : DomainEvent;
 public record WorkspaceMemberJoinedEvent(Guid WorkspaceId, Guid UserId) : DomainEvent;
 public record WorkspaceMemberRemovedEvent(Guid WorkspaceId, Guid UserId) : DomainEvent;
 
