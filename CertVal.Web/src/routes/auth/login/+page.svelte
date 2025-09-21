@@ -15,12 +15,14 @@
 	let isLoading = $state(false);
 
 	const isRegistered = $derived(page.url.searchParams.get('registered') === 'true');
+	const redirectUrl = $derived(page.url.searchParams.get('redirect') || '/');
 
 	onMount(() => {
 		if ($auth.isAuthenticated) {
 			goto('/');
 		}
 	});
+
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
 		errors = {};
@@ -30,7 +32,7 @@
 			const response = await api.post<any>('/v1/auth/login', formData);
 			if (response.data) {
 				auth.login(response.data.token, response.data.user);
-				goto('/');
+				goto(redirectUrl);
 			} else {
 				errors.general = response.message || 'Invalid credentials.';
 			}

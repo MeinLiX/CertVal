@@ -88,9 +88,6 @@ public class WorkspaceMembersController : ControllerBase
             _currentUser.UserId!.Value
         );
 
-        //Temporary before adding ensdpoint for accept invation;
-        member.AcceptInvitation();
-
         await _unitOfWork.WorkspaceMembers.AddAsync(member);
         await _unitOfWork.SaveChangesAsync();
 
@@ -119,6 +116,53 @@ public class WorkspaceMembersController : ControllerBase
         };
 
         return CreatedAtAction(nameof(GetMembers), new { workspaceId }, memberDto);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("/api/v1/invitations/{token}")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetInvitationDetails(string token)
+    {
+        var membership = await _unitOfWork.WorkspaceMembers.GetByInvitationTokenAsync(token);
+
+        if (membership == null || (membership.InvitationTokenExpiresAt.HasValue && membership.InvitationTokenExpiresAt < DateTime.UtcNow))
+        {
+            return NotFound(new { message = "Invitation is invalid or has expired." });
+        }
+
+        return Ok(new
+        {
+            workspaceId = membership.Workspace.Id,
+            workspaceName = membership.Workspace.Name,
+            invitedUserEmail = membership.User.Email
+        });
+    }
+
+    [Authorize]
+    [HttpPost("/api/v1/invitations/{token}/accept")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AcceptInvitation(string token)
+    {
+        var membership = await _unitOfWork.WorkspaceMembers.GetByInvitationTokenAsync(token);
+
+        if (membership == null || (membership.InvitationTokenExpiresAt.HasValue && membership.InvitationTokenExpiresAt < DateTime.UtcNow))
+        {
+            return NotFound(new { message = "Invitation is invalid or has expired." });
+        }
+
+        if (_currentUser.UserId.HasValue && membership.UserId != _currentUser.UserId)
+        {
+            return Forbid();
+        }
+
+        membership.AcceptInvitation();
+        await _unitOfWork.WorkspaceMembers.UpdateAsync(membership);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Ok(new { message = "Invitation accepted successfully." });
     }
 
     [HttpPut("{memberId:guid}/role")]

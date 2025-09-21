@@ -168,6 +168,17 @@
 				return 'badge-ghost';
 		}
 	}
+
+	function getStatusBadge(status: string): { class: string; text: string } {
+		switch (status.toLowerCase()) {
+			case 'active':
+				return { class: 'badge-success', text: 'Active' };
+			case 'invited':
+				return { class: 'badge-warning', text: 'Invited' };
+			default:
+				return { class: 'badge-ghost', text: status };
+		}
+	}
 </script>
 
 <svelte:head>
@@ -305,22 +316,25 @@
 							</div>
 						</div>
 						{#each members as member}
+							{@const statusInfo = getStatusBadge(member.status)}
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-3">
-									<div class="placeholder avatar">
-										<div class="w-10 rounded-full bg-neutral text-neutral-content">
-											<span>{member.user.firstName.charAt(0)}{member.user.lastName.charAt(0)}</span>
-										</div>
-									</div>
+									<UserAvatar
+										firstName={member.user.firstName}
+										lastName={member.user.lastName}
+										size="w-10"
+										textSize="text-1xl"
+									/>
 									<div>
 										<div class="font-bold">{member.user.fullName}</div>
 										<div class="text-xs opacity-50">{member.user.email}</div>
 									</div>
 								</div>
 								<div class="flex items-center gap-2">
-									<span class="badge {getRoleBadgeClass(member.role)}"
-										>{t(`workspaces.roles.${member.role.toLowerCase()}`, $language)}</span
-									>
+									<span class="badge {statusInfo.class} badge-sm">{statusInfo.text}</span>
+									<span class="badge {getRoleBadgeClass(member.role)} badge-sm">
+										{t(`workspaces.roles.${member.role.toLowerCase()}`, $language)}
+									</span>
 									{#if canManage}
 										<Button
 											size="xs"
