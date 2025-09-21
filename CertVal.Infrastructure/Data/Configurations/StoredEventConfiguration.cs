@@ -13,7 +13,7 @@ public class StoredEventConfiguration : IEntityTypeConfiguration<StoredEvent>
         builder.HasKey(se => se.Id);
         builder.Property(se => se.Id)
             .ValueGeneratedOnAdd()
-            .UseIdentityColumn(1, 1);
+            .UseIdentityColumn();
 
         builder.Property(se => se.EventId)
             .IsRequired();
@@ -23,8 +23,7 @@ public class StoredEventConfiguration : IEntityTypeConfiguration<StoredEvent>
             .HasMaxLength(200);
 
         builder.Property(se => se.EventData)
-            .IsRequired()
-            .HasColumnType("nvarchar(max)");
+            .IsRequired();
 
         builder.Property(se => se.AggregateType)
             .HasMaxLength(100);
@@ -42,10 +41,9 @@ public class StoredEventConfiguration : IEntityTypeConfiguration<StoredEvent>
 
         builder.Property(se => se.StoredAt)
             .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-        builder.Property(se => se.Metadata)
-            .HasColumnType("nvarchar(max)");
+        builder.Property(se => se.Metadata);
 
         // Indexes for common queries
         builder.HasIndex(se => se.Id)
@@ -64,11 +62,11 @@ public class StoredEventConfiguration : IEntityTypeConfiguration<StoredEvent>
 
         builder.HasIndex(se => se.UserId)
             .HasDatabaseName("IX_StoredEvents_UserId")
-            .HasFilter("[UserId] IS NOT NULL");
+            .HasFilter("\"UserId\" IS NOT NULL");
 
         builder.HasIndex(se => se.CorrelationId)
             .HasDatabaseName("IX_StoredEvents_CorrelationId")
-            .HasFilter("[CorrelationId] IS NOT NULL");
+            .HasFilter("\"CorrelationId\" IS NOT NULL");
 
         builder.HasIndex(se => se.OccurredAt)
             .HasDatabaseName("IX_StoredEvents_OccurredAt");
@@ -84,6 +82,6 @@ public class StoredEventConfiguration : IEntityTypeConfiguration<StoredEvent>
 
         builder.HasIndex(se => new { se.UserId, se.OccurredAt })
             .HasDatabaseName("IX_StoredEvents_User_OccurredAt")
-            .HasFilter("[UserId] IS NOT NULL");
+            .HasFilter("\"UserId\" IS NOT NULL");
     }
 }

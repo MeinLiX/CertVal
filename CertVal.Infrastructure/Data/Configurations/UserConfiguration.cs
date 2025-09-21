@@ -14,8 +14,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Email)
             .IsRequired()
-            .HasMaxLength(320) // RFC 5321 limit
-            .HasAnnotation("Collation", "SQL_Latin1_General_CP1_CI_AS");
+            .HasMaxLength(320);
 
         builder.Property(u => u.PasswordHash)
             .IsRequired()
@@ -57,11 +56,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => u.EmailConfirmationToken)
             .HasDatabaseName("IX_Users_EmailConfirmationToken")
-            .HasFilter("[EmailConfirmationToken] IS NOT NULL");
+            .HasFilter("\"EmailConfirmationToken\" IS NOT NULL");
 
         builder.HasIndex(u => u.PasswordResetToken)
             .HasDatabaseName("IX_Users_PasswordResetToken")
-            .HasFilter("[PasswordResetToken] IS NOT NULL");
+            .HasFilter("\"PasswordResetToken\" IS NOT NULL");
 
         builder.HasIndex(u => u.Status)
             .HasDatabaseName("IX_Users_Status");

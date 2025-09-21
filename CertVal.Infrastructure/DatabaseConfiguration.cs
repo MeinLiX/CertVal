@@ -12,12 +12,12 @@ public static class DatabaseConfiguration
         var connectionString = configuration.GetConnectionString("CertVal-database")
             ?? throw new InvalidOperationException("Database connection string 'CertVal-database' not found.");
 
-        options.UseSqlServer(connectionString, sqlOptions =>
+        options.UseNpgsql(connectionString, sqlOptions =>
         {
             sqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 3,
                 maxRetryDelay: TimeSpan.FromSeconds(5),
-                errorNumbersToAdd: null);
+                errorCodesToAdd: null);
 
             sqlOptions.CommandTimeout(30);
 

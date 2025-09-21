@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.AddRabbitMQClient("rabbitmq");
+builder.AddRabbitMQClient("CertVal-rabbitmq");
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -74,7 +74,7 @@ builder.Services.AddOpenApi("v1", options =>
 
 builder.Services.AddHttpContextAccessor();
 
-builder.AddSqlServerDbContext<ApplicationDbContext>(
+builder.AddNpgsqlDbContext<ApplicationDbContext>(
     connectionName: "CertVal-database",
     configureDbContextOptions: options =>
     {

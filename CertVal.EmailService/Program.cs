@@ -8,7 +8,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.AddRabbitMQClient("rabbitmq");
+builder.AddRabbitMQClient("CertVal-rabbitmq");
 
 builder.Services.AddOptions<MessagingConfiguration>()
             .BindConfiguration(MessagingConfiguration.SectionName)

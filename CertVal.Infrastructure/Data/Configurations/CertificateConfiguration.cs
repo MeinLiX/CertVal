@@ -61,7 +61,7 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
 
         builder.HasIndex(c => c.ParentCertificateId)
             .HasDatabaseName("IX_Certificates_ParentId")
-            .HasFilter("[ParentCertificateId] IS NOT NULL");
+            .HasFilter("\"ParentCertificateId\" IS NOT NULL"); ;
 
         builder.HasIndex(c => new { c.WorkspaceId, c.Status })
             .HasDatabaseName("IX_Certificates_Workspace_Status");

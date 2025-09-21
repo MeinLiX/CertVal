@@ -29,8 +29,7 @@ public class NotificationHistoryConfiguration : IEntityTypeConfiguration<Notific
             .HasMaxLength(500);
 
         builder.Property(nh => nh.Message)
-            .IsRequired()
-            .HasColumnType("nvarchar(max)");
+            .IsRequired();
 
         builder.Property(nh => nh.ErrorMessage)
             .HasMaxLength(2000);
@@ -38,8 +37,7 @@ public class NotificationHistoryConfiguration : IEntityTypeConfiguration<Notific
         builder.Property(nh => nh.ExternalId)
             .HasMaxLength(255);
 
-        builder.Property(nh => nh.ResponseData)
-            .HasColumnType("nvarchar(max)");
+        builder.Property(nh => nh.ResponseData);
 
         builder.Property(nh => nh.RetryCount)
             .HasDefaultValue(0);
@@ -69,6 +67,7 @@ public class NotificationHistoryConfiguration : IEntityTypeConfiguration<Notific
         builder.HasOne(nh => nh.Certificate)
             .WithMany(c => c.NotificationHistory)
             .HasForeignKey(nh => nh.CertificateId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
