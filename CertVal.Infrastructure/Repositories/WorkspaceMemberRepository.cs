@@ -49,4 +49,12 @@ public class WorkspaceMemberRepository : BaseRepository<WorkspaceMember>, IWorks
                            wm.Status == Core.Enums.WorkspaceMemberStatus.Active,
                      cancellationToken);
     }
+
+    public async Task<WorkspaceMember?> GetByInvitationTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .Include(wm => wm.User)
+            .Include(wm => wm.Workspace)
+            .FirstOrDefaultAsync(wm => wm.InvitationToken == token, cancellationToken);
+    }
 }
