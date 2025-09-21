@@ -35,29 +35,39 @@ public class AuthController : ControllerBase
 
     [HttpPost("register")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<UserDto>> Register(CreateUserRequest request)
     {
         var result = await _userService.CreateUserAsync(request);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error, errors = result.Errors });
+        {
+            var errors = new Dictionary<string, string[]>();
+            if (result.Errors != null)
+            {
+                foreach (var error in result.Errors)
+                {
+                    errors.Add("error", [error]);
+                }
+            }
+            return BadRequest(new ErrorResponseDto(result.Error, errors));
+        }
 
-        return CreatedAtAction(nameof(GetProfile), new { }, result.Value);
+        return CreatedAtAction(nameof(GetProfile), null, result.Value);
     }
 
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<LoginResponse>> Login(Application.DTOs.LoginRequest request)
     {
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            return Unauthorized(new { message = "Invalid email or password" });
+            return Unauthorized(new ErrorResponseDto("Invalid email or password"));
 
         if (!user.IsEmailConfirmed)
-            return BadRequest(new { message = "Email not confirmed" });
+            return BadRequest(new ErrorResponseDto("Email not confirmed"));
 
         user.UpdateLastLogin();
         await _unitOfWork.Users.UpdateAsync(user);
@@ -90,41 +100,41 @@ public class AuthController : ControllerBase
     [HttpGet("profile")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserDto>> GetProfile()
     {
         var result = await _userService.GetCurrentUserAsync();
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
 
         return Ok(result.Value);
     }
 
     [HttpPost("confirm-email")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request)
     {
         var result = await _userService.ConfirmEmailAsync(request.Token);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-        return Ok(new { message = "Email confirmed successfully" });
+        return Ok(new MessageResponseDto("Email confirmed successfully"));
     }
 
     [HttpPost("resend-confirmation")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResendEmailConfirmation(ResendConfirmationRequest request)
     {
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
         if (user == null)
-            return Ok(new { message = "If the email exists and is not confirmed, a confirmation link has been sent" });
+            return Ok(new MessageResponseDto("If the email exists and is not confirmed, a confirmation link has been sent"));
 
         if (user.IsEmailConfirmed)
-            return BadRequest(new { message = "Email is already confirmed" });
+            return BadRequest(new ErrorResponseDto("Email is already confirmed"));
 
         var newToken = Guid.NewGuid().ToString();
         user.SetEmailConfirmationToken(newToken);
@@ -138,11 +148,11 @@ public class AuthController : ControllerBase
             user.LastName,
             newToken);
 
-        return Ok(new { message = "If the email exists and is not confirmed, a confirmation link has been sent" });
+        return Ok(new MessageResponseDto("If the email exists and is not confirmed, a confirmation link has been sent"));
     }
 
     [HttpPost("forgot-password")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword(Application.DTOs.ForgotPasswordRequest request)
     {
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
@@ -162,36 +172,36 @@ public class AuthController : ControllerBase
                 expiresAt);
         }
 
-        return Ok(new { message = "If the email exists, a password reset link has been sent" });
+        return Ok(new MessageResponseDto("If the email exists, a password reset link has been sent"));
     }
 
     [HttpPost("reset-password")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword(Application.DTOs.ResetPasswordRequest request)
     {
         var result = await _userService.ResetPasswordAsync(request.Token, request.NewPassword);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-        return Ok(new { message = "Password reset successfully" });
+        return Ok(new MessageResponseDto("Password reset successfully"));
     }
 
     [HttpPost("validate-reset-token")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidateResetTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ValidateResetToken(ValidateResetTokenRequest request)
     {
         var user = await _unitOfWork.Users.GetByPasswordResetTokenAsync(request.Token);
         if (user == null)
-            return BadRequest(new { message = "Invalid or expired reset token" });
+            return BadRequest(new ErrorResponseDto("Invalid or expired reset token"));
 
-        return Ok(new
+        return Ok(new ValidateResetTokenResponse
         {
-            message = "Token is valid",
-            email = user.Email,
-            expiresAt = user.PasswordResetTokenExpiresAt
+            Message = "Token is valid",
+            Email = user.Email,
+            ExpiresAt = user.PasswordResetTokenExpiresAt
         });
     }
 

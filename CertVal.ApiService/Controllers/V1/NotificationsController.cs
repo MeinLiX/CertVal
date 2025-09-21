@@ -52,7 +52,7 @@ public class NotificationsController : ControllerBase
 
     [HttpPost("rules")]
     [ProducesResponseType(typeof(NotificationRuleDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<NotificationRuleDto>> CreateNotificationRule(
         Guid workspaceId,
@@ -69,7 +69,7 @@ public class NotificationsController : ControllerBase
         {
             if (request.RecipientUserIds == null || !request.RecipientUserIds.Any())
             {
-                return BadRequest(new { message = "Recipient user IDs are required for email notifications." });
+                return BadRequest(new ErrorResponseDto("Recipient user IDs are required for email notifications."));
             }
 
             var distinctUserIds = request.RecipientUserIds.Distinct().ToList();
@@ -85,7 +85,7 @@ public class NotificationsController : ControllerBase
             var invalidUserIds = distinctUserIds.Except(validUserIds).ToList();
             if (invalidUserIds.Any())
             {
-                return BadRequest(new { message = $"The following user IDs are not members of this workspace: {string.Join(", ", invalidUserIds)}" });
+                return BadRequest(new ErrorResponseDto($"The following user IDs are not members of this workspace: {string.Join(", ", invalidUserIds)}"));
             }
 
             var existingEmailUserIds = existingRules
@@ -128,10 +128,7 @@ public class NotificationsController : ControllerBase
                         : dupId.ToString());
                 }
 
-                return BadRequest(new
-                {
-                    message = $"Notification rule already exists for the following users: {string.Join(", ", userNames)}"
-                });
+                return BadRequest(new ErrorResponseDto($"Notification rule already exists for the following users: {string.Join(", ", userNames)}"));
             }
 
             channelConfig = JsonSerializer.Serialize(new { userIds = distinctUserIds });
@@ -143,7 +140,7 @@ public class NotificationsController : ControllerBase
                 using var newDoc = JsonDocument.Parse(request.ChannelConfig);
                 if (!newDoc.RootElement.TryGetProperty("url", out var urlElement) || string.IsNullOrWhiteSpace(urlElement.GetString()))
                 {
-                    return BadRequest(new { message = "Webhook URL is missing in channel configuration." });
+                    return BadRequest(new ErrorResponseDto("Webhook URL is missing in channel configuration."));
                 }
 
                 var newUrl = urlElement.GetString()!.Trim();
@@ -170,14 +167,14 @@ public class NotificationsController : ControllerBase
 
                 if (existingWebhookUrls.Contains(newUrl))
                 {
-                    return BadRequest(new { message = $"A notification rule with the URL '{newUrl}' already exists in this workspace." });
+                    return BadRequest(new ErrorResponseDto($"A notification rule with the URL '{newUrl}' already exists in this workspace."));
                 }
 
                 channelConfig = request.ChannelConfig;
             }
             catch (JsonException)
             {
-                return BadRequest(new { message = "Invalid JSON format for webhook channel configuration." });
+                return BadRequest(new ErrorResponseDto("Invalid JSON format for webhook channel configuration."));
             }
         }
         else

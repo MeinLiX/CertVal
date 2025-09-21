@@ -20,50 +20,50 @@ public class UsersController : ControllerBase
 
     [HttpGet("me")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserDto>> GetCurrentUser()
     {
         var result = await _userService.GetCurrentUserAsync();
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
 
         return Ok(result.Value);
     }
 
     [HttpPut("me")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserDto>> UpdateCurrentUser(UpdateUserRequest request)
     {
         var currentUser = await _userService.GetCurrentUserAsync();
         if (!currentUser.IsSuccess)
-            return BadRequest(new { message = currentUser.Error });
+            return BadRequest(new ErrorResponseDto(currentUser.Error));
 
         var result = await _userService.UpdateUserAsync(currentUser.Value.Id, request);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
 
         return Ok(result.Value);
     }
 
     [HttpPost("change-password")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
     {
         var currentUser = await _userService.GetCurrentUserAsync();
         if (!currentUser.IsSuccess)
-            return BadRequest(new { message = currentUser.Error });
+            return BadRequest(new ErrorResponseDto(currentUser.Error));
 
         var result = await _userService.ChangePasswordAsync(currentUser.Value.Id, request);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-        return Ok(new { message = "Password changed successfully" });
+        return Ok(new MessageResponseDto("Password changed successfully"));
     }
 }

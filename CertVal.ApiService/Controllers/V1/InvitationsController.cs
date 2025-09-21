@@ -1,4 +1,5 @@
 ﻿using CertVal.Application.Common.Interfaces;
+using CertVal.Application.DTOs;
 using CertVal.Core.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,29 +22,29 @@ public class InvitationsController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet("{token}")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(InvitationDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetInvitationDetails(string token)
     {
         var membership = await _unitOfWork.WorkspaceMembers.GetByInvitationTokenAsync(token);
 
         if (membership == null || (membership.InvitationTokenExpiresAt.HasValue && membership.InvitationTokenExpiresAt < DateTime.UtcNow))
         {
-            return NotFound(new { message = "Invitation is invalid or has expired." });
+            return NotFound(new ErrorResponseDto("Invitation is invalid or has expired."));
         }
 
-        return Ok(new
+        return Ok(new InvitationDetailsDto
         {
-            workspaceId = membership.Workspace.Id,
-            workspaceName = membership.Workspace.Name,
-            invitedUserEmail = membership.User.Email
+            WorkspaceId = membership.Workspace.Id,
+            WorkspaceName = membership.Workspace.Name,
+            InvitedUserEmail = membership.User.Email
         });
     }
 
     [Authorize]
     [HttpPost("{token}/accept")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> AcceptInvitation(string token)
     {
@@ -51,7 +52,7 @@ public class InvitationsController : ControllerBase
 
         if (membership == null || (membership.InvitationTokenExpiresAt.HasValue && membership.InvitationTokenExpiresAt < DateTime.UtcNow))
         {
-            return NotFound(new { message = "Invitation is invalid or has expired." });
+            return NotFound(new ErrorResponseDto("Invitation is invalid or has expired."));
         }
 
         if (_currentUser.UserId.HasValue && membership.UserId != _currentUser.UserId)
@@ -63,6 +64,6 @@ public class InvitationsController : ControllerBase
         await _unitOfWork.WorkspaceMembers.UpdateAsync(membership);
         await _unitOfWork.SaveChangesAsync();
 
-        return Ok(new { message = "Invitation accepted successfully." });
+        return Ok(new MessageResponseDto("Invitation accepted successfully."));
     }
 }
