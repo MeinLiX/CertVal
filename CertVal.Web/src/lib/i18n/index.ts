@@ -226,7 +226,11 @@ export const translations = {
                 processing: 'Обробка запрошення...',
                 success: 'Ви успішно приєдналися до робочого простору!',
                 invalidToken: 'Недійсний або застарілий токен запрошення.',
-                goToWorkspace: 'Перейти до робочого простору'
+                goToWorkspace: 'Перейти до робочого простору',
+                inviteDetails: 'Вас запросили приєднатися до робочого простору "{workspaceName}".',
+                acceptButton: 'Прийняти запрошення',
+                loginToAccept: 'Увійти, щоб прийняти',
+                acceptError: 'Не вдалося прийняти запрошення. Можливо, воно для іншого користувача.',
             }
         },
         certificates: {
@@ -630,7 +634,11 @@ export const translations = {
                 processing: 'Processing your invitation...',
                 success: 'You have successfully joined the workspace!',
                 invalidToken: 'Invalid or expired invitation token.',
-                goToWorkspace: 'Go to Workspace'
+                goToWorkspace: 'Go to Workspace',
+                inviteDetails: 'You have been invited to join the "{workspaceName}" workspace.',
+                acceptButton: 'Accept Invitation',
+                loginToAccept: 'Login to Accept',
+                acceptError: 'Failed to accept invitation. It might be intended for another user.',
             }
         },
         certificates: {

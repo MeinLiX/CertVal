@@ -87,17 +87,15 @@ public class EmailNotificationEventHandlers :
                 return;
             }
 
-            var invitationToken = Guid.NewGuid().ToString();
-
             await _emailPublisher.PublishWorkspaceInvitationAsync(
-                workspace.Id,
-                invitedUser.FullName,
-                inviterUser.FullName,
-                workspace.Name,
-                invitationToken,
-                membership.Role.ToString(),
-                invitedUser.Email,
-                cancellationToken);
+               workspace.Id,
+               invitedUser.FullName,
+               inviterUser.FullName,
+               workspace.Name,
+               domainEvent.InvitationToken,
+               membership.Role.ToString(),
+               invitedUser.Email,
+               cancellationToken);
 
             _logger.LogInformation("Published workspace invitation email for user {UserId} to workspace {WorkspaceId}",
                 domainEvent.UserId, domainEvent.WorkspaceId);
