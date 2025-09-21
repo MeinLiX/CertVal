@@ -60,7 +60,7 @@ public class WorkspaceMembersController : ControllerBase
 
     [HttpPost("invite")]
     [ProducesResponseType(typeof(WorkspaceMemberDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<WorkspaceMemberDto>> InviteMember(
         Guid workspaceId,
@@ -71,15 +71,15 @@ public class WorkspaceMembersController : ControllerBase
 
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
         if (user == null)
-            return BadRequest(new { message = "User with this email does not exist" });
+            return BadRequest(new ErrorResponseDto("User with this email does not exist"));
 
         var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
         if (workspace?.OwnerId == user.Id)
-            return BadRequest(new { message = "Workspace owner cannot invite themselves" });
+            return BadRequest(new ErrorResponseDto("Workspace owner cannot invite themselves"));
 
         var existingMember = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, user.Id);
         if (existingMember != null)
-            return BadRequest(new { message = "User is already a member of this workspace" });
+            return BadRequest(new ErrorResponseDto("User is already a member of this workspace"));
 
         var member = WorkspaceMember.Create(
             workspaceId,
@@ -171,7 +171,7 @@ public class WorkspaceMembersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RemoveMember(Guid workspaceId, Guid memberId)
     {
         if (!await CanManageWorkspace(workspaceId))
@@ -184,10 +184,7 @@ public class WorkspaceMembersController : ControllerBase
         var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId);
         if (workspace?.OwnerId == member.UserId && member.UserId == _currentUser.UserId)
         {
-            return BadRequest(new
-            {
-                message = "Workspace owner cannot remove themselves. Transfer ownership first."
-            });
+            return BadRequest(new ErrorResponseDto("Workspace owner cannot remove themselves. Transfer ownership first."));
         }
 
         await _unitOfWork.WorkspaceMembers.DeleteAsync(member.Id);
@@ -199,7 +196,7 @@ public class WorkspaceMembersController : ControllerBase
     [HttpPost("leave")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> LeaveWorkspace(Guid workspaceId)
     {
         if (!_currentUser.UserId.HasValue)
@@ -210,7 +207,7 @@ public class WorkspaceMembersController : ControllerBase
             return NotFound();
 
         if (workspace.OwnerId == _currentUser.UserId.Value)
-            return BadRequest(new { message = "Workspace owner cannot leave. Transfer ownership first." });
+            return BadRequest(new ErrorResponseDto("Workspace owner cannot leave. Transfer ownership first."));
 
         var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value);
         if (membership == null)
@@ -227,7 +224,7 @@ public class WorkspaceMembersController : ControllerBase
     [ProducesResponseType(typeof(WorkspaceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<WorkspaceDto>> TransferOwnership(
         Guid workspaceId,
         TransferOwnershipRequest request)
@@ -244,13 +241,13 @@ public class WorkspaceMembersController : ControllerBase
 
         var newOwner = await _unitOfWork.Users.GetByEmailAsync(request.NewOwnerEmail);
         if (newOwner == null)
-            return BadRequest(new { message = "User with this email does not exist" });
+            return BadRequest(new ErrorResponseDto("User with this email does not exist"));
 
         if (!newOwner.IsEmailConfirmed)
-            return BadRequest(new { message = "New owner must have confirmed email address" });
+            return BadRequest(new ErrorResponseDto("New owner must have confirmed email address"));
 
         if (newOwner.Id == workspace.OwnerId)
-            return BadRequest(new { message = "User is already the workspace owner" });
+            return BadRequest(new ErrorResponseDto("User is already the workspace owner"));
 
         var existingMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, newOwner.Id);
 

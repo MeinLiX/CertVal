@@ -29,14 +29,14 @@ public class WorkspacesController : ControllerBase
         var result = await _workspaceService.GetUserWorkspacesAsync(pageNumber, pageSize);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
 
         return Ok(result.Value);
     }
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(WorkspaceDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<WorkspaceDto>> GetWorkspace(Guid id)
@@ -46,11 +46,11 @@ public class WorkspacesController : ControllerBase
         if (!result.IsSuccess)
         {
             if (result.Error.Contains("not found"))
-                return NotFound(new { message = result.Error });
+                return NotFound(new ErrorResponseDto(result.Error));
             if (result.Error.Contains("Access denied"))
                 return Forbid();
 
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
         }
 
         return Ok(result.Value);
@@ -58,22 +58,22 @@ public class WorkspacesController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(WorkspaceDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<WorkspaceDto>> CreateWorkspace(CreateWorkspaceRequest request)
     {
         var result = await _workspaceService.CreateWorkspaceAsync(request);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
 
         return CreatedAtAction(nameof(GetWorkspace), new { id = result.Value.Id }, result.Value);
     }
 
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(WorkspaceDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<WorkspaceDto>> UpdateWorkspace(Guid id, UpdateWorkspaceRequest request)
@@ -83,11 +83,11 @@ public class WorkspacesController : ControllerBase
         if (!result.IsSuccess)
         {
             if (result.Error.Contains("not found"))
-                return NotFound(new { message = result.Error });
+                return NotFound(new ErrorResponseDto(result.Error));
             if (result.Error.Contains("Access denied"))
                 return Forbid();
 
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
         }
 
         return Ok(result.Value);
@@ -95,7 +95,7 @@ public class WorkspacesController : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteWorkspace(Guid id)
@@ -105,11 +105,11 @@ public class WorkspacesController : ControllerBase
         if (!result.IsSuccess)
         {
             if (result.Error.Contains("not found"))
-                return NotFound(new { message = result.Error });
+                return NotFound(new ErrorResponseDto(result.Error));
             if (result.Error.Contains("Access denied"))
                 return Forbid();
 
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new ErrorResponseDto(result.Error));
         }
 
         return NoContent();
