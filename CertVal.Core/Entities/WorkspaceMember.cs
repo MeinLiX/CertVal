@@ -15,6 +15,9 @@ public class WorkspaceMember : BaseEntity
     public DateTime? InvitedAt { get; private set; }
     public DateTime? JoinedAt { get; private set; }
 
+    public string? InvitationToken { get; private set; }
+    public DateTime? InvitationTokenExpiresAt { get; private set; }
+
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
 
@@ -44,7 +47,9 @@ public class WorkspaceMember : BaseEntity
         if (invitedByUserId.HasValue)
         {
             member.Status = WorkspaceMemberStatus.Invited;
-            member.AddDomainEvent(new WorkspaceMemberInvitedEvent(workspaceId, userId, invitedByUserId.Value));
+            member.InvitationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "").Replace("+", "");
+            member.InvitationTokenExpiresAt = DateTime.UtcNow.AddDays(7);
+            member.AddDomainEvent(new WorkspaceMemberInvitedEvent(workspaceId, userId, invitedByUserId.Value, member.InvitationToken));
         }
         else
         {
@@ -61,6 +66,8 @@ public class WorkspaceMember : BaseEntity
 
         Status = WorkspaceMemberStatus.Active;
         JoinedAt = DateTime.UtcNow;
+        InvitationToken = null;
+        InvitationTokenExpiresAt = null;
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new WorkspaceMemberJoinedEvent(WorkspaceId, UserId));

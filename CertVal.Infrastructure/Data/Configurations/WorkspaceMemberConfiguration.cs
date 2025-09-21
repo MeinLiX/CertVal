@@ -20,7 +20,14 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
             .IsRequired()
             .HasConversion<int>();
 
+        builder.Property(wm => wm.InvitationToken)
+            .HasMaxLength(255);
+
         // Indexes
+        builder.HasIndex(wm => wm.InvitationToken)
+            .HasDatabaseName("IX_WorkspaceMembers_InvitationToken")
+            .HasFilter("[InvitationToken] IS NOT NULL");
+
         builder.HasIndex(wm => wm.WorkspaceId)
             .HasDatabaseName("IX_WorkspaceMembers_WorkspaceId");
 
