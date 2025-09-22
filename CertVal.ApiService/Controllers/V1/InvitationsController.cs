@@ -1,6 +1,7 @@
-﻿using CertVal.Application.Common.Interfaces;
-using CertVal.Application.DTOs;
-using CertVal.Core.Repositories;
+﻿using CertVal.Application.DTOs;
+using CertVal.Application.Features.Invitations.Commands;
+using CertVal.Application.Features.Invitations.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,34 +12,25 @@ namespace CertVal.ApiService.Controllers.V1;
 [Tags("Invitations")]
 public class InvitationsController : ControllerBase
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ICurrentUserService _currentUser;
+    private readonly IMediator _mediator;
 
-    public InvitationsController(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public InvitationsController(IMediator mediator)
     {
-        _unitOfWork = unitOfWork;
-        _currentUser = currentUser;
+        _mediator = mediator;
     }
 
     [AllowAnonymous]
     [HttpGet("{token}")]
     [ProducesResponseType(typeof(InvitationDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetInvitationDetails(string token)
+    public async Task<IActionResult> GetInvitationDetails(string token, CancellationToken cancellationToken)
     {
-        var membership = await _unitOfWork.WorkspaceMembers.GetByInvitationTokenAsync(token);
+        var result = await _mediator.Send(new GetInvitationDetailsQuery { Token = token }, cancellationToken);
 
-        if (membership == null || (membership.InvitationTokenExpiresAt.HasValue && membership.InvitationTokenExpiresAt < DateTime.UtcNow))
-        {
-            return NotFound(new ErrorResponseDto("Invitation is invalid or has expired."));
-        }
+        if (!result.IsSuccess)
+            return NotFound(new ErrorResponseDto(result.Error));
 
-        return Ok(new InvitationDetailsDto
-        {
-            WorkspaceId = membership.Workspace.Id,
-            WorkspaceName = membership.Workspace.Name,
-            InvitedUserEmail = membership.User.Email
-        });
+        return Ok(result.Value);
     }
 
     [Authorize]
@@ -46,23 +38,20 @@ public class InvitationsController : ControllerBase
     [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> AcceptInvitation(string token)
+    public async Task<IActionResult> AcceptInvitation(string token, CancellationToken cancellationToken)
     {
-        var membership = await _unitOfWork.WorkspaceMembers.GetByInvitationTokenAsync(token);
+        var result = await _mediator.Send(new AcceptInvitationCommand { Token = token }, cancellationToken);
 
-        if (membership == null || (membership.InvitationTokenExpiresAt.HasValue && membership.InvitationTokenExpiresAt < DateTime.UtcNow))
+        if (!result.IsSuccess)
         {
-            return NotFound(new ErrorResponseDto("Invitation is invalid or has expired."));
-        }
+            if (result.Error.Contains("not found") || result.Error.Contains("expired"))
+                return NotFound(new ErrorResponseDto(result.Error));
 
-        if (_currentUser.UserId.HasValue && membership.UserId != _currentUser.UserId)
-        {
-            return Forbid();
-        }
+            if (result.Error.Contains("Access denied"))
+                return Forbid();
 
-        membership.AcceptInvitation();
-        await _unitOfWork.WorkspaceMembers.UpdateAsync(membership);
-        await _unitOfWork.SaveChangesAsync();
+            return BadRequest(new ErrorResponseDto(result.Error));
+        }
 
         return Ok(new MessageResponseDto("Invitation accepted successfully."));
     }

@@ -1,5 +1,7 @@
 ﻿using CertVal.Application.DTOs;
-using CertVal.Application.Services;
+using CertVal.Application.Features.Users.Commands;
+using CertVal.Application.Features.Users.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,19 +13,19 @@ namespace CertVal.ApiService.Controllers.V1;
 [Tags("Users")]
 public class UsersController : ControllerBase
 {
-    private readonly IUserService _userService;
+    private readonly IMediator _mediator;
 
-    public UsersController(IUserService userService)
+    public UsersController(IMediator mediator)
     {
-        _userService = userService;
+        _mediator = mediator;
     }
 
     [HttpGet("me")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<UserDto>> GetCurrentUser()
+    public async Task<ActionResult<UserDto>> GetCurrentUser(CancellationToken cancellationToken)
     {
-        var result = await _userService.GetCurrentUserAsync();
+        var result = await _mediator.Send(new GetCurrentUserQuery(), cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
@@ -35,13 +37,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<UserDto>> UpdateCurrentUser(UpdateUserRequest request)
+    public async Task<ActionResult<UserDto>> UpdateCurrentUser([FromBody] UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        var currentUser = await _userService.GetCurrentUserAsync();
-        if (!currentUser.IsSuccess)
-            return BadRequest(new ErrorResponseDto(currentUser.Error));
-
-        var result = await _userService.UpdateUserAsync(currentUser.Value.Id, request);
+        var result = await _mediator.Send(new UpdateCurrentUserCommand(request), cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
@@ -53,13 +51,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken cancellationToken)
     {
-        var currentUser = await _userService.GetCurrentUserAsync();
-        if (!currentUser.IsSuccess)
-            return BadRequest(new ErrorResponseDto(currentUser.Error));
-
-        var result = await _userService.ChangePasswordAsync(currentUser.Value.Id, request);
+        var result = await _mediator.Send(new ChangePasswordCommand(request), cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
