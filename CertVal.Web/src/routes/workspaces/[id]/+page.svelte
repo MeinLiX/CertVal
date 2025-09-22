@@ -40,7 +40,8 @@
 	let isProcessing = $state(false);
 
 	const workspaceId = $derived(page.params.id);
-	const canManage = $derived(workspace && $auth.user && workspace.ownerId === $auth.user.id);
+	const currentUserMember = $derived(members.find(m => m.user.id === $auth.user?.id));
+	const canManage = $derived(currentUserMember?.role === 'Owner' || currentUserMember?.role === 'Admin');
 
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
@@ -101,7 +102,7 @@
 		isProcessing = true;
 		try {
 			const response = await api.delete(
-				`/v1/workspaces/${workspaceId}/members/${memberToRemove.id}`
+				`/v1/workspaces/${workspaceId}/members/${memberToRemove.userId}`
 			);
 			if (response.message) {
 				errors.removeMember = response.message;
@@ -160,6 +161,8 @@
 
 	function getRoleBadgeClass(role: string): string {
 		switch (role.toLowerCase()) {
+			case 'owner':
+				return 'badge-error';
 			case 'admin':
 				return 'badge-primary';
 			case 'editor':
@@ -248,7 +251,7 @@
 			<Card
 				><div class="stat">
 					<div class="stat-title">{t('common.owner', $language)}</div>
-					<div class="stat-value truncate text-lg">{workspace.owner.fullName}</div>
+					<div class="stat-value truncate text-lg">{members.find(m => m.role === 'Owner')?.user.fullName || 'N/A'}</div>
 				</div></Card
 			>
 			<Card
@@ -303,18 +306,6 @@
 			<div class="space-y-6">
 				<Card title={t('common.members', $language)}>
 					<div class="space-y-2">
-						<div class="flex items-center gap-3">
-							<UserAvatar
-								firstName={workspace.owner.firstName}
-								lastName={workspace.owner.lastName}
-								size="w-10"
-								textSize="text-1xl"
-							/>
-							<div>
-								<div class="font-bold">{workspace.owner.fullName}</div>
-								<div class="text-xs opacity-50">{t('common.owner', $language)}</div>
-							</div>
-						</div>
 						{#each members as member}
 							{@const statusInfo = getStatusBadge(member.status)}
 							<div class="flex items-center justify-between">
@@ -335,7 +326,7 @@
 									<span class="badge {getRoleBadgeClass(member.role)} badge-sm">
 										{t(`workspaces.roles.${member.role.toLowerCase()}`, $language)}
 									</span>
-									{#if canManage}
+									{#if canManage && member.role !== 'Owner'}
 										<Button
 											size="xs"
 											variant="ghost"
@@ -358,7 +349,7 @@
 					{/if}
 				</Card>
 
-				{#if canManage}
+				{#if currentUserMember?.role === 'Owner'}
 					<Card class="border-error">
 						<h3 class="card-title text-error">{t('workspaces.dangerZone', $language)}</h3>
 						<p class="text-sm text-base-content/70">
@@ -400,7 +391,9 @@
 				options={[
 					{ value: 'Viewer', label: t('workspaces.roles.viewer', $language) },
 					{ value: 'Editor', label: t('workspaces.roles.editor', $language) },
-					{ value: 'Admin', label: t('workspaces.roles.admin', $language) }
+					...(currentUserMember?.role === 'Owner' ? [
+						{ value: 'Admin', label: t('workspaces.roles.admin', $language) }
+					] : [])
 				]}
 			/>
 			<div class="modal-action">

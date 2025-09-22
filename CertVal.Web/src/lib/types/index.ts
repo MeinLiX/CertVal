@@ -107,8 +107,8 @@ export interface InviteMemberRequest {
     role: WorkspaceRole;
 }
 
-export type WorkspaceRole = 'Viewer' | 'Editor' | 'Administrator';
-export type WorkspaceMemberStatus = 'Pending' | 'Active' | 'Inactive';
+export type WorkspaceRole = 'Viewer' | 'Editor' | 'Admin' | 'Owner';
+export type WorkspaceMemberStatus = 'Invited' | 'Active' | 'Inactive';
 export interface WorkspaceMember {
     id: string;
     userId: string;

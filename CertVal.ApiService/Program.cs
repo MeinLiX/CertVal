@@ -1,3 +1,4 @@
+using CertVal.Application;
 using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Services;
 using CertVal.Infrastructure;
@@ -85,10 +86,8 @@ builder.AddNpgsqlDbContext<ApplicationDbContext>(
 builder.Services.AddInfrastructure();
 
 // Register application services
+builder.Services.AddApplicationServices();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
-builder.Services.AddScoped<ICertificateService, CertificateService>();
 builder.Services.AddScoped<ICertificateProcessorService, CertificateProcessorService>();
 
 builder.Services.AddCustomAuthentication(builder.Configuration);

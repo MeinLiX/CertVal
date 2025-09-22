@@ -1,8 +1,10 @@
 ﻿using CertVal.Application.Common.Exceptions;
+using CertVal.Application.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Text.Json;
+using ApplicationException = CertVal.Application.Common.Exceptions.ApplicationException;
 
 namespace CertVal.Application.Middleware;
 
@@ -25,57 +27,56 @@ public class GlobalExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unexpected error occurred");
+            _logger.LogError(ex, "An unexpected error occurred: {Message}", ex.Message);
             await HandleExceptionAsync(context, ex);
         }
     }
 
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        context.Response.ContentType = "application/json";
+        var response = context.Response;
+        response.ContentType = "application/json";
 
-        var response = new ErrorResponse();
+        ErrorResponseDto errorResponse;
 
         switch (exception)
         {
-            case ValidationException validationEx:
-                response.Message = "Validation failed";
-                response.Errors = validationEx.Errors.ToDictionary(e => e.PropertyName, e => e.ErrorMessage);
-                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            case ValidationException ex:
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new ErrorResponseDto("Validation failed", new Dictionary<string, string[]>(ex.Errors));
                 break;
 
-            case NotFoundException:
-                response.Message = exception.Message;
-                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+            case NotFoundException ex:
+                response.StatusCode = (int)HttpStatusCode.NotFound;
+                errorResponse = new ErrorResponseDto(ex.Message);
                 break;
 
-            case UnauthorizedException:
-                response.Message = exception.Message;
-                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            case UnauthorizedException ex:
+                response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                errorResponse = new ErrorResponseDto(ex.Message);
                 break;
 
-            case ForbiddenException:
-                response.Message = exception.Message;
-                context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+            case ForbiddenException ex:
+                response.StatusCode = (int)HttpStatusCode.Forbidden;
+                errorResponse = new ErrorResponseDto(ex.Message);
+                break;
+
+            case ApplicationException ex:
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                errorResponse = new ErrorResponseDto(ex.Message);
                 break;
 
             default:
-                response.Message = "An internal server error occurred";
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                errorResponse = new ErrorResponseDto("An internal server error occurred");
                 break;
         }
 
-        var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
+        var jsonResponse = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
 
-        await context.Response.WriteAsync(jsonResponse);
+        await response.WriteAsync(jsonResponse);
     }
-}
-
-public class ErrorResponse
-{
-    public string Message { get; set; } = string.Empty;
-    public Dictionary<string, string>? Errors { get; set; }
 }

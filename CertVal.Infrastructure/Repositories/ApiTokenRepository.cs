@@ -29,7 +29,9 @@ public class ApiTokenRepository : BaseRepository<ApiToken>, IApiTokenRepository
     {
         return await DbSet
             .Include(at => at.User)
-            .FirstOrDefaultAsync(at => at.TokenHash == tokenHash && at.IsValid,
+            .FirstOrDefaultAsync(at => at.TokenHash == tokenHash 
+                                    && at.IsActive 
+                                    && (at.ExpiresAt == null || at.ExpiresAt > DateTime.UtcNow),
                                cancellationToken);
     }
 

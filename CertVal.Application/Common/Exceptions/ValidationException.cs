@@ -1,19 +1,29 @@
 ﻿using CertVal.Application.Common.Validation;
+using FluentValidation.Results;
 
 namespace CertVal.Application.Common.Exceptions;
 
-public class ValidationException : ApplicationException
+public class ValidationException : Exception
 {
-    public List<ValidationError> Errors { get; }
-
-    public ValidationException(List<ValidationError> errors)
-        : base($"Validation failed: {string.Join(", ", errors.Select(e => e.ErrorMessage))}")
+    public ValidationException() : base("One or more validation failures have occurred.")
     {
-        Errors = errors;
+        Errors = new Dictionary<string, string[]>();
     }
 
-    public ValidationException(string propertyName, string errorMessage)
-        : this([new ValidationError(propertyName, errorMessage)])
+    public ValidationException(IEnumerable<ValidationFailure> failures) : this()
     {
+        Errors = failures
+            .GroupBy(e => e.PropertyName, e => e.ErrorMessage)
+            .ToDictionary(failureGroup => failureGroup.Key, failureGroup => failureGroup.ToArray());
     }
+
+    public ValidationException(string propertyName, string errorMessage) : this()
+    {
+        Errors = new Dictionary<string, string[]>
+        {
+            { propertyName, new[] { errorMessage } }
+        };
+    }
+
+    public IDictionary<string, string[]> Errors { get; }
 }

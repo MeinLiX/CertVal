@@ -1,13 +1,10 @@
 ﻿using CertVal.Application.DTOs;
-using CertVal.Application.Services;
-using CertVal.Core.Repositories;
-using CertVal.Core.Messaging;
+using CertVal.Application.Features.Auth.Commands;
+using CertVal.Application.Features.Auth.Queries;
+using CertVal.Application.Features.Users.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace CertVal.ApiService.Controllers.V1;
 
@@ -16,42 +13,22 @@ namespace CertVal.ApiService.Controllers.V1;
 [Tags("Authentication")]
 public class AuthController : ControllerBase
 {
-    private readonly IUserService _userService;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IConfiguration _configuration;
-    private readonly IEmailNotificationPublisher _emailPublisher;
+    private readonly IMediator _mediator;
 
-    public AuthController(
-        IUserService userService,
-        IUnitOfWork unitOfWork,
-        IConfiguration configuration,
-        IEmailNotificationPublisher emailPublisher)
+    public AuthController(IMediator mediator)
     {
-        _userService = userService;
-        _unitOfWork = unitOfWork;
-        _configuration = configuration;
-        _emailPublisher = emailPublisher;
+        _mediator = mediator;
     }
 
     [HttpPost("register")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<UserDto>> Register(CreateUserRequest request)
+    public async Task<ActionResult<UserDto>> Register([FromBody] RegisterUserCommand request, CancellationToken cancellationToken)
     {
-        var result = await _userService.CreateUserAsync(request);
+        var result = await _mediator.Send(request, cancellationToken);
 
         if (!result.IsSuccess)
-        {
-            var errors = new Dictionary<string, string[]>();
-            if (result.Errors != null)
-            {
-                foreach (var error in result.Errors)
-                {
-                    errors.Add("error", [error]);
-                }
-            }
-            return BadRequest(new ErrorResponseDto(result.Error, errors));
-        }
+            return BadRequest(new ErrorResponseDto(result.Error));
 
         return CreatedAtAction(nameof(GetProfile), null, result.Value);
     }
@@ -60,50 +37,23 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<LoginResponse>> Login(Application.DTOs.LoginRequest request)
+    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginCommand request, CancellationToken cancellationToken)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            return Unauthorized(new ErrorResponseDto("Invalid email or password"));
+        var result = await _mediator.Send(request, cancellationToken);
 
-        if (!user.IsEmailConfirmed)
-            return BadRequest(new ErrorResponseDto("Email not confirmed"));
+        if (!result.IsSuccess)
+            return Unauthorized(new ErrorResponseDto(result.Error));
 
-        user.UpdateLastLogin();
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.SaveChangesAsync();
-
-        var token = GenerateJwtToken(user);
-
-        return Ok(new LoginResponse
-        {
-            Token = token,
-            ExpiresAt = DateTime.UtcNow.AddHours(24),
-            User = new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                FullName = user.FullName,
-                IsEmailConfirmed = user.IsEmailConfirmed,
-                LastLoginAt = user.LastLoginAt,
-                Status = user.Status.ToString(),
-                TimeZone = user.TimeZone,
-                Language = user.Language,
-                EmailNotificationsEnabled = user.EmailNotificationsEnabled,
-                CreatedAt = user.CreatedAt
-            }
-        });
+        return Ok(result.Value);
     }
 
     [HttpGet("profile")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<UserDto>> GetProfile()
+    public async Task<ActionResult<UserDto>> GetProfile(CancellationToken cancellationToken)
     {
-        var result = await _userService.GetCurrentUserAsync();
+        var result = await _mediator.Send(new GetCurrentUserQuery(), cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
@@ -114,9 +64,9 @@ public class AuthController : ControllerBase
     [HttpPost("confirm-email")]
     [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request)
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand request, CancellationToken cancellationToken)
     {
-        var result = await _userService.ConfirmEmailAsync(request.Token);
+        var result = await _mediator.Send(request, cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
@@ -127,50 +77,24 @@ public class AuthController : ControllerBase
     [HttpPost("resend-confirmation")]
     [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ResendEmailConfirmation(ResendConfirmationRequest request)
+    public async Task<IActionResult> ResendEmailConfirmation([FromBody] ResendEmailConfirmationCommand request, CancellationToken cancellationToken)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
-        if (user == null)
-            return Ok(new MessageResponseDto("If the email exists and is not confirmed, a confirmation link has been sent"));
+        var result = await _mediator.Send(request, cancellationToken);
 
-        if (user.IsEmailConfirmed)
-            return BadRequest(new ErrorResponseDto("Email is already confirmed"));
-
-        var newToken = Guid.NewGuid().ToString();
-        user.SetEmailConfirmationToken(newToken);
-        await _unitOfWork.Users.UpdateAsync(user);
-        await _unitOfWork.SaveChangesAsync();
-
-        await _emailPublisher.PublishUserRegisteredAsync(
-            user.Id,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            newToken);
+        if (!result.IsSuccess)
+            return BadRequest(new ErrorResponseDto(result.Error));
 
         return Ok(new MessageResponseDto("If the email exists and is not confirmed, a confirmation link has been sent"));
     }
 
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ForgotPassword(Application.DTOs.ForgotPasswordRequest request)
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
-        var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
-        if (user != null)
-        {
-            var resetToken = Guid.NewGuid().ToString();
-            var expiresAt = DateTime.UtcNow.AddHours(24);
+        var result = await _mediator.Send(request, cancellationToken);
 
-            user.SetPasswordResetToken(resetToken, expiresAt);
-            await _unitOfWork.Users.UpdateAsync(user);
-            await _unitOfWork.SaveChangesAsync();
-
-            await _emailPublisher.PublishPasswordResetAsync(
-                user.Email,
-                user.FirstName,
-                resetToken,
-                expiresAt);
-        }
+        if (!result.IsSuccess)
+            return BadRequest(new ErrorResponseDto(result.Error));
 
         return Ok(new MessageResponseDto("If the email exists, a password reset link has been sent"));
     }
@@ -178,9 +102,9 @@ public class AuthController : ControllerBase
     [HttpPost("reset-password")]
     [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ResetPassword(Application.DTOs.ResetPasswordRequest request)
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand request, CancellationToken cancellationToken)
     {
-        var result = await _userService.ResetPasswordAsync(request.Token, request.NewPassword);
+        var result = await _mediator.Send(request, cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
@@ -191,46 +115,13 @@ public class AuthController : ControllerBase
     [HttpPost("validate-reset-token")]
     [ProducesResponseType(typeof(ValidateResetTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ValidateResetToken(ValidateResetTokenRequest request)
+    public async Task<IActionResult> ValidateResetToken([FromBody] ValidateResetTokenQuery request, CancellationToken cancellationToken)
     {
-        var user = await _unitOfWork.Users.GetByPasswordResetTokenAsync(request.Token);
-        if (user == null)
-            return BadRequest(new ErrorResponseDto("Invalid or expired reset token"));
+        var result = await _mediator.Send(request, cancellationToken);
 
-        return Ok(new ValidateResetTokenResponse
-        {
-            Message = "Token is valid",
-            Email = user.Email,
-            ExpiresAt = user.PasswordResetTokenExpiresAt
-        });
-    }
+        if (!result.IsSuccess)
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-    private string GenerateJwtToken(Core.Entities.User user)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
-        var key = Encoding.ASCII.GetBytes(secretKey);
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.GivenName, user.FirstName),
-            new Claim(ClaimTypes.Surname, user.LastName),
-            new Claim("client_type", "web")
-        };
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(24),
-            Issuer = jwtSettings["Issuer"],
-            Audience = jwtSettings["Audience"],
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+        return Ok(result.Value);
     }
 }

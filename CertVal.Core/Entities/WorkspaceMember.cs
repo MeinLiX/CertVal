@@ -1,5 +1,6 @@
 ﻿using CertVal.Core.Enums;
 using CertVal.Core.Events;
+using CertVal.Core.Utils;
 
 namespace CertVal.Core.Entities;
 
@@ -47,7 +48,7 @@ public class WorkspaceMember : BaseEntity
         if (invitedByUserId.HasValue)
         {
             member.Status = WorkspaceMemberStatus.Invited;
-            member.InvitationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "").Replace("+", "");
+            member.InvitationToken = TokenGenerator.GenerateUrlSafeToken();
             member.InvitationTokenExpiresAt = DateTime.UtcNow.AddDays(7);
             member.AddDomainEvent(new WorkspaceMemberInvitedEvent(workspaceId, userId, invitedByUserId.Value, member.InvitationToken));
         }
@@ -85,6 +86,23 @@ public class WorkspaceMember : BaseEntity
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new WorkspaceMemberRemovedEvent(WorkspaceId, UserId));
+    }
+
+    public void Reactivate(WorkspaceRole newRole, Guid invitedByUserId)
+    {
+        if (Status != WorkspaceMemberStatus.Inactive)
+            throw new InvalidOperationException("Only inactive members can be reactivated");
+
+        Role = newRole;
+        Status = WorkspaceMemberStatus.Invited;
+        InvitedByUserId = invitedByUserId;
+        InvitedAt = DateTime.UtcNow;
+        InvitationToken = TokenGenerator.GenerateUrlSafeToken();
+        InvitationTokenExpiresAt = DateTime.UtcNow.AddDays(7);
+        JoinedAt = null;
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new WorkspaceMemberInvitedEvent(WorkspaceId, UserId, invitedByUserId, InvitationToken));
     }
 
     public bool CanManageWorkspace => Role == WorkspaceRole.Admin;
