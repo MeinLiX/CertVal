@@ -41,7 +41,7 @@
 
 	const workspaceId = $derived(page.params.id);
 	const currentUserMember = $derived(members.find(m => m.user.id === $auth.user?.id));
-	const canManage = $derived(currentUserMember?.role === 'Owner' || currentUserMember?.role === 'Administrator');
+	const canManage = $derived(currentUserMember?.role === 'Owner' || currentUserMember?.role === 'Admin');
 
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
@@ -163,7 +163,7 @@
 		switch (role.toLowerCase()) {
 			case 'owner':
 				return 'badge-error';
-			case 'administrator':
+			case 'admin':
 				return 'badge-primary';
 			case 'editor':
 				return 'badge-secondary';
@@ -392,7 +392,7 @@
 					{ value: 'Viewer', label: t('workspaces.roles.viewer', $language) },
 					{ value: 'Editor', label: t('workspaces.roles.editor', $language) },
 					...(currentUserMember?.role === 'Owner' ? [
-						{ value: 'Administrator', label: t('workspaces.roles.administrator', $language) }
+						{ value: 'Admin', label: t('workspaces.roles.admin', $language) }
 					] : [])
 				]}
 			/>
