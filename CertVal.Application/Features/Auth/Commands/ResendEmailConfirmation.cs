@@ -1,6 +1,7 @@
 using CertVal.Application.Common.Models;
 using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
+using CertVal.Core.Utils;
 using FluentValidation;
 using MediatR;
 
@@ -41,7 +42,7 @@ public class ResendEmailConfirmationCommandHandler : IRequestHandler<ResendEmail
         if (user.IsEmailConfirmed)
             return Result.Failure("Email is already confirmed");
 
-        var newToken = Guid.NewGuid().ToString();
+        var newToken = TokenGenerator.GenerateUrlSafeToken();
         user.SetEmailConfirmationToken(newToken);
         await _unitOfWork.Users.UpdateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
