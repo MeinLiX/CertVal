@@ -65,10 +65,11 @@ public class WorkspacesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<WorkspaceDto>> CreateWorkspace(
-        [FromBody] CreateWorkspaceCommand request,
+        [FromBody] CreateWorkspaceRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var command = new CreateWorkspaceCommand(request);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
