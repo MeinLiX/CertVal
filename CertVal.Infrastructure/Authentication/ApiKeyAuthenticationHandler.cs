@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Encodings.Web;
 
 namespace CertVal.Infrastructure.Authentication;
@@ -46,11 +48,8 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             using var scope = _serviceProvider.CreateScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-            // In a real implementation:
-            // 1. Hash the incoming API key with the same algorithm used during creation
-            // 2. Look up the token by the hash
-            // For this example, we'll store and compare the raw token (NOT SECURE for production)
-            var apiToken = await unitOfWork.ApiTokens.GetActiveTokenAsync(apiKeyHeader);
+            var tokenHash = HashApiToken(apiKeyHeader);
+            var apiToken = await unitOfWork.ApiTokens.GetActiveTokenAsync(tokenHash);
 
             if (apiToken == null || !apiToken.IsValid)
             {
@@ -65,6 +64,8 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             {
                 new(ClaimTypes.NameIdentifier, apiToken.UserId.ToString()),
                 new(ClaimTypes.Email, apiToken.User.Email),
+                new(ClaimTypes.GivenName, apiToken.User.FirstName),
+                new(ClaimTypes.Surname, apiToken.User.LastName),
                 new("client_type", "api"),
                 new("api_token_id", apiToken.Id.ToString()),
                 new("api_scope", apiToken.Scope.ToString())
@@ -74,7 +75,8 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
-            Logger.LogInformation("API key authentication successful for user {UserId}", apiToken.UserId);
+            Logger.LogInformation("API key authentication successful for user {UserId} with scope {Scope}", 
+                apiToken.UserId, apiToken.Scope);
             return AuthenticateResult.Success(ticket);
         }
         catch (Exception ex)
@@ -82,6 +84,11 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             Logger.LogError(ex, "Error validating API key");
             return AuthenticateResult.Fail("Error validating API key");
         }
+    }
+
+    private static string HashApiToken(string token)
+    {
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
     }
 
     private string? GetClientIpAddress()
