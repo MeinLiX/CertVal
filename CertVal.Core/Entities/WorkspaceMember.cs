@@ -1,5 +1,6 @@
 ﻿using CertVal.Core.Enums;
 using CertVal.Core.Events;
+using CertVal.Core.Utils;
 
 namespace CertVal.Core.Entities;
 
@@ -47,7 +48,7 @@ public class WorkspaceMember : BaseEntity
         if (invitedByUserId.HasValue)
         {
             member.Status = WorkspaceMemberStatus.Invited;
-            member.InvitationToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "").Replace("+", "");
+            member.InvitationToken = TokenGenerator.GenerateUrlSafeToken();
             member.InvitationTokenExpiresAt = DateTime.UtcNow.AddDays(7);
             member.AddDomainEvent(new WorkspaceMemberInvitedEvent(workspaceId, userId, invitedByUserId.Value, member.InvitationToken));
         }

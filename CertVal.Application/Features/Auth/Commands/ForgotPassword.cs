@@ -1,6 +1,7 @@
 using CertVal.Application.Common.Models;
 using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
+using CertVal.Core.Utils;
 using FluentValidation;
 using MediatR;
 
@@ -37,7 +38,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
         if (user != null)
         {
-            var resetToken = Guid.NewGuid().ToString();
+            var resetToken = TokenGenerator.GenerateUrlSafeToken();
             var expiresAt = DateTime.UtcNow.AddHours(24);
 
             user.SetPasswordResetToken(resetToken, expiresAt);

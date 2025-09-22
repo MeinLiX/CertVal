@@ -1,5 +1,6 @@
 ﻿using CertVal.Core.Enums;
 using CertVal.Core.Events;
+using CertVal.Core.Utils;
 
 namespace CertVal.Core.Entities;
 
@@ -49,7 +50,7 @@ public class User : BaseEntity
             PasswordHash = passwordHash,
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
-            EmailConfirmationToken = Guid.NewGuid().ToString()
+            EmailConfirmationToken = TokenGenerator.GenerateUrlSafeToken()
         };
 
         user.AddDomainEvent(new UserRegisteredEvent(user.Id, user.Email, user.FullName));
