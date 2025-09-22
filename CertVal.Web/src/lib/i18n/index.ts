@@ -212,7 +212,6 @@ export const translations = {
             roles: {
                 viewer: 'Глядач',
                 editor: 'Редактор',
-                administrator: 'Адміністратор',
                 admin: 'Адміністратор',
                 owner: 'Власник'
             },
@@ -623,7 +622,6 @@ export const translations = {
             roles: {
                 viewer: 'Viewer',
                 editor: 'Editor',
-                administrator: 'Administrator',
                 admin: 'Administrator',
                 owner: 'Owner'
             },
