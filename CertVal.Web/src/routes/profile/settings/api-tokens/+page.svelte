@@ -6,12 +6,11 @@
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import { formatDateTime } from '$lib/utils/date';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
+	import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
 	import type { ApiToken, CreateApiTokenRequest, CreateApiTokenResponse } from '$lib/types';
 
 	let tokens = $state<ApiToken[]>([]);
@@ -24,6 +23,7 @@
 
 	let newTokenResponse = $state<CreateApiTokenResponse | null>(null);
 	let tokenToRevoke = $state<ApiToken | null>(null);
+	let isCopied = $state(false);
 
 	let createForm = $state<CreateApiTokenRequest>({
 		name: '',
@@ -58,6 +58,7 @@
 	function openCreateModal() {
 		createForm = { name: '', scope: 'ReadOnly', expiresAt: undefined };
 		errors = {};
+		isCopied = false;
 		showCreateModal = true;
 	}
 
@@ -83,7 +84,12 @@
 	}
 
 	function copyToClipboard(text: string) {
-		navigator.clipboard.writeText(text);
+		navigator.clipboard.writeText(text).then(() => {
+			isCopied = true;
+			setTimeout(() => {
+				isCopied = false;
+			}, 2000);
+		});
 	}
 
 	function openRevokeModal(token: ApiToken) {
@@ -111,11 +117,7 @@
 </svelte:head>
 
 <div class="space-y-6">
-	<div class="fab" role="button">
-		<Button outline variant="primary" class="btn-circle shadow-lg" onclick={openCreateModal}>
-			<Icon name="plus" class="h-6 w-6" />
-		</Button>
-	</div>
+	<FloatingActionButton iconName="plus" variant="primary" onclick={openCreateModal} />
 
 	{#if isLoading}
 		<div class="flex justify-center py-16">
@@ -213,15 +215,16 @@
 	{#if newTokenResponse}
 		<div class="space-y-4">
 			<p>{t('common.copyTokenWarning', $language)}</p>
-			<div class="relative">
+			<div class="space-y-2">
 				<Input readonly value={newTokenResponse.token} />
 				<Button
-					class="absolute top-1/2 right-2 -translate-y-1/2"
 					size="sm"
-					variant="ghost"
+					variant="primary"
+					class="w-full"
+					disabled={isCopied}
 					onclick={() => copyToClipboard(newTokenResponse?.token ?? '')}
 				>
-					{t('common.copy', $language)}
+					{isCopied ? t('common.copied', $language) : t('common.copy', $language)}
 				</Button>
 			</div>
 			<div class="modal-action">

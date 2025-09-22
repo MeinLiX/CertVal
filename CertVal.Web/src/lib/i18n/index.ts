@@ -11,7 +11,7 @@ export const translations = {
             close: 'Закрити',
             confirm: 'Підтвердити',
             confirmDelete: 'Видалити',
-            confirmDeleteMessage: 'Ви впевнені, що хочете видалити {name}? Це дія не може бути скасована.',
+            confirmDeleteMessage: 'Ви впевнені, що хочете видалити {name}? Ця дія не може бути скасована.',
             back: 'Назад',
             next: 'Далі',
             previous: 'Попередня',
@@ -67,6 +67,7 @@ export const translations = {
             newTokenTitle: 'Ваш новий API токен',
             copyTokenWarning: 'Скопіюйте цей токен. Ви не зможете побачити його знову.',
             copy: 'Копіювати',
+            copied: 'Скопійовано!',
             revokeTokenTitle: 'Відкликати API токен',
             revokeTokenWarning: 'Ви впевнені, що хочете відкликати токен "{tokenName}"? Ця дія не може бути скасована.',
             openDocsInNewTab: 'Відкрити документацію в новій вкладці'
@@ -477,6 +478,7 @@ export const translations = {
             newTokenTitle: 'Your New API Token',
             copyTokenWarning: 'Please copy this token now. You won’t be able to see it again.',
             copy: 'Copy',
+            copied: 'Copied!',
             revokeTokenTitle: 'Revoke API Token',
             revokeTokenWarning: 'Are you sure you want to revoke the token "{tokenName}"? This action cannot be undone.',
             openDocsInNewTab: 'Open documentation in a new tab'
