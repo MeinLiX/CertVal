@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
@@ -7,7 +7,6 @@
 	import { language } from '$lib/stores/language';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
-	import { formatDate, getCertificateStatus } from '$lib/utils/date';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -15,6 +14,8 @@
 	import Select from '$lib/components/ui/Select.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { Certificate, Workspace, PagedResult, BulkUploadResultDto } from '$lib/types';
+	import CertificateCard from '$lib/components/certificates/CertificateCard.svelte';
+	import Pagination from '$lib/components/ui/Pagination.svelte';
 
 	let certificates = $state<Certificate[]>([]);
 	let workspaceList = $state<Workspace[]>([]);
@@ -37,13 +38,15 @@
 		status: page.url.searchParams.get('status') || 'All',
 		workspaceId: page.url.searchParams.get('workspace') || '',
 		page: parseInt(page.url.searchParams.get('page') || '1'),
-		pageSize: parseInt(page.url.searchParams.get('pageSize') || '10')
+		pageSize: parseInt(page.url.searchParams.get('pageSize') || '12')
 	});
+
 	const totalPages = $derived(Math.ceil(totalCount / filters.pageSize) || 1);
 	const workspaceOptions = $derived([
 		{ value: '', label: t('certificates.allWorkspaces', $language) },
 		...workspaceList.map((w) => ({ value: w.id, label: w.name }))
 	]);
+
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -58,6 +61,7 @@
 			loadCertificates();
 		}
 	});
+
 	async function loadWorkspaces() {
 		try {
 			const response = await api.get<PagedResult<Workspace>>('/v1/workspaces');
@@ -129,10 +133,7 @@
 		isUploading = true;
 		errors = {};
 		try {
-			const response = await api.upload<BulkUploadResultDto>(
-				'/v1/certificates/upload',
-				formData
-			);
+			const response = await api.upload<BulkUploadResultDto>('/v1/certificates/upload', formData);
 			if (response.data) {
 				uploadResults = response.data;
 				showUploadModal = false;
@@ -157,7 +158,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold">{t('certificates.title', $language)}</h1>
-			<p class="mt-1 text-base-content/70">{t('certificates.subtitle', $language)}</p>
+			<p class="text-base-content/70 mt-1">{t('certificates.subtitle', $language)}</p>
 		</div>
 		<Button onclick={openUploadModal}>
 			<Icon name="upload" />
@@ -166,19 +167,12 @@
 	</div>
 
 	<Card>
-		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-5">
+		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-4">
 			<Input
 				label={t('certificates.subject', $language)}
 				value={filters.subjectTerm}
 				oninput={(e) => updateUrlParams({ search: (e.target as HTMLInputElement).value })}
 				placeholder={t('certificates.searchSubjectPlaceholder', $language)}
-				icon="search"
-			/>
-			<Input
-				label={t('certificates.issuer', $language)}
-				value={filters.issuerTerm}
-				oninput={(e) => updateUrlParams({ issuer: (e.target as HTMLInputElement).value })}
-				placeholder={t('certificates.searchIssuerPlaceholder', $language)}
 				icon="search"
 			/>
 			<Select
@@ -203,114 +197,53 @@
 				value={filters.pageSize}
 				onchange={(e) => updateUrlParams({ pageSize: (e.target as HTMLSelectElement).value })}
 				options={[
-					{ value: 10, label: '10' },
-					{ value: 20, label: '20' },
-					{ value: 50, label: '50' },
-					{ value: 100, label: '100' }
+					{ value: 12, label: '12' },
+					{ value: 24, label: '24' },
+					{ value: 48, label: '48' }
 				]}
 			/>
 		</div>
 	</Card>
 
-	<Card>
-		<div class="overflow-x-auto">
-			<table class="table">
-				<thead>
-					<tr>
-						<th>{t('certificates.subject', $language)}</th>
-						<th>{t('certificates.issuer', $language)}</th>
-						<th>{t('certificates.expires', $language)}</th>
-						<th>{t('common.status', $language)}</th>
-						<th>{t('common.workspace', $language)}</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody>
-					{#if isLoading}
-						{#each { length: filters.pageSize } as _}
-							<tr><td colspan="6"><div class="h-10 w-full skeleton"></div></td></tr>
-						{/each}
-					{:else if certificates.length === 0}
-						<tr
-							><td colspan="6" class="py-8 text-center">{t('certificates.empty', $language)}</td
-							></tr
-						>
-					{:else}
-						{#each certificates as cert (cert.id)}
-							<tr>
-								<td>
-									<a
-										href="/certificates/{cert.id}"
-										class="block max-w-sm link truncate font-bold link-hover">{cert.subject}</a
-									>
-									<div class="text-xs opacity-60">{cert.originalFileName}</div>
-								</td>
-								<td>
-									<div class="max-w-sm truncate">{cert.issuer}</div>
-								</td>
-								<td>
-									{formatDate(cert.notAfter)}
-									<div class="text-xs opacity-60">
-										{cert.daysUntilExpiry}
-										{t('certificates.daysLeft', $language)}
-									</div>
-								</td>
-								<td
-									><span
-										class="badge {getCertificateStatus(cert.notAfter) === 'expired'
-											? 'badge-error'
-											: getCertificateStatus(cert.notAfter) === 'expiring'
-												? 'badge-warning'
-												: 'badge-success'} badge-sm"
-										>{t(`certificates.${getCertificateStatus(cert.notAfter)}`, $language)}</span
-									></td
-								>
-								<td>{workspaceList.find((w) => w.id === cert.workspaceId)?.name || 'N/A'}</td>
-								<td
-									><Button
-										size="sm"
-										variant="ghost"
-										onclick={() => goto(`/certificates/${cert.id}`)}
-										>{t('common.details', $language)}</Button
-									></td
-								>
-							</tr>
-						{/each}
-					{/if}
-				</tbody>
-			</table>
+	{#if isLoading}
+		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			{#each { length: filters.pageSize } as _}
+				<div class="skeleton h-64 w-full"></div>
+			{/each}
 		</div>
-		<div class="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
-			<div class="text-sm">
-				{t('certificates.showing', $language)}
-				<strong>{Math.min((filters.page - 1) * filters.pageSize + 1, totalCount)}</strong>
-				{t('common.to', $language)}
-				<strong>{Math.min(filters.page * filters.pageSize, totalCount)}</strong>
-				{t('common.of', $language)} <strong>{totalCount}</strong>
-				{t('certificates.results', $language)}
-			</div>
-			{#if totalPages > 1}
-				<div class="join">
-					<Button
-						class="join-item"
-						onclick={() => updateUrlParams({ page: filters.page - 1 })}
-						disabled={filters.page <= 1}>«</Button
-					>
-					<span class="no-animation btn join-item"
-						>{t('certificates.page', $language)}
-						{filters.page}
-						{t('common.of', $language)}
-						{totalPages}</span
-					>
-					<Button
-						class="join-item"
-						onclick={() => updateUrlParams({ page: filters.page + 1 })}
-						disabled={filters.page >= totalPages}>»</Button
-					>
-				</div>
-			{/if}
+	{:else if certificates.length === 0}
+		<div class="py-16 text-center">
+			<h3 class="text-xl font-semibold">{t('certificates.empty', $language)}</h3>
+			<p class="text-base-content/60 mt-2">{t('certificates.uploadFirst', $language)}</p>
 		</div>
-	</Card>
+	{:else}
+		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			{#each certificates as cert (cert.id)}
+				<CertificateCard
+					certificate={cert}
+					workspaceName={workspaceList.find((w) => w.id === cert.workspaceId)?.name}
+				/>
+			{/each}
+		</div>
+	{/if}
+
+	<div class="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
+		<div class="text-sm">
+			{t('certificates.showing', $language)}
+			<strong>{Math.min((filters.page - 1) * filters.pageSize + 1, totalCount)}</strong>
+			{t('common.to', $language)}
+			<strong>{Math.min(filters.page * filters.pageSize, totalCount)}</strong>
+			{t('common.of', $language)} <strong>{totalCount}</strong>
+			{t('certificates.results', $language)}
+		</div>
+		{#if totalPages > 1}
+			<Pagination
+				currentPage={filters.page}
+				{totalPages}
+				onPageChange={(p) => updateUrlParams({ page: p })}
+			/>
+		{/if}
+	</div>
 </div>
 
 <Modal
