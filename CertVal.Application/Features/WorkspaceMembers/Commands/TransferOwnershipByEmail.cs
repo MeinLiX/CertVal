@@ -57,7 +57,7 @@ public class TransferOwnershipByEmailCommandHandler : IRequestHandler<TransferOw
         if (workspace.OwnerId == newOwner.Id)
             return Result.Failure("Cannot transfer ownership to yourself");
 
-        var newOwnerMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, newOwner.Id, cancellationToken);
+        var newOwnerMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, newOwner.Id, cancellationToken: cancellationToken);
         if (newOwnerMembership == null)
             return Result.Failure($"User '{request.NewOwnerEmail}' must be a member of the workspace before becoming owner");
 

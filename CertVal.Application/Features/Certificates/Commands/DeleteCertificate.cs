@@ -73,7 +73,7 @@ public class DeleteCertificateCommandHandler : IRequestHandler<DeleteCertificate
              _currentUser.ApiTokenScope == Core.Enums.ApiTokenScope.Admin))
             return await _unitOfWork.Workspaces.CanUserAccessAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
 
-        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
+        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken: cancellationToken);
         if (membership != null)
             return membership.CanManageCertificates;
 

@@ -80,7 +80,7 @@ public class UpdateNotificationRuleCommandHandler : IRequestHandler<UpdateNotifi
 
         if (workspace.OwnerId == _currentUser.UserId.Value) return true;
 
-        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
+        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken: cancellationToken);
         return membership?.CanManageWorkspace ?? false;
     }
 }

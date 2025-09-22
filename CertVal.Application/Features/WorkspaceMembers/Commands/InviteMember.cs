@@ -66,21 +66,32 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         if (workspace.OwnerId == user.Id)
             return Result.Failure<WorkspaceMemberDto>("Cannot invite workspace owner");
 
-        var existingMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, user.Id, cancellationToken);
+        var existingMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, user.Id, includeInactive: true, cancellationToken);
         if (existingMembership != null && existingMembership.Status != WorkspaceMemberStatus.Inactive)
             return Result.Failure<WorkspaceMemberDto>("User is already a member of this workspace");
+        
+        WorkspaceMember membership;
+        if (existingMembership != null)
+        {
+            // Reactivate existing inactive membership
+            existingMembership.Reactivate(request.Role, (Guid)_currentUser.UserId);
+            membership = existingMembership;
+            // No need to call UpdateAsync as the entity is already tracked
+        }
+        else
+        {
+            // Create new membership
+            membership = WorkspaceMember.Create(
+                request.WorkspaceId,
+                user.Id,
+                request.Role,
+                _currentUser.UserId.Value
+            );
 
-        var membership = WorkspaceMember.Create(
-            request.WorkspaceId,
-            user.Id,
-            request.Role,
-            _currentUser.UserId.Value
-        );
-
-        await _unitOfWork.WorkspaceMembers.AddAsync(membership, cancellationToken);
+            await _unitOfWork.WorkspaceMembers.AddAsync(membership, cancellationToken);
+        }
+        
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var currentUserEntity = await _unitOfWork.Users.GetByIdAsync(_currentUser.UserId.Value, cancellationToken);
 
         var dto = new WorkspaceMemberDto
         {
@@ -120,7 +131,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 
         if (workspace.OwnerId == _currentUser.UserId.Value) return true;
 
-        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
+        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken: cancellationToken);
         return membership?.CanManageWorkspace ?? false;
     }
 }

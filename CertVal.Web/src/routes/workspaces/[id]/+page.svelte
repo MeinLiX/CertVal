@@ -102,7 +102,7 @@
 		isProcessing = true;
 		try {
 			const response = await api.delete(
-				`/v1/workspaces/${workspaceId}/members/${memberToRemove.id}`
+				`/v1/workspaces/${workspaceId}/members/${memberToRemove.userId}`
 			);
 			if (response.message) {
 				errors.removeMember = response.message;
