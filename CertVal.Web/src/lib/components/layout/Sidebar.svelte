@@ -41,7 +41,7 @@
 	}
 </script>
 
-<aside class="drawer-side z-40 h-screen">
+<aside class="drawer-side z-40">
 	<label for="drawer-toggle" class="drawer-overlay lg:hidden"></label>
 	<div
 		class="flex min-h-full w-64 flex-col border-r border-base-content/10 bg-base-100/95 text-base-content backdrop-blur-lg"
