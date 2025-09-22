@@ -88,6 +88,23 @@ public class WorkspaceMember : BaseEntity
         AddDomainEvent(new WorkspaceMemberRemovedEvent(WorkspaceId, UserId));
     }
 
+    public void Reactivate(WorkspaceRole newRole, Guid invitedByUserId)
+    {
+        if (Status != WorkspaceMemberStatus.Inactive)
+            throw new InvalidOperationException("Only inactive members can be reactivated");
+
+        Role = newRole;
+        Status = WorkspaceMemberStatus.Invited;
+        InvitedByUserId = invitedByUserId;
+        InvitedAt = DateTime.UtcNow;
+        InvitationToken = TokenGenerator.GenerateUrlSafeToken();
+        InvitationTokenExpiresAt = DateTime.UtcNow.AddDays(7);
+        JoinedAt = null;
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new WorkspaceMemberInvitedEvent(WorkspaceId, UserId, invitedByUserId, InvitationToken));
+    }
+
     public bool CanManageWorkspace => Role == WorkspaceRole.Admin;
     public bool CanManageCertificates => Role is WorkspaceRole.Admin or WorkspaceRole.Editor;
     public bool CanViewCertificates => Role is WorkspaceRole.Admin or WorkspaceRole.Editor or WorkspaceRole.Viewer;

@@ -44,7 +44,7 @@ public class LeaveWorkspaceCommandHandler : IRequestHandler<LeaveWorkspaceComman
         if (workspace.OwnerId == _currentUser.UserId.Value)
             return Result.Failure("Workspace owner cannot leave. Transfer ownership to another member first.");
 
-        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, _currentUser.UserId.Value, cancellationToken);
+        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, _currentUser.UserId.Value, cancellationToken: cancellationToken);
         if (membership == null)
             return Result.Failure("You are not a member of this workspace");
 

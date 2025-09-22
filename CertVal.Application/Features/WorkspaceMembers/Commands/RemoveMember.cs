@@ -51,13 +51,16 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
         if (workspace.OwnerId == request.UserId)
             return Result.Failure("Cannot remove workspace owner. Transfer ownership first.");
 
-        var member = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, request.UserId, cancellationToken);
+        var member = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, request.UserId, cancellationToken: cancellationToken);
         if (member == null)
             return Result.Failure("User is not a member of this workspace");
 
         if (member.Status == WorkspaceMemberStatus.Inactive)
             return Result.Failure("User is already inactive in this workspace");
 
+        // Physically delete the member
+        //await _unitOfWork.WorkspaceMembers.DeleteAsync(member.Id, cancellationToken);
+        
         member.Deactivate();
         await _unitOfWork.WorkspaceMembers.UpdateAsync(member, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -74,7 +77,7 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
 
         if (workspace.OwnerId == _currentUser.UserId.Value) return true;
 
-        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
+        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken: cancellationToken);
         return membership?.CanManageWorkspace ?? false;
     }
 }

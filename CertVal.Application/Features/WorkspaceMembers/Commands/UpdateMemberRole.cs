@@ -48,7 +48,7 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
         if (!await CanManageWorkspace(request.WorkspaceId, cancellationToken))
             return Result.Failure("Access denied - insufficient permissions to manage this workspace");
 
-        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, request.UserId, cancellationToken);
+        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, request.UserId, cancellationToken: cancellationToken);
         if (membership == null)
             return Result.Failure("Member not found in this workspace");
 
@@ -75,7 +75,7 @@ public class UpdateMemberRoleCommandHandler : IRequestHandler<UpdateMemberRoleCo
 
         if (workspace.OwnerId == _currentUser.UserId.Value) return true;
 
-        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
+        var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(workspaceId, _currentUser.UserId.Value, cancellationToken: cancellationToken);
         return membership?.CanManageWorkspace ?? false;
     }
 }

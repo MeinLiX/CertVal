@@ -78,7 +78,7 @@ public class EmailNotificationEventHandlers :
             }
 
             var membership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(
-                domainEvent.WorkspaceId, domainEvent.UserId, cancellationToken);
+                domainEvent.WorkspaceId, domainEvent.UserId, false, cancellationToken);
 
             if (membership == null)
             {

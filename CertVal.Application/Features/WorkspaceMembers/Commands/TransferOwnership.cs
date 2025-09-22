@@ -55,7 +55,7 @@ public class TransferOwnershipCommandHandler : IRequestHandler<TransferOwnership
         if (newOwner == null)
             return Result.Failure("New owner user not found");
 
-        var newOwnerMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, request.NewOwnerId, cancellationToken);
+        var newOwnerMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, request.NewOwnerId, cancellationToken: cancellationToken);
         if (newOwnerMembership == null)
             return Result.Failure("New owner must be a member of the workspace");
 
