@@ -16,8 +16,23 @@ public static class AuthenticationExtensions
 
         services.AddAuthentication(options =>
         {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = "Smart";
+            options.DefaultChallengeScheme = "Smart";
+        })
+        .AddPolicyScheme("Smart", "Authorization Bearer or ApiKey", options =>
+        {
+            options.ForwardDefaultSelector = context =>
+            {
+                var authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
+                if (authorizationHeader?.StartsWith("Bearer ") == true)
+                    return JwtBearerDefaults.AuthenticationScheme;
+
+                if (context.Request.Headers.ContainsKey("X-API-Key"))
+                    return ApiKeyAuthenticationOptions.DefaultScheme;
+
+                // Default to JWT for other cases
+                return JwtBearerDefaults.AuthenticationScheme;
+            };
         })
         .AddJwtBearer(options =>
         {
