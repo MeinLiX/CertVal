@@ -1,6 +1,8 @@
 ﻿using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
-using CertVal.Application.Services;
+using CertVal.Application.Features.Workspaces.Commands;
+using CertVal.Application.Features.Workspaces.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,11 @@ namespace CertVal.ApiService.Controllers.V1;
 [Tags("Workspaces")]
 public class WorkspacesController : ControllerBase
 {
-    private readonly IWorkspaceService _workspaceService;
+    private readonly IMediator _mediator;
 
-    public WorkspacesController(IWorkspaceService workspaceService)
+    public WorkspacesController(IMediator mediator)
     {
-        _workspaceService = workspaceService;
+        _mediator = mediator;
     }
 
     [HttpGet]
@@ -24,9 +26,11 @@ public class WorkspacesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResult<WorkspaceDto>>> GetWorkspaces(
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _workspaceService.GetUserWorkspacesAsync(pageNumber, pageSize);
+        var query = new GetUserWorkspacesQuery { PageNumber = pageNumber, PageSize = pageSize };
+        var result = await _mediator.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
@@ -39,9 +43,9 @@ public class WorkspacesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<WorkspaceDto>> GetWorkspace(Guid id)
+    public async Task<ActionResult<WorkspaceDto>> GetWorkspace(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _workspaceService.GetWorkspaceByIdAsync(id);
+        var result = await _mediator.Send(new GetWorkspaceByIdQuery(id), cancellationToken);
 
         if (!result.IsSuccess)
         {
@@ -60,9 +64,11 @@ public class WorkspacesController : ControllerBase
     [ProducesResponseType(typeof(WorkspaceDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<WorkspaceDto>> CreateWorkspace(CreateWorkspaceRequest request)
+    public async Task<ActionResult<WorkspaceDto>> CreateWorkspace(
+        [FromBody] CreateWorkspaceCommand request,
+        CancellationToken cancellationToken)
     {
-        var result = await _workspaceService.CreateWorkspaceAsync(request);
+        var result = await _mediator.Send(request, cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
@@ -76,9 +82,22 @@ public class WorkspacesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<WorkspaceDto>> UpdateWorkspace(Guid id, UpdateWorkspaceRequest request)
+    public async Task<ActionResult<WorkspaceDto>> UpdateWorkspace(
+        Guid id,
+        [FromBody] UpdateWorkspaceRequest request,
+        CancellationToken cancellationToken)
     {
-        var result = await _workspaceService.UpdateWorkspaceAsync(id, request);
+        var command = new UpdateWorkspaceCommand
+        {
+            WorkspaceId = id,
+            Name = request.Name,
+            Description = request.Description,
+            MaxCertificates = request.MaxCertificates,
+            IsPublic = request.IsPublic,
+            AllowMemberInvites = request.AllowMemberInvites
+        };
+
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (!result.IsSuccess)
         {
@@ -98,9 +117,9 @@ public class WorkspacesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> DeleteWorkspace(Guid id)
+    public async Task<IActionResult> DeleteWorkspace(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _workspaceService.DeleteWorkspaceAsync(id);
+        var result = await _mediator.Send(new DeleteWorkspaceCommand(id), cancellationToken);
 
         if (!result.IsSuccess)
         {

@@ -1,10 +1,9 @@
-﻿using CertVal.Application.Common.Interfaces;
-using CertVal.Application.DTOs;
-using CertVal.Core.Entities;
-using CertVal.Core.Repositories;
+﻿using CertVal.Application.DTOs;
+using CertVal.Application.Features.ApiTokens.Commands;
+using CertVal.Application.Features.ApiTokens.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Cryptography;
 
 namespace CertVal.ApiService.Controllers.V1;
 
@@ -14,90 +13,60 @@ namespace CertVal.ApiService.Controllers.V1;
 [Tags("API Tokens")]
 public class ApiTokensController : ControllerBase
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ICurrentUserService _currentUser;
+    private readonly IMediator _mediator;
 
-    public ApiTokensController(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public ApiTokensController(IMediator mediator)
     {
-        _unitOfWork = unitOfWork;
-        _currentUser = currentUser;
+        _mediator = mediator;
     }
 
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ApiTokenDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<ApiTokenDto>>> GetTokens()
+    public async Task<ActionResult<IEnumerable<ApiTokenDto>>> GetTokens(
+        [FromQuery] bool includeInactive = false,
+        CancellationToken cancellationToken = default)
     {
-        if (!_currentUser.UserId.HasValue)
-            return Unauthorized();
+        var result = await _mediator.Send(new GetApiTokensQuery { IncludeInactive = includeInactive }, cancellationToken);
 
-        var tokens = await _unitOfWork.ApiTokens.GetByUserAsync(_currentUser.UserId.Value);
-        var tokenDtos = tokens.Select(t => new ApiTokenDto
-        {
-            Id = t.Id,
-            Name = t.Name,
-            TokenPrefix = t.TokenPrefix,
-            Scope = t.Scope.ToString(),
-            IsActive = t.IsActive,
-            LastUsedAt = t.LastUsedAt,
-            ExpiresAt = t.ExpiresAt,
-            CreatedAt = t.CreatedAt
-        });
+        if (!result.IsSuccess)
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-        return Ok(tokenDtos);
+        return Ok(result.Value);
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(CreateApiTokenResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<CreateApiTokenResponse>> CreateToken(CreateApiTokenRequest request)
+    public async Task<ActionResult<CreateApiTokenResponse>> CreateToken(
+        [FromBody] CreateApiTokenCommand request,
+        CancellationToken cancellationToken)
     {
-        if (!_currentUser.UserId.HasValue)
-            return Unauthorized();
+        var result = await _mediator.Send(request, cancellationToken);
 
-        var tokenBytes = new byte[32];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(tokenBytes);
-        }
-        var token = Convert.ToBase64String(tokenBytes);
-        var tokenPrefix = token[..8];
+        if (!result.IsSuccess)
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-        var apiToken = ApiToken.Create(
-            _currentUser.UserId.Value,
-            request.Name,
-            token,
-            tokenPrefix,
-            request.Scope,
-            request.ExpiresAt
-        );
-
-        await _unitOfWork.ApiTokens.AddAsync(apiToken);
-        await _unitOfWork.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetTokens), new CreateApiTokenResponse
-        {
-            Id = apiToken.Id,
-            Name = apiToken.Name,
-            Token = token,
-            TokenPrefix = tokenPrefix,
-            Scope = apiToken.Scope.ToString(),
-            ExpiresAt = apiToken.ExpiresAt,
-            CreatedAt = apiToken.CreatedAt
-        });
+        return CreatedAtAction(nameof(GetTokens), result.Value);
     }
 
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> RevokeToken(Guid id)
+    public async Task<IActionResult> RevokeToken(Guid id, CancellationToken cancellationToken)
     {
-        if (!_currentUser.UserId.HasValue)
-            return Unauthorized();
+        var result = await _mediator.Send(new RevokeApiTokenCommand(id), cancellationToken);
 
-        await _unitOfWork.ApiTokens.RevokeTokenAsync(id);
+        if (!result.IsSuccess)
+        {
+            if (result.Error.Contains("not found"))
+                return NotFound(new ErrorResponseDto(result.Error));
+
+            return BadRequest(new ErrorResponseDto(result.Error));
+        }
+
         return NoContent();
     }
 }
