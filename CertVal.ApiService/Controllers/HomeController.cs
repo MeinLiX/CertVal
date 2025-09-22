@@ -1,4 +1,4 @@
-﻿using CertVal.Application.DTOs;
+using CertVal.Application.DTOs;
 using CertVal.Application.Features.Api.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
