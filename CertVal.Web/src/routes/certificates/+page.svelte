@@ -32,7 +32,8 @@
 	});
 
 	const filters = $derived({
-		searchTerm: page.url.searchParams.get('search') || '',
+		subjectTerm: page.url.searchParams.get('search') || '',
+		issuerTerm: page.url.searchParams.get('issuer') || '',
 		status: page.url.searchParams.get('status') || 'All',
 		workspaceId: page.url.searchParams.get('workspace') || '',
 		page: parseInt(page.url.searchParams.get('page') || '1'),
@@ -79,11 +80,12 @@
 				sortDescending: 'false'
 			});
 			if (filters.workspaceId) params.set('workspaceId', filters.workspaceId);
-			if (filters.searchTerm) params.set('query', filters.searchTerm);
+			if (filters.subjectTerm) params.set('subject', filters.subjectTerm);
+			if (filters.issuerTerm) params.set('issuer', filters.issuerTerm);
 			if (filters.status !== 'All') params.set('statusFilter', filters.status);
 
 			const response = await api.get<PagedResult<Certificate>>(
-				`/v1/search/certificates?${params.toString()}`
+				`/v1/certificates?${params.toString()}`
 			);
 			if (response.data) {
 				certificates = response.data.items;
@@ -128,7 +130,7 @@
 		errors = {};
 		try {
 			const response = await api.upload<BulkUploadResultDto>(
-				'/v1/certificates/upload/multiple',
+				'/v1/certificates/upload',
 				formData
 			);
 			if (response.data) {
@@ -164,12 +166,19 @@
 	</div>
 
 	<Card>
-		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-4">
+		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-5">
 			<Input
-				label={t('common.search', $language)}
-				value={filters.searchTerm}
+				label={t('certificates.subject', $language)}
+				value={filters.subjectTerm}
 				oninput={(e) => updateUrlParams({ search: (e.target as HTMLInputElement).value })}
-				placeholder={t('certificates.searchPlaceholder', $language)}
+				placeholder={t('certificates.searchSubjectPlaceholder', $language)}
+				icon="search"
+			/>
+			<Input
+				label={t('certificates.issuer', $language)}
+				value={filters.issuerTerm}
+				oninput={(e) => updateUrlParams({ issuer: (e.target as HTMLInputElement).value })}
+				placeholder={t('certificates.searchIssuerPlaceholder', $language)}
 				icon="search"
 			/>
 			<Select
@@ -209,6 +218,7 @@
 				<thead>
 					<tr>
 						<th>{t('certificates.subject', $language)}</th>
+						<th>{t('certificates.issuer', $language)}</th>
 						<th>{t('certificates.expires', $language)}</th>
 						<th>{t('common.status', $language)}</th>
 						<th>{t('common.workspace', $language)}</th>
@@ -218,11 +228,11 @@
 				<tbody>
 					{#if isLoading}
 						{#each { length: filters.pageSize } as _}
-							<tr><td colspan="5"><div class="h-10 w-full skeleton"></div></td></tr>
+							<tr><td colspan="6"><div class="h-10 w-full skeleton"></div></td></tr>
 						{/each}
 					{:else if certificates.length === 0}
 						<tr
-							><td colspan="5" class="py-8 text-center">{t('certificates.empty', $language)}</td
+							><td colspan="6" class="py-8 text-center">{t('certificates.empty', $language)}</td
 							></tr
 						>
 					{:else}
@@ -234,6 +244,9 @@
 										class="block max-w-sm link truncate font-bold link-hover">{cert.subject}</a
 									>
 									<div class="text-xs opacity-60">{cert.originalFileName}</div>
+								</td>
+								<td>
+									<div class="max-w-sm truncate">{cert.issuer}</div>
 								</td>
 								<td>
 									{formatDate(cert.notAfter)}
