@@ -130,6 +130,10 @@ public class CertificatesController : ControllerBase
 
         var (fileContents, fileName, contentType) = result.Value;
 
-        return File(fileContents, contentType, fileName);
+        var safeFileName = fileName.Replace("\"", "").Replace(";", "").Replace(",", "");
+        
+        Response.Headers["Content-Disposition"] = $"attachment; filename=\"{safeFileName}\"";
+        
+        return File(fileContents, contentType);
     }
 }
