@@ -4,10 +4,9 @@ using CertVal.Application.DTOs;
 using CertVal.Core.Entities;
 using CertVal.Core.Enums;
 using CertVal.Core.Repositories;
+using CertVal.Core.Utils;
 using FluentValidation;
 using MediatR;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace CertVal.Application.Features.ApiTokens.Commands;
 
@@ -60,7 +59,7 @@ public class CreateApiTokenCommandHandler : IRequestHandler<CreateApiTokenComman
         if (activeTokens.Any(t => t.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
             return Result.Failure<CreateApiTokenResponse>("API token with this name already exists");
 
-        var (token, tokenHash) = GenerateApiToken();
+        var (token, tokenHash) = TokenGenerator.GenerateApiToken();
         var tokenPrefix = token[..8];
 
         var apiToken = ApiToken.Create(
@@ -85,17 +84,5 @@ public class CreateApiTokenCommandHandler : IRequestHandler<CreateApiTokenComman
             ExpiresAt = apiToken.ExpiresAt,
             CreatedAt = apiToken.CreatedAt
         });
-    }
-
-    private static (string token, string hash) GenerateApiToken()
-    {
-        var tokenBytes = new byte[32];
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(tokenBytes);
-
-        var token = Convert.ToBase64String(tokenBytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
-
-        return (token, hash);
     }
 }
