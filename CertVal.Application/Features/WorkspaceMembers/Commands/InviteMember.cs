@@ -3,7 +3,6 @@ using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
 using CertVal.Core.Entities;
 using CertVal.Core.Enums;
-using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
 using FluentValidation;
 using MediatR;
@@ -67,7 +66,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         var existingMembership = await _unitOfWork.WorkspaceMembers.GetMembershipAsync(request.WorkspaceId, user.Id, includeInactive: true, cancellationToken);
         if (existingMembership != null && existingMembership.Status != WorkspaceMemberStatus.Inactive)
             return Result.Failure<WorkspaceMemberDto>("User is already a member of this workspace");
-        
+
         WorkspaceMember membership;
         if (existingMembership != null)
         {
@@ -85,7 +84,7 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 
             await _unitOfWork.WorkspaceMembers.AddAsync(membership, cancellationToken);
         }
-        
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var dto = new WorkspaceMemberDto

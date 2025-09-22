@@ -1,5 +1,5 @@
-using FluentValidation;
 using CertVal.Application.Common.Models;
+using FluentValidation;
 using MediatR;
 
 namespace CertVal.Application.Common.Behaviors;
@@ -31,14 +31,14 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             if (failures.Any())
             {
                 // For Result<T> responses, return a failure result instead of throwing
-                if (typeof(TResponse).IsGenericType && 
+                if (typeof(TResponse).IsGenericType &&
                     typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
                 {
                     var errors = failures.Select(f => f.ErrorMessage).ToList();
                     var resultType = typeof(TResponse);
                     var method = typeof(Result<>).MakeGenericType(resultType.GetGenericArguments()[0])
                         .GetMethod(nameof(Result.Failure), new[] { typeof(string) });
-                    
+
                     if (method != null)
                     {
                         var result = method.Invoke(null, new object[] { string.Join("; ", errors) });

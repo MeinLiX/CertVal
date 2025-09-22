@@ -1,5 +1,4 @@
-﻿using CertVal.Application.Common.Validation;
-using FluentValidation.Results;
+﻿using FluentValidation.Results;
 
 namespace CertVal.Application.Common.Exceptions;
 

@@ -1,6 +1,5 @@
 ﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
-using CertVal.Application.DTOs;
 using CertVal.Core.Repositories;
 using FluentValidation;
 using MediatR;

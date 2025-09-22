@@ -60,7 +60,7 @@ public class RemoveMemberCommandHandler : IRequestHandler<RemoveMemberCommand, R
 
         // Physically delete the member
         //await _unitOfWork.WorkspaceMembers.DeleteAsync(member.Id, cancellationToken);
-        
+
         member.Deactivate();
         await _unitOfWork.WorkspaceMembers.UpdateAsync(member, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
