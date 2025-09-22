@@ -81,13 +81,6 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         await _unitOfWork.Users.AddAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        await _emailPublisher.PublishUserRegisteredAsync(
-            user.Id,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            user.EmailConfirmationToken!);
-
         return Result.Success(user.Adapt<UserDto>());
     }
 }

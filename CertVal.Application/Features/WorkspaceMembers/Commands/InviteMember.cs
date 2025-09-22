@@ -81,15 +81,6 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var currentUserEntity = await _unitOfWork.Users.GetByIdAsync(_currentUser.UserId.Value, cancellationToken);
-        await _emailPublisher.PublishWorkspaceInvitationAsync(
-            request.WorkspaceId,
-            user.FullName,
-            currentUserEntity?.FullName ?? "Unknown",
-            workspace.Name,
-            membership.InvitationToken!,
-            request.Role.ToString(),
-            user.Email,
-            cancellationToken);
 
         var dto = new WorkspaceMemberDto
         {
