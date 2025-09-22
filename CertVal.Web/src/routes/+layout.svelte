@@ -37,7 +37,7 @@
 	{:else}
 		<div class="drawer lg:drawer-open">
 			<input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
-			<div class="drawer-content flex flex-col">
+			<div class="drawer-content flex h-screen flex-col overflow-y-auto">
 				<Navbar />
 				<main class="relative flex-1 p-4 sm:p-6 lg:p-8">
 					<div class="mx-auto max-w-7xl">
