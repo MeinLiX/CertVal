@@ -156,10 +156,27 @@ class ApiClient {
             const contentDisposition = response.headers.get('content-disposition');
             let filename = 'downloaded_file';
             if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-                if (filenameMatch && filenameMatch.length > 1) {
-                    filename = filenameMatch[1];
+                let cleanedHeader = contentDisposition.trim();
+                
+                const encodedFilenameMatch = cleanedHeader.match(/filename\*=UTF-8''([^;,]+)/);
+                if (encodedFilenameMatch && encodedFilenameMatch[1]) {
+                    filename = decodeURIComponent(encodedFilenameMatch[1]);
+                } else {
+                    const filenameMatches = cleanedHeader.match(/filename="?([^";,]+)"?/g);
+                    if (filenameMatches && filenameMatches.length > 0) {
+                        const lastMatch = filenameMatches[filenameMatches.length - 1];
+                        const filenameMatch = lastMatch.match(/filename="?([^";,]+)"?/);
+                        if (filenameMatch && filenameMatch[1]) {
+                            filename = filenameMatch[1].trim();
+                        }
+                    }
                 }
+                
+                filename = filename.replace(/^UTF-8''/, '').replace(/^\w+''/, '');
+                
+                filename = filename.split(';')[0].trim();
+                
+                filename = filename.replace(/^["']|["']$/g, '');
             }
 
             const blob = await response.blob();

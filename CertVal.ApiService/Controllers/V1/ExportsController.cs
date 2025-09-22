@@ -40,7 +40,12 @@ public class ExportsController : ControllerBase
             return BadRequest(new ErrorResponseDto(result.Error));
 
         var (fileContents, fileName, contentType) = result.Value;
-        return File(fileContents, contentType, fileName);
+        
+        var safeFileName = fileName.Replace("\"", "").Replace(";", "").Replace(",", "");
+        
+        Response.Headers["Content-Disposition"] = $"attachment; filename=\"{safeFileName}\"";
+        
+        return File(fileContents, contentType);
     }
 
     [HttpGet("certificates/json")]
@@ -64,7 +69,14 @@ public class ExportsController : ControllerBase
             return BadRequest(new ErrorResponseDto(result.Error));
 
         var (fileContents, fileName, contentType) = result.Value;
-        return File(fileContents, contentType, fileName);
+        
+        // Sanitize filename to prevent issues with special characters
+        var safeFileName = fileName.Replace("\"", "").Replace(";", "").Replace(",", "");
+        
+        // Manually set Content-Disposition header to avoid encoding issues
+        Response.Headers["Content-Disposition"] = $"attachment; filename=\"{safeFileName}\"";
+        
+        return File(fileContents, contentType);
     }
 
     [HttpGet("workspace/{workspaceId:guid}/report")]
