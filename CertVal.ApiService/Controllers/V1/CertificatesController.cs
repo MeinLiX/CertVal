@@ -1,6 +1,8 @@
 ﻿using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
-using CertVal.Application.Services;
+using CertVal.Application.Features.Certificates.Commands;
+using CertVal.Application.Features.Certificates.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,20 +14,22 @@ namespace CertVal.ApiService.Controllers.V1;
 [Tags("Certificates")]
 public class CertificatesController : ControllerBase
 {
-    private readonly ICertificateService _certificateService;
+    private readonly IMediator _mediator;
 
-    public CertificatesController(ICertificateService certificateService)
+    public CertificatesController(IMediator mediator)
     {
-        _certificateService = certificateService;
+        _mediator = mediator;
     }
 
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<CertificateDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedResult<CertificateDto>>> GetCertificates([FromQuery] CertificateFilterRequest request)
+    public async Task<ActionResult<PagedResult<CertificateDto>>> GetCertificates(
+        [FromQuery] GetCertificatesQuery request,
+        CancellationToken cancellationToken)
     {
-        var result = await _certificateService.GetCertificatesAsync(request);
+        var result = await _mediator.Send(request, cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
@@ -38,9 +42,9 @@ public class CertificatesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<CertificateDto>> GetCertificate(Guid id)
+    public async Task<ActionResult<CertificateDto>> GetCertificate(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _certificateService.GetCertificateByIdAsync(id);
+        var result = await _mediator.Send(new GetCertificateByIdQuery(id), cancellationToken);
 
         if (!result.IsSuccess)
         {
@@ -56,33 +60,17 @@ public class CertificatesController : ControllerBase
     }
 
     [HttpPost("upload")]
-    [ProducesResponseType(typeof(CertificateDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<CertificateDto>> UploadCertificate([FromForm] UploadCertificateRequest request)
-    {
-        var result = await _certificateService.UploadCertificateAsync(request);
-
-        if (!result.IsSuccess)
-        {
-            if (result.Error.Contains("Access denied"))
-                return Forbid();
-
-            return BadRequest(new ErrorResponseDto(result.Error));
-        }
-
-        return CreatedAtAction(nameof(GetCertificate), new { id = result.Value.Id }, result.Value);
-    }
-
-    [HttpPost("upload/multiple")]
     [ProducesResponseType(typeof(BulkUploadResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<BulkUploadResultDto>> UploadMultipleCertificates([FromForm] UploadMultipleCertificatesRequest request)
+    public async Task<ActionResult<BulkUploadResultDto>> UploadCertificates(
+        [FromForm] Guid workspaceId,
+        [FromForm] IFormFile[] files,
+        CancellationToken cancellationToken)
     {
-        var result = await _certificateService.UploadMultipleCertificatesAsync(request);
+        var command = new UploadCertificatesCommand(workspaceId, files);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (!result.IsSuccess)
         {
@@ -102,9 +90,11 @@ public class CertificatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteCertificate(
         Guid id,
-        [FromQuery] bool deleteBundleChildren = true)
+        [FromQuery] bool deleteBundleChildren = true,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _certificateService.DeleteCertificateAsync(id, deleteBundleChildren);
+        var command = new DeleteCertificateCommand(id, deleteBundleChildren);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (!result.IsSuccess)
         {
@@ -119,27 +109,14 @@ public class CertificatesController : ControllerBase
         return NoContent();
     }
 
-    [HttpGet("expiring")]
-    [ProducesResponseType(typeof(IEnumerable<CertificateDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<CertificateDto>>> GetExpiringCertificates([FromQuery] int daysAhead = 30)
-    {
-        var result = await _certificateService.GetExpiringCertificatesAsync(daysAhead);
-
-        if (!result.IsSuccess)
-            return BadRequest(new ErrorResponseDto(result.Error));
-
-        return Ok(result.Value);
-    }
-
     [HttpGet("{id:guid}/download")]
     [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> DownloadCertificate(Guid id)
+    public async Task<IActionResult> DownloadCertificate(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _certificateService.GetCertificateFileAsync(id);
+        var query = new DownloadCertificateQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
         {

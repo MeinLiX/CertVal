@@ -1,6 +1,6 @@
-﻿using CertVal.Application.Common.Interfaces;
-using CertVal.Application.DTOs;
-using CertVal.Core.Repositories;
+﻿using CertVal.Application.DTOs;
+using CertVal.Application.Features.Dashboard.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,139 +12,54 @@ namespace CertVal.ApiService.Controllers.V1;
 [Tags("Dashboard")]
 public class DashboardController : ControllerBase
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ICurrentUserService _currentUser;
+    private readonly IMediator _mediator;
 
-    public DashboardController(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public DashboardController(IMediator mediator)
     {
-        _unitOfWork = unitOfWork;
-        _currentUser = currentUser;
+        _mediator = mediator;
     }
 
     [HttpGet("stats")]
     [ProducesResponseType(typeof(DashboardStatsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats()
+    public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats(CancellationToken cancellationToken)
     {
-        if (!_currentUser.UserId.HasValue)
-            return Unauthorized();
+        var result = await _mediator.Send(new GetDashboardStatsQuery(), cancellationToken);
 
-        var workspaces = await _unitOfWork.Workspaces.GetUserWorkspacesAsync(_currentUser.UserId.Value);
-        var workspaceIds = workspaces.Select(w => w.Id).ToList();
+        if (!result.IsSuccess)
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-        var allCertificates = new List<Core.Entities.Certificate>();
-        foreach (var workspaceId in workspaceIds)
-        {
-            var workspaceCerts = await _unitOfWork.Certificates.GetByWorkspaceAsync(workspaceId);
-            allCertificates.AddRange(workspaceCerts);
-        }
-
-        var now = DateTime.UtcNow;
-
-        var stats = new DashboardStatsDto
-        {
-            TotalWorkspaces = workspaces.Count(),
-            TotalCertificates = allCertificates.Count,
-            ExpiredCertificates = allCertificates.Count(c => c.NotAfter <= now),
-            ExpiringIn7Days = allCertificates.Count(c => c.NotAfter > now && c.NotAfter <= now.AddDays(7)),
-            ExpiringIn30Days = allCertificates.Count(c => c.NotAfter > now && c.NotAfter <= now.AddDays(30)),
-            ValidCertificates = allCertificates.Count(c => c.NotAfter > now.AddDays(30))
-        };
-
-        return Ok(stats);
+        return Ok(result.Value);
     }
 
     [HttpGet("recent-activity")]
     [ProducesResponseType(typeof(IEnumerable<RecentActivityDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<RecentActivityDto>>> GetRecentActivity()
+    public async Task<ActionResult<IEnumerable<RecentActivityDto>>> GetRecentActivity(CancellationToken cancellationToken)
     {
-        if (!_currentUser.UserId.HasValue)
-            return Unauthorized();
+        var result = await _mediator.Send(new GetRecentActivityQuery(), cancellationToken);
 
-        var recentEvents = await _unitOfWork.EventStore.GetEventsByUserAsync(
-            _currentUser.UserId.Value.ToString(),
-            DateTime.UtcNow.AddDays(-30),
-            DateTime.UtcNow);
+        if (!result.IsSuccess)
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-        var activities = recentEvents
-            .OrderByDescending(e => e.OccurredAt)
-            .Take(20)
-            .Select(e => new RecentActivityDto
-            {
-                Id = e.Id,
-                EventType = e.EventType,
-                Description = GetEventDescription(e.EventType, e.EventData),
-                OccurredAt = e.OccurredAt,
-                AggregateId = e.AggregateId
-            });
-
-        return Ok(activities);
+        return Ok(result.Value);
     }
 
     [HttpGet("expiring-certificates")]
     [ProducesResponseType(typeof(IEnumerable<CertificateDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IEnumerable<CertificateDto>>> GetExpiringCertificates(
-        [FromQuery] int daysAhead = 30)
+        [FromQuery] int daysAhead = 30,
+        CancellationToken cancellationToken = default)
     {
-        if (!_currentUser.UserId.HasValue)
-            return Unauthorized();
-
-        var workspaces = await _unitOfWork.Workspaces.GetUserWorkspacesAsync(_currentUser.UserId.Value);
-        var workspaceIds = workspaces.Select(w => w.Id).ToList();
-
-        var expiringCertificates = new List<Core.Entities.Certificate>();
-        var cutoffDate = DateTime.UtcNow.AddDays(daysAhead);
-
-        foreach (var workspaceId in workspaceIds)
+        var result = await _mediator.Send(new GetExpiringCertificatesForDashboardQuery
         {
-            var workspaceCerts = await _unitOfWork.Certificates.GetByWorkspaceAsync(workspaceId);
-            var expiring = workspaceCerts.Where(c => c.NotAfter <= cutoffDate && c.NotAfter > DateTime.UtcNow);
-            expiringCertificates.AddRange(expiring);
-        }
+            DaysAhead = daysAhead
+        }, cancellationToken);
 
-        var certificateDtos = expiringCertificates
-            .OrderBy(c => c.NotAfter)
-            .Select(c => new CertificateDto
-            {
-                Id = c.Id,
-                WorkspaceId = c.WorkspaceId,
-                Subject = c.Subject,
-                Issuer = c.Issuer,
-                SerialNumber = c.SerialNumber,
-                Thumbprint = c.Thumbprint,
-                NotBefore = c.NotBefore,
-                NotAfter = c.NotAfter,
-                OriginalFileName = c.OriginalFileName,
-                FileFormat = c.FileFormat.ToString(),
-                FileSize = c.FileSize,
-                IsBundle = c.IsBundle,
-                ParentCertificateId = c.ParentCertificateId,
-                Status = c.Status.ToString(),
-                IsExpired = c.IsExpired,
-                DaysUntilExpiry = (c.NotAfter - DateTime.UtcNow).Days,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt
-            });
+        if (!result.IsSuccess)
+            return BadRequest(new ErrorResponseDto(result.Error));
 
-        return Ok(certificateDtos);
-    }
-
-    private static string GetEventDescription(string eventType, string eventData)
-    {
-        return eventType switch
-        {
-            "CertificateUploadedEvent" => "Certificate uploaded",
-            "CertificateExpiringEvent" => "Certificate expiring soon",
-            "CertificateExpiredEvent" => "Certificate expired",
-            "WorkspaceCreatedEvent" => "Workspace created",
-            "WorkspaceUpdatedEvent" => "Workspace updated",
-            "NotificationSentEvent" => "Notification sent",
-            "NotificationFailedEvent" => "Notification failed",
-            "ApiTokenCreatedEvent" => "API token created",
-            "ApiTokenUsedEvent" => "API token used",
-            _ => eventType.Replace("Event", "")
-        };
+        return Ok(result.Value);
     }
 }

@@ -7,6 +7,7 @@ using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Events;
 using CertVal.Infrastructure.Messaging;
 using CertVal.Infrastructure.Repositories;
+using CertVal.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -26,6 +27,7 @@ public static class ServiceRegistration
         services.AddMessaging();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         return services;
     }

@@ -212,7 +212,8 @@ export const translations = {
             roles: {
                 viewer: 'Глядач',
                 editor: 'Редактор',
-                admin: 'Адміністратор'
+                admin: 'Адміністратор',
+                owner: 'Власник'
             },
             transferOwnership: 'Передати право власності',
             transferWarning: 'Ви збираєтеся передати право власності на цей робочий простір. Ви втратите права власника і станете адміністратором.',
@@ -261,7 +262,8 @@ export const translations = {
             downloadCert: 'Скачати сертифікат',
             clearAll: 'Очистити все',
             allWorkspaces: 'Всі робочі простори',
-            searchPlaceholder: "Пошук за суб'єктом, видавцем...",
+            searchSubjectPlaceholder: "Пошук за суб'єктом сертифіката...",
+            searchIssuerPlaceholder: 'Пошук за видавцем сертифіката...',
             allStatuses: 'Всі статуси',
             allFormats: 'Всі формати',
             sortBy: 'Сортувати за',
@@ -620,7 +622,8 @@ export const translations = {
             roles: {
                 viewer: 'Viewer',
                 editor: 'Editor',
-                admin: 'Administrator'
+                admin: 'Administrator',
+                owner: 'Owner'
             },
             transferOwnership: 'Transfer Ownership',
             transferWarning: 'You are about to transfer ownership of this workspace. You will lose owner privileges and become an administrator.',
@@ -669,7 +672,8 @@ export const translations = {
             downloadCert: 'Download Certificate',
             clearAll: 'Clear All',
             allWorkspaces: 'All Workspaces',
-            searchPlaceholder: 'Search by subject, issuer...',
+            searchSubjectPlaceholder: 'Search by certificate subject...',
+            searchIssuerPlaceholder: 'Search by certificate issuer...',
             allStatuses: 'All Statuses',
             allFormats: 'All Formats',
             sortBy: 'Sort By',
