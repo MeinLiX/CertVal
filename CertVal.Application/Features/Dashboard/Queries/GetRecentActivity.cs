@@ -2,11 +2,19 @@
 using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
 using CertVal.Core.Repositories;
+using FluentValidation;
 using MediatR;
 
 namespace CertVal.Application.Features.Dashboard.Queries;
 
 public record GetRecentActivityQuery : IRequest<Result<IEnumerable<RecentActivityDto>>>;
+
+public class GetRecentActivityQueryValidator : AbstractValidator<GetRecentActivityQuery>
+{
+    public GetRecentActivityQueryValidator()
+    {
+    }
+}
 
 public class GetRecentActivityQueryHandler : IRequestHandler<GetRecentActivityQuery, Result<IEnumerable<RecentActivityDto>>>
 {
@@ -40,9 +48,9 @@ public class GetRecentActivityQueryHandler : IRequestHandler<GetRecentActivityQu
                 Description = GetEventDescription(e.EventType, e.EventData),
                 OccurredAt = e.OccurredAt,
                 AggregateId = e.AggregateId
-            });
+            }).ToList();
 
-        return Result.Success(activities);
+        return Result.Success<IEnumerable<RecentActivityDto>>(activities);
     }
 
     private static string GetEventDescription(string eventType, string eventData)
@@ -58,6 +66,10 @@ public class GetRecentActivityQueryHandler : IRequestHandler<GetRecentActivityQu
             "NotificationFailedEvent" => "Notification failed",
             "ApiTokenCreatedEvent" => "API token created",
             "ApiTokenUsedEvent" => "API token used",
+            "UserRegisteredEvent" => "User registered",
+            "UserEmailConfirmedEvent" => "Email confirmed",
+            "WorkspaceMemberInvitedEvent" => "Member invited",
+            "WorkspaceMemberJoinedEvent" => "Member joined",
             _ => eventType.Replace("Event", "")
         };
     }
