@@ -16,25 +16,25 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;
-        
+
         _logger.LogInformation("Handling {RequestName}", requestName);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         try
         {
             var response = await next();
-            
+
             stopwatch.Stop();
-            _logger.LogInformation("Handled {RequestName} in {ElapsedMilliseconds}ms", 
+            _logger.LogInformation("Handled {RequestName} in {ElapsedMilliseconds}ms",
                 requestName, stopwatch.ElapsedMilliseconds);
-            
+
             return response;
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "Error handling {RequestName} after {ElapsedMilliseconds}ms", 
+            _logger.LogError(ex, "Error handling {RequestName} after {ElapsedMilliseconds}ms",
                 requestName, stopwatch.ElapsedMilliseconds);
             throw;
         }

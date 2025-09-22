@@ -13,7 +13,7 @@ var db = builder.AddPostgres("CertVal-sql-server", password: sqlpwd)
 var rabbitmq = builder.AddRabbitMQ("CertVal-rabbitmq")
     .WithManagementPlugin()
     .WithLifetime(ContainerLifetime.Persistent);
-    //.WithVolume("CertVal-rabbitmq-data");
+//.WithVolume("CertVal-rabbitmq-data");
 
 var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-service")
     .WithReference(rabbitmq)

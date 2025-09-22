@@ -1,7 +1,6 @@
 ﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
-using CertVal.Core.Entities;
 using CertVal.Core.Repositories;
 using MediatR;
 

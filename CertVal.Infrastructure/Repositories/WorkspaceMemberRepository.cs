@@ -33,13 +33,13 @@ public class WorkspaceMemberRepository : BaseRepository<WorkspaceMember>, IWorks
     public async Task<WorkspaceMember?> GetMembershipAsync(Guid workspaceId, Guid userId, bool includeInactive = false, CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsQueryable();
-        
+
         // Only ignore query filters if we need to include inactive memberships
         if (includeInactive)
         {
             query = query.IgnoreQueryFilters();
         }
-        
+
         return await query
             .Include(wm => wm.User)
             .Include(wm => wm.Workspace)

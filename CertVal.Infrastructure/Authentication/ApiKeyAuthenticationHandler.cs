@@ -74,7 +74,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
-            Logger.LogInformation("API key authentication successful for user {UserId} with scope {Scope}", 
+            Logger.LogInformation("API key authentication successful for user {UserId} with scope {Scope}",
                 apiToken.UserId, apiToken.Scope);
             return AuthenticateResult.Success(ticket);
         }

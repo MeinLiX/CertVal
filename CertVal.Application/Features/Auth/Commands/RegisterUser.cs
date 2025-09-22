@@ -1,7 +1,6 @@
 using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
 using CertVal.Core.Entities;
-using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
 using FluentValidation;
 using Mapster;

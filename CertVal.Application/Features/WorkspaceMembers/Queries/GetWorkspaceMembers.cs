@@ -48,7 +48,7 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
             return Result.Failure<IEnumerable<WorkspaceMemberDto>>("Access denied to this workspace");
 
         var members = await _unitOfWork.WorkspaceMembers.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken);
-        
+
         if (!request.IncludeInactive)
         {
             members = members.Where(m => m.Status == WorkspaceMemberStatus.Active || m.Status == WorkspaceMemberStatus.Invited);
