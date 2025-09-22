@@ -2,11 +2,26 @@
 using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
 using CertVal.Core.Repositories;
+using FluentValidation;
+using Mapster;
 using MediatR;
 
 namespace CertVal.Application.Features.Dashboard.Queries;
 
-public record GetExpiringCertificatesForDashboardQuery(int DaysAhead) : IRequest<Result<IEnumerable<CertificateDto>>>;
+public record GetExpiringCertificatesForDashboardQuery : IRequest<Result<IEnumerable<CertificateDto>>>
+{
+    public int DaysAhead { get; init; } = 30;
+}
+
+public class GetExpiringCertificatesForDashboardQueryValidator : AbstractValidator<GetExpiringCertificatesForDashboardQuery>
+{
+    public GetExpiringCertificatesForDashboardQueryValidator()
+    {
+        RuleFor(x => x.DaysAhead)
+            .GreaterThan(0).WithMessage("Days ahead must be greater than 0")
+            .LessThanOrEqualTo(365).WithMessage("Days ahead must not exceed 365");
+    }
+}
 
 public class GetExpiringCertificatesForDashboardQueryHandler : IRequestHandler<GetExpiringCertificatesForDashboardQuery, Result<IEnumerable<CertificateDto>>>
 {
@@ -39,28 +54,21 @@ public class GetExpiringCertificatesForDashboardQueryHandler : IRequestHandler<G
 
         var certificateDtos = expiringCertificates
             .OrderBy(c => c.NotAfter)
-            .Select(c => new CertificateDto
-            {
-                Id = c.Id,
-                WorkspaceId = c.WorkspaceId,
-                Subject = c.Subject,
-                Issuer = c.Issuer,
-                SerialNumber = c.SerialNumber,
-                Thumbprint = c.Thumbprint,
-                NotBefore = c.NotBefore,
-                NotAfter = c.NotAfter,
-                OriginalFileName = c.OriginalFileName,
-                FileFormat = c.FileFormat.ToString(),
-                FileSize = c.FileSize,
-                IsBundle = c.IsBundle,
-                ParentCertificateId = c.ParentCertificateId,
-                Status = c.Status.ToString(),
-                IsExpired = c.IsExpired,
-                DaysUntilExpiry = (c.NotAfter - DateTime.UtcNow).Days,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt
-            });
+            .Select(c => MapToCertificateDto(c))
+            .ToList();
 
-        return Result.Success(certificateDtos);
+        return Result.Success<IEnumerable<CertificateDto>>(certificateDtos);
+    }
+
+    private CertificateDto MapToCertificateDto(Core.Entities.Certificate certificate)
+    {
+        var dto = certificate.Adapt<CertificateDto>();
+        return dto with
+        {
+            DaysUntilExpiry = (certificate.NotAfter - DateTime.UtcNow).Days,
+            Status = certificate.Status.ToString(),
+            FileFormat = certificate.FileFormat.ToString(),
+            ChildCertificates = certificate.ChildCertificates.Select(MapToCertificateDto).ToList()
+        };
     }
 }
