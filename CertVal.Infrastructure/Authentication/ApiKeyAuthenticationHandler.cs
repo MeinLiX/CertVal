@@ -1,11 +1,10 @@
 ﻿using CertVal.Core.Repositories;
+using CertVal.Core.Utils;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Encodings.Web;
 
 namespace CertVal.Infrastructure.Authentication;
@@ -48,7 +47,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             using var scope = _serviceProvider.CreateScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-            var tokenHash = HashApiToken(apiKeyHeader);
+            var tokenHash = TokenGenerator.HashApiToken(apiKeyHeader);
             var apiToken = await unitOfWork.ApiTokens.GetActiveTokenAsync(tokenHash);
 
             if (apiToken == null || !apiToken.IsValid)
@@ -86,10 +85,6 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         }
     }
 
-    private static string HashApiToken(string token)
-    {
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
-    }
 
     private string? GetClientIpAddress()
     {
