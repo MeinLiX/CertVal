@@ -38,13 +38,11 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
-    private readonly IEmailNotificationPublisher _emailPublisher;
 
-    public InviteMemberCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser, IEmailNotificationPublisher emailPublisher)
+    public InviteMemberCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
-        _emailPublisher = emailPublisher;
     }
 
     public async Task<Result<WorkspaceMemberDto>> Handle(InviteMemberCommand request, CancellationToken cancellationToken)
@@ -73,14 +71,11 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         WorkspaceMember membership;
         if (existingMembership != null)
         {
-            // Reactivate existing inactive membership
-            existingMembership.Reactivate(request.Role, (Guid)_currentUser.UserId);
+            existingMembership.Reactivate(request.Role, _currentUser.UserId.Value);
             membership = existingMembership;
-            // No need to call UpdateAsync as the entity is already tracked
         }
         else
         {
-            // Create new membership
             membership = WorkspaceMember.Create(
                 request.WorkspaceId,
                 user.Id,

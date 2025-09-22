@@ -53,12 +53,10 @@ public class RegisterUserCommandValidator : AbstractValidator<RegisterUserComman
 public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, Result<UserDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IEmailNotificationPublisher _emailPublisher;
 
-    public RegisterUserCommandHandler(IUnitOfWork unitOfWork, IEmailNotificationPublisher emailPublisher)
+    public RegisterUserCommandHandler(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
-        _emailPublisher = emailPublisher;
     }
 
     public async Task<Result<UserDto>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
