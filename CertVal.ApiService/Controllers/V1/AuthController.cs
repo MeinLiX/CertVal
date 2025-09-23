@@ -62,16 +62,16 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("confirm-email")]
-    [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailCommand request, CancellationToken cancellationToken)
+    public async Task<ActionResult<LoginResponse>> ConfirmEmail([FromBody] ConfirmEmailCommand request, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(request, cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
 
-        return Ok(new MessageResponseDto("Email confirmed successfully"));
+        return Ok(result.Value);
     }
 
     [HttpPost("resend-confirmation")]
