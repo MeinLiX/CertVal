@@ -5,10 +5,14 @@
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import { language } from '$lib/stores/language';
+	import { auth } from '$lib/stores/auth';
 	import Button from '$lib/components/ui/Button.svelte';
+	import type { LoginResponse } from '$lib/types';
 
 	let message = $state(t('auth.confirm.processing', $language));
 	let isSuccess = $state(false);
+	let isLoggingIn = $state(false);
+	
 	onMount(async () => {
 		const token = page.url.searchParams.get('token');
 		if (!token) {
@@ -17,10 +21,19 @@
 		}
 
 		try {
-			const response = await api.post('/v1/auth/confirm-email', { token });
+			const response = await api.post<LoginResponse>('/v1/auth/confirm-email', { token });
 			if (response.data) {
 				message = t('auth.confirm.success', $language);
 				isSuccess = true;
+				isLoggingIn = true;
+				
+				// Automatically log in the user
+				auth.login(response.data.token, response.data.user);
+				
+				// Redirect to dashboard after a short delay to show success message
+				setTimeout(() => {
+					goto('/dashboard');
+				}, 1500);
 			} else {
 				message = response.message || t('errors.general', $language);
 			}
@@ -43,11 +56,17 @@
 			<h2 class="card-title text-2xl font-bold">{t('auth.confirm.title', $language)}</h2>
 			<p class="mt-4">{message}</p>
 			{#if isSuccess}
-				<div class="mt-6 card-actions">
-					<Button variant="primary" onclick={() => goto('/auth/login')}>
-						{t('auth.confirm.login', $language)}
-					</Button>
-				</div>
+				{#if isLoggingIn}
+					<div class="mt-6">
+						<p class="text-sm text-gray-600">{t('auth.confirm.redirecting', $language)}</p>
+					</div>
+				{:else}
+					<div class="mt-6 card-actions">
+						<Button variant="primary" onclick={() => goto('/dashboard')}>
+							{t('auth.confirm.continue', $language)}
+						</Button>
+					</div>
+				{/if}
 			{/if}
 		</div>
 	</div>

@@ -133,9 +133,11 @@ export const translations = {
             confirm: {
                 title: 'Підтвердження Email',
                 processing: 'Обробка вашого запиту...',
-                success: 'Ваш email успішно підтверджено! Тепер ви можете увійти.',
+                success: 'Ваш email успішно підтверджено! Ви автоматично увійшли в систему.',
                 invalidToken: 'Недійсний або застарілий токен.',
-                login: 'Перейти до входу'
+                login: 'Перейти до входу',
+                redirecting: 'Перенаправлення на панель керування...',
+                continue: 'Продовжити'
             }
         },
         dashboard: {
@@ -543,9 +545,11 @@ export const translations = {
             confirm: {
                 title: 'Email Confirmation',
                 processing: 'Processing your request...',
-                success: 'Your email has been successfully confirmed! You can now log in.',
+                success: 'Your email has been successfully confirmed! You are now logged in.',
                 invalidToken: 'Invalid or expired token.',
-                login: 'Go to Login'
+                login: 'Go to Login',
+                redirecting: 'Redirecting to dashboard...',
+                continue: 'Continue'
             },
         },
         dashboard: {
