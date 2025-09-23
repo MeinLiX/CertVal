@@ -15,11 +15,11 @@
 	let isLoading = $state(false);
 
 	const isRegistered = $derived(page.url.searchParams.get('registered') === 'true');
-	const redirectUrl = $derived(page.url.searchParams.get('redirect') || '/');
+	const redirectUrl = $derived(page.url.searchParams.get('redirect') || '/dashboard');
 
 	onMount(() => {
 		if ($auth.isAuthenticated) {
-			goto('/');
+			goto('/dashboard');
 		}
 	});
 
