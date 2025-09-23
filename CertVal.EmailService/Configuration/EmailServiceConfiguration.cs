@@ -24,7 +24,6 @@ public class SmtpSettings
 
 public class EmailTemplateSettings
 {
-    public string BaseUrl { get; set; } = "https://certval.halerka.dev";
     public string SupportEmail { get; set; } = "support@certval.halerka.dev";
     public string CompanyName { get; set; } = "CertVal";
 }
