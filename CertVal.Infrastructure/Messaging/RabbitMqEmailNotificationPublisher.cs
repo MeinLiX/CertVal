@@ -231,7 +231,7 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
     }
 
     private string GetBaseUrl() =>
-        _appConfig["EmailService:Templates:BaseUrl"] ?? "https://certval.halerka.dev";
+        _appConfig["EmailService:Templates:BaseUrl"] ?? throw new InvalidOperationException("Missing configuration: EmailService:Templates:BaseUrl");
 
     public void Dispose()
     {
