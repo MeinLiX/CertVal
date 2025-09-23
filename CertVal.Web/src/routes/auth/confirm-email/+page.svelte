@@ -27,10 +27,8 @@
 				isSuccess = true;
 				isLoggingIn = true;
 				
-				// Automatically log in the user
 				auth.login(response.data.token, response.data.user);
 				
-				// Redirect to dashboard after a short delay to show success message
 				setTimeout(() => {
 					goto('/dashboard');
 				}, 1500);

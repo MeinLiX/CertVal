@@ -10,7 +10,7 @@
 	import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
 
 	const menuItems: { label: string; href: string; icon: IconName }[] = [
-		{ label: 'nav.dashboard', href: '/', icon: 'menu' },
+		{ label: 'nav.dashboard', href: '/dashboard', icon: 'menu' },
 		{
 			label: 'nav.workspaces',
 			href: '/workspaces',
@@ -31,7 +31,7 @@
 	const user = $derived($auth.user);
 
 	function isActive(href: string): boolean {
-		if (href === '/') return currentPath === '/';
+		if (href === '/dashboard') return currentPath === '/dashboard' || currentPath === '/';
 		return currentPath.startsWith(href);
 	}
 
@@ -46,7 +46,7 @@
 	<div
 		class="flex min-h-full w-64 flex-col border-r border-base-content/10 bg-base-100/95 text-base-content backdrop-blur-lg"
 	>
-		<a href="/" class="flex items-center gap-3 border-b border-base-content/10 p-4">
+	<a href="/dashboard" class="flex items-center gap-3 border-b border-base-content/10 p-4">
 			<img src={logoUrl} alt="CertVal logo" class="h-10 w-10" />
 			<div>
 				<span class="text-xl font-bold">CertVal</span>
