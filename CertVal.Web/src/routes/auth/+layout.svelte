@@ -8,7 +8,7 @@
 	onMount(() => {
 		// Redirect to dashboard if already authenticated
 		if ($auth.isAuthenticated) {
-			goto('/');
+			goto('/dashboard');
 		}
 	});
 </script>
