@@ -15,6 +15,8 @@ builder.AddServiceDefaults();
 
 builder.AddRabbitMQClient("CertVal-rabbitmq");
 
+builder.AddMinioClient("CertVal-minio");
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -116,6 +118,7 @@ builder.Services.AddCors(options =>
 
 // Register background services
 builder.Services.AddHostedService<CertificateExpiryCheckerService>();
+builder.Services.AddHostedService<CertificateStorageInitializationService>();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("database");

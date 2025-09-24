@@ -11,11 +11,16 @@ public class DownloadCertificateQueryHandler : IRequestHandler<DownloadCertifica
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
+    private readonly ICertificateStorageService _storageService;
 
-    public DownloadCertificateQueryHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public DownloadCertificateQueryHandler(
+        IUnitOfWork unitOfWork,
+        ICurrentUserService currentUser,
+        ICertificateStorageService storageService)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
+        _storageService = storageService;
     }
 
     public async Task<Result<(byte[] FileContents, string FileName, string ContentType)>> Handle(DownloadCertificateQuery request, CancellationToken cancellationToken)
@@ -30,14 +35,22 @@ public class DownloadCertificateQueryHandler : IRequestHandler<DownloadCertifica
         if (!await _unitOfWork.Workspaces.CanUserAccessAsync(certificate.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
             return Result.Failure<(byte[], string, string)>("Access denied to this certificate");
 
-        if (!File.Exists(certificate.FilePath))
+        if (!await _storageService.CertificateExistsAsync(certificate.FilePath, cancellationToken))
         {
-            return Result.Failure<(byte[], string, string)>("Certificate file not found on server.");
+            return Result.Failure<(byte[], string, string)>("Certificate file not found in storage.");
         }
 
-        var fileContents = await File.ReadAllBytesAsync(certificate.FilePath, cancellationToken);
-        var contentType = "application/octet-stream";
+        try
+        {
+            var fileContents = await _storageService.GetCertificateAsync(certificate.FilePath, cancellationToken);
 
-        return Result.Success((fileContents, certificate.OriginalFileName, contentType));
+            var contentType = "application/octet-stream";
+
+            return Result.Success((fileContents, certificate.OriginalFileName, contentType));
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<(byte[], string, string)>($"Failed to retrieve certificate file: {ex.Message}");
+        }
     }
 }

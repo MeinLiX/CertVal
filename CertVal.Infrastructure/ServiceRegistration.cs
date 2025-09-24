@@ -1,4 +1,5 @@
 ﻿using CertVal.Application.Common.Interfaces;
+using CertVal.Application.Configuration;
 using CertVal.Core.Events;
 using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
@@ -25,6 +26,7 @@ public static class ServiceRegistration
         AddDomainEventHandlers(services);
         AddRepositories(services);
         services.AddMessaging();
+        services.AddCertificateStorage();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -123,6 +125,20 @@ public static class ServiceRegistration
             .ValidateOnStart();
 
         services.AddSingleton<IEmailNotificationPublisher, RabbitMqEmailNotificationPublisher>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddCertificateStorage(this IServiceCollection services)
+    {
+        // Configure certificate storage settings
+        services.AddOptions<CertificateStorageConfiguration>()
+            .BindConfiguration(CertificateStorageConfiguration.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Register certificate storage service
+        services.AddScoped<ICertificateStorageService, MinIOCertificateStorageService>();
 
         return services;
     }

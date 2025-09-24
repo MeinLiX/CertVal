@@ -4,16 +4,22 @@ using Microsoft.Extensions.Configuration;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var sqlpwd = builder.AddParameter("database-pwd", secret: true);
+var minioUser = builder.AddParameter("minio-user", secret: true);
+var minioUserPassword = builder.AddParameter("minio-user-password", secret: true);
 
 var db = builder.AddPostgres("CertVal-sql-server", password: sqlpwd)
     .WithLifetime(ContainerLifetime.Persistent)
-    .WithVolume("/data/sql")
+    .WithVolume("certval-sql-data", "/var/lib/postgresql/data")
     .AddDatabase("CertVal-database");
 
 var rabbitmq = builder.AddRabbitMQ("CertVal-rabbitmq")
     .WithManagementPlugin()
     .WithLifetime(ContainerLifetime.Persistent)
-    .WithVolume("/data/rabbitmq");
+    .WithVolume("certval-rabbitmq-data", "/var/lib/rabbitmq");
+
+var minio = builder.AddMinioContainer("CertVal-minio", rootUser: minioUser, rootPassword: minioUserPassword)
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithVolume("certval-minio-data", "/data");
 
 var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-service")
     .WithReference(rabbitmq)
@@ -25,9 +31,11 @@ var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-serv
 var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-server")
     .WithReference(db)
     .WithReference(rabbitmq)
+    .WithReference(minio)
     .WithMessagingConfig(builder.Configuration)
     .WaitFor(db)
     .WaitFor(rabbitmq)
+    .WaitFor(minio)
     .WaitFor(emailService)
     .PublishAsDockerFile();
 

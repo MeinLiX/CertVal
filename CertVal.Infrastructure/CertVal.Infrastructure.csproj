@@ -23,4 +23,8 @@
     <ProjectReference Include="..\CertVal.Core\CertVal.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Configuration\" />
+  </ItemGroup>
+
 </Project>
