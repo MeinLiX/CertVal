@@ -1,0 +1,24 @@
+Certificate Expiring Soon - {{CompanyName}}
+
+?? CERTIFICATE EXPIRATION ALERT ??
+
+This is a reminder that one of your SSL certificates is expiring soon and requires your attention.
+
+ACTION REQUIRED: Your certificate will expire in {{DaysUntilExpiry}} day(s) on {{ExpiryDate}}.
+
+Certificate Details:
+- Subject: {{CertificateSubject}}
+- Issuer: {{CertificateIssuer}}
+- Workspace: {{WorkspaceName}}
+- Expires: {{ExpiryDate}}
+
+To avoid service interruptions, please renew this certificate as soon as possible.
+
+View in Dashboard: {{DashboardUrl}}
+
+If you have already renewed this certificate, please upload the new certificate to your {{CompanyName}} workspace.
+
+If you need assistance, contact our support team at {{SupportEmail}}.
+
+Best regards,
+The {{CompanyName}} Team

@@ -22,4 +22,10 @@
 		<ProjectReference Include="..\CertVal.ServiceDefaults\CertVal.ServiceDefaults.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Content Include="Templates\**\*">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+
 </Project>
