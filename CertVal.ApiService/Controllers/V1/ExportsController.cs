@@ -40,11 +40,11 @@ public class ExportsController : ControllerBase
             return BadRequest(new ErrorResponseDto(result.Error));
 
         var (fileContents, fileName, contentType) = result.Value;
-        
+
         var safeFileName = fileName.Replace("\"", "").Replace(";", "").Replace(",", "");
-        
+
         Response.Headers["Content-Disposition"] = $"attachment; filename=\"{safeFileName}\"";
-        
+
         return File(fileContents, contentType);
     }
 
@@ -69,13 +69,13 @@ public class ExportsController : ControllerBase
             return BadRequest(new ErrorResponseDto(result.Error));
 
         var (fileContents, fileName, contentType) = result.Value;
-        
+
         // Sanitize filename to prevent issues with special characters
         var safeFileName = fileName.Replace("\"", "").Replace(";", "").Replace(",", "");
-        
+
         // Manually set Content-Disposition header to avoid encoding issues
         Response.Headers["Content-Disposition"] = $"attachment; filename=\"{safeFileName}\"";
-        
+
         return File(fileContents, contentType);
     }
 

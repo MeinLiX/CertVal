@@ -1,8 +1,11 @@
 ﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
+using CertVal.Application.Configuration;
 using CertVal.Core.Repositories;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CertVal.Application.Features.Certificates.Commands;
 
@@ -21,11 +24,22 @@ public class DeleteCertificateCommandHandler : IRequestHandler<DeleteCertificate
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
+    private readonly ICertificateStorageService _storageService;
+    private readonly CertificateStorageConfiguration _config;
+    private readonly ILogger<DeleteCertificateCommandHandler> _logger;
 
-    public DeleteCertificateCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public DeleteCertificateCommandHandler(
+        IUnitOfWork unitOfWork,
+        ICurrentUserService currentUser,
+        ICertificateStorageService storageService,
+        IOptions<CertificateStorageConfiguration> config,
+        ILogger<DeleteCertificateCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
+        _storageService = storageService;
+        _config = config.Value;
+        _logger = logger;
     }
 
     public async Task<Result> Handle(DeleteCertificateCommand request, CancellationToken cancellationToken)
@@ -44,22 +58,79 @@ public class DeleteCertificateCommandHandler : IRequestHandler<DeleteCertificate
         {
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                if (certificate.IsBundle && request.DeleteBundleChildren)
+                var shouldDeleteFile = false;
+                string? filePathToDelete = null;
+
+                if (certificate.IsBundle)
                 {
-                    var childCertificates = await _unitOfWork.Certificates.GetBundleContentsAsync(request.CertificateId, cancellationToken);
-                    foreach (var child in childCertificates)
+                    shouldDeleteFile = true;
+                    filePathToDelete = certificate.FilePath;
+
+                    if (request.DeleteBundleChildren)
                     {
-                        await _unitOfWork.Certificates.DeleteAsync(child.Id, cancellationToken);
+                        var childCertificates = await _unitOfWork.Certificates.GetBundleContentsAsync(request.CertificateId, cancellationToken);
+                        foreach (var child in childCertificates)
+                        {
+                            await _unitOfWork.Certificates.DeleteAsync(child.Id, cancellationToken);
+                            _logger.LogInformation("Deleted child certificate {CertificateId} from bundle", child.Id);
+                        }
                     }
+                }
+                else if (certificate.ParentCertificateId.HasValue)
+                {
+                    var parentCertificate = await _unitOfWork.Certificates.GetByIdAsync(certificate.ParentCertificateId.Value, cancellationToken);
+                    if (parentCertificate != null)
+                    {
+                        var remainingChildren = await _unitOfWork.Certificates.GetBundleContentsAsync(certificate.ParentCertificateId.Value, cancellationToken);
+                        var remainingChildrenAfterDeletion = remainingChildren.Where(c => c.Id != request.CertificateId).ToList();
+
+                        if (!remainingChildrenAfterDeletion.Any())
+                        {
+                            shouldDeleteFile = true;
+                            filePathToDelete = parentCertificate.FilePath;
+
+                            await _unitOfWork.Certificates.DeleteAsync(parentCertificate.Id, cancellationToken);
+                            _logger.LogInformation("Deleted parent bundle certificate {CertificateId} as it was the last remaining child", parentCertificate.Id);
+                        }
+                        else
+                        {
+                            shouldDeleteFile = false;
+                            _logger.LogInformation("Certificate {CertificateId} is part of bundle with other certificates, file will be preserved", request.CertificateId);
+                        }
+                    }
+                }
+                else
+                {
+                    shouldDeleteFile = true;
+                    filePathToDelete = certificate.FilePath;
                 }
 
                 await _unitOfWork.Certificates.DeleteAsync(request.CertificateId, cancellationToken);
+                _logger.LogInformation("Deleted certificate {CertificateId} from database", request.CertificateId);
+
+                if (shouldDeleteFile && _config.DeleteOnCertificateRemoval && !string.IsNullOrEmpty(filePathToDelete))
+                {
+                    try
+                    {
+                        await _storageService.DeleteCertificateAsync(filePathToDelete, cancellationToken);
+                        _logger.LogInformation("Successfully deleted certificate file {ObjectKey} from storage", filePathToDelete);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to delete certificate file {ObjectKey} from storage, but certificate was removed from database", filePathToDelete);
+                    }
+                }
+                else if (!shouldDeleteFile)
+                {
+                    _logger.LogDebug("Certificate file {ObjectKey} preserved as it contains other certificates", certificate.FilePath);
+                }
             }, cancellationToken);
 
             return Result.Success();
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error deleting certificate {CertificateId}", request.CertificateId);
             return Result.Failure($"Error deleting certificate: {ex.Message}");
         }
     }
