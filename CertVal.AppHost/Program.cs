@@ -7,13 +7,13 @@ var sqlpwd = builder.AddParameter("database-pwd", secret: true);
 
 var db = builder.AddPostgres("CertVal-sql-server", password: sqlpwd)
     .WithLifetime(ContainerLifetime.Persistent)
-    //.WithVolume("CertVal-sql-data")
+    .WithVolume("/data/sql")
     .AddDatabase("CertVal-database");
 
 var rabbitmq = builder.AddRabbitMQ("CertVal-rabbitmq")
     .WithManagementPlugin()
-    .WithLifetime(ContainerLifetime.Persistent);
-//.WithVolume("CertVal-rabbitmq-data");
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithVolume("/data/rabbitmq");
 
 var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-service")
     .WithReference(rabbitmq)
