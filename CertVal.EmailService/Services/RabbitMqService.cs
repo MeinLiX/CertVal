@@ -44,15 +44,12 @@ public class RabbitMqService : IRabbitMqService
         {
             SetupQueue();
             StartConsumer();
-
-            _logger.LogInformation("RabbitMQ consumer started for queue: {QueueName}",
-                _config.EmailQueueName);
-
+            _logger.LogInformation("Started consuming messages from queue: {QueueName}", _config.EmailQueueName);
             await Task.CompletedTask;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to start RabbitMQ consumer");
+            _logger.LogError(ex, "Failed to start consuming messages");
             throw;
         }
     }
@@ -65,12 +62,12 @@ public class RabbitMqService : IRabbitMqService
             {
                 _channel.BasicCancel(_consumerTag);
                 _consumerTag = null;
-                _logger.LogInformation("RabbitMQ consumer stopped");
+                _logger.LogInformation("Stopped consuming messages");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error stopping RabbitMQ consumer");
+            _logger.LogError(ex, "Error stopping message consumer");
         }
 
         return Task.CompletedTask;
@@ -79,31 +76,23 @@ public class RabbitMqService : IRabbitMqService
     private void SetupQueue()
     {
         _channel = _connection.CreateModel();
-
-        // Configure channel
         _channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
 
-        // Declare exchange
         _channel.ExchangeDeclare(
             exchange: _config.ExchangeName,
             type: ExchangeType.Direct,
             durable: _config.DurableQueues);
 
-        // Declare queue
         _channel.QueueDeclare(
             queue: _config.EmailQueueName,
             durable: _config.DurableQueues,
             exclusive: false,
             autoDelete: false);
 
-        // Bind queue
         _channel.QueueBind(
             queue: _config.EmailQueueName,
             exchange: _config.ExchangeName,
             routingKey: _config.EmailRoutingKey);
-
-        _logger.LogDebug("Queue configured: Exchange={Exchange}, Queue={Queue}, RoutingKey={RoutingKey}",
-            _config.ExchangeName, _config.EmailQueueName, _config.EmailRoutingKey);
     }
 
     private void StartConsumer()
@@ -118,8 +107,6 @@ public class RabbitMqService : IRabbitMqService
             queue: _config.EmailQueueName,
             autoAck: false,
             consumer: consumer);
-
-        _logger.LogDebug("Started consuming with tag: {ConsumerTag}", _consumerTag);
     }
 
     private async Task ProcessMessageAsync(BasicDeliverEventArgs eventArgs)
@@ -128,23 +115,18 @@ public class RabbitMqService : IRabbitMqService
 
         try
         {
-            var message = JsonSerializer.Deserialize<EmailNotificationMessage>(
-                messageBody, DeserializerOptions);
+            var message = JsonSerializer.Deserialize<EmailNotificationMessage>(messageBody, DeserializerOptions);
 
             if (message == null)
             {
-                _logger.LogWarning("Failed to deserialize message: {Message}", messageBody);
+                _logger.LogWarning("Failed to deserialize message, rejecting");
                 AcknowledgeMessage(eventArgs, false);
                 return;
             }
 
-            _logger.LogDebug("Processing email message {MessageId} of type {Type} to {Email}",
-                message.MessageId, message.Type, message.ToEmail);
-
             if (message.RetryCount >= _config.MaxRetryAttempts)
             {
-                _logger.LogError("Message {MessageId} exceeded max retry attempts. Discarding.",
-                    message.MessageId);
+                _logger.LogError("Message {MessageId} exceeded max retry attempts, discarding", message.MessageId);
                 AcknowledgeMessage(eventArgs, false);
                 return;
             }
@@ -154,8 +136,6 @@ public class RabbitMqService : IRabbitMqService
             if (success)
             {
                 AcknowledgeMessage(eventArgs, true);
-                _logger.LogInformation("Successfully processed email message {MessageId}",
-                    message.MessageId);
             }
             else
             {
@@ -164,7 +144,7 @@ public class RabbitMqService : IRabbitMqService
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "JSON deserialization failed for message: {Message}", messageBody);
+            _logger.LogError(ex, "Invalid message format, rejecting");
             AcknowledgeMessage(eventArgs, false);
         }
         catch (Exception ex)
@@ -176,13 +156,14 @@ public class RabbitMqService : IRabbitMqService
 
     private async Task HandleFailedMessage(EmailNotificationMessage message, BasicDeliverEventArgs eventArgs)
     {
-        _logger.LogWarning("Failed to send email {MessageId}. Retry {RetryCount}/{MaxRetries}",
-            message.MessageId, message.RetryCount + 1, _config.MaxRetryAttempts);
-
         if (message.RetryCount + 1 < _config.MaxRetryAttempts)
         {
             var retryMessage = message with { RetryCount = message.RetryCount + 1 };
             await RequeueMessageAsync(retryMessage);
+        }
+        else
+        {
+            _logger.LogError("Message {MessageId} failed permanently, discarding", message.MessageId);
         }
 
         AcknowledgeMessage(eventArgs, false);
@@ -237,9 +218,6 @@ public class RabbitMqService : IRabbitMqService
                 routingKey: _config.EmailRoutingKey,
                 basicProperties: properties,
                 body: body);
-
-            _logger.LogDebug("Requeued message {MessageId} for retry {RetryCount}",
-                message.MessageId, message.RetryCount);
         }
         catch (Exception ex)
         {

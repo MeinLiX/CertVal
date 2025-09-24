@@ -25,13 +25,11 @@ public class EmailWorkerService : BackgroundService
             _logger.LogInformation("Email Worker Service starting...");
 
             await _rabbitMqService.StartConsumingAsync(stoppingToken);
-
-            _logger.LogInformation("Email Worker Service started successfully and consuming messages");
+            _logger.LogInformation("Email Worker Service started successfully");
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromSeconds(300), stoppingToken);
-                _logger.LogDebug("Email Worker Service is running...");
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
         }
         catch (OperationCanceledException)
@@ -60,7 +58,6 @@ public class EmailWorkerService : BackgroundService
         }
 
         await base.StopAsync(cancellationToken);
-
         _logger.LogInformation("Email Worker Service stopped");
     }
 }
