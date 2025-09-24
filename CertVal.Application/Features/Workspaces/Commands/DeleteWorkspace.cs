@@ -29,7 +29,7 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
     private readonly ILogger<DeleteWorkspaceCommandHandler> _logger;
 
     public DeleteWorkspaceCommandHandler(
-        IUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork, 
         ICurrentUserService currentUser,
         ICertificateStorageService storageService,
         IOptions<CertificateStorageConfiguration> config,
@@ -58,20 +58,14 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
         {
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                var certificates = await _unitOfWork.Certificates.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken);
-
-                var uniqueFilePaths = certificates
-                    .Where(c => !string.IsNullOrEmpty(c.FilePath))
-                    .Select(c => c.FilePath)
-                    .Distinct()
-                    .ToList();
-
-                _logger.LogInformation("Found {CertificateCount} certificates with {UniqueFileCount} unique files in workspace {WorkspaceId}",
-                    certificates.Count(), uniqueFilePaths.Count, request.WorkspaceId);
+                var certificateCount = await _unitOfWork.Certificates.GetWorkspaceCertificateCountAsync(request.WorkspaceId, cancellationToken);
+                
+                _logger.LogInformation("Deleting workspace {WorkspaceId} with {CertificateCount} certificates", 
+                    request.WorkspaceId, certificateCount);
 
                 await _unitOfWork.Workspaces.DeleteAsync(request.WorkspaceId, cancellationToken);
 
-                if (_config.DeleteOnCertificateRemoval && uniqueFilePaths.Any())
+                if (_config.DeleteOnCertificateRemoval && certificateCount > 0)
                 {
                     try
                     {
@@ -80,27 +74,7 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Bulk deletion failed, falling back to individual file deletion for workspace {WorkspaceId}", request.WorkspaceId);
-
-                        var successCount = 0;
-                        var errorCount = 0;
-
-                        foreach (var filePath in uniqueFilePaths)
-                        {
-                            try
-                            {
-                                await _storageService.DeleteCertificateAsync(filePath, cancellationToken);
-                                successCount++;
-                            }
-                            catch (Exception fileEx)
-                            {
-                                _logger.LogWarning(fileEx, "Failed to delete file {FilePath} for workspace {WorkspaceId}", filePath, request.WorkspaceId);
-                                errorCount++;
-                            }
-                        }
-
-                        _logger.LogInformation("Individual file cleanup for workspace {WorkspaceId} completed: {SuccessCount} succeeded, {ErrorCount} failed",
-                            request.WorkspaceId, successCount, errorCount);
+                        _logger.LogWarning(ex, "Failed to clean up certificate files for workspace {WorkspaceId}, but workspace was deleted from database", request.WorkspaceId);
                     }
                 }
             }, cancellationToken);

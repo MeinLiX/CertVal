@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
+using System.Text;
 
 namespace CertVal.Infrastructure.Services;
 
@@ -12,9 +13,10 @@ public class MinIOCertificateStorageService : ICertificateStorageService
     private readonly IMinioClient _minioClient;
     private readonly ILogger<MinIOCertificateStorageService> _logger;
     private readonly CertificateStorageConfiguration _config;
+    private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
 
     public MinIOCertificateStorageService(
-        IMinioClient minioClient,
+        IMinioClient minioClient, 
         ILogger<MinIOCertificateStorageService> logger,
         IOptions<CertificateStorageConfiguration> config)
     {
@@ -31,9 +33,9 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
             var uniqueFileName = $"{Guid.NewGuid():N}_{SanitizeFileName(fileName)}";
             var objectKey = _config.GetObjectKey(workspaceId, uniqueFileName);
-
+            
             using var stream = new MemoryStream(fileContent);
-
+            
             var putObjectArgs = new PutObjectArgs()
                 .WithBucket(_config.BucketName)
                 .WithObject(objectKey)
@@ -49,7 +51,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
             await _minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
 
-            _logger.LogInformation("Successfully stored certificate {OriginalFileName} as {ObjectKey} for workspace {WorkspaceId}",
+            _logger.LogInformation("Successfully stored certificate {OriginalFileName} as {ObjectKey} for workspace {WorkspaceId}", 
                 fileName, objectKey, workspaceId);
 
             return objectKey;
@@ -140,7 +142,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
             {
                 var makeBucketArgs = new MakeBucketArgs().WithBucket(_config.BucketName);
                 await _minioClient.MakeBucketAsync(makeBucketArgs, cancellationToken);
-
+                
                 _logger.LogInformation("Created MinIO bucket: {BucketName}", _config.BucketName);
             }
         }
@@ -175,7 +177,6 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
             if (objectsToDelete.Any())
             {
-                // Delete objects one by one for better error handling
                 var successCount = 0;
                 var errorCount = 0;
 
@@ -193,7 +194,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
                     }
                 }
 
-                _logger.LogInformation("Completed workspace {WorkspaceId} cleanup: {SuccessCount} files deleted, {ErrorCount} errors",
+                _logger.LogInformation("Completed workspace {WorkspaceId} cleanup: {SuccessCount} files deleted, {ErrorCount} errors", 
                     workspaceId, successCount, errorCount);
             }
         }
@@ -206,11 +207,21 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
     private static string SanitizeFileName(string fileName)
     {
-        var invalidChars = Path.GetInvalidFileNameChars();
-        foreach (var invalidChar in invalidChars)
+        if (string.IsNullOrEmpty(fileName))
+            return "unnamed_file";
+
+        var needsSanitization = fileName.AsSpan().IndexOfAny(InvalidFileNameChars) >= 0;
+        if (!needsSanitization)
+            return fileName;
+
+        var sb = new StringBuilder(fileName.Length);
+        foreach (var ch in fileName)
         {
-            fileName = fileName.Replace(invalidChar, '_');
+            sb.Append(Array.IndexOf(InvalidFileNameChars, ch) >= 0 ? '_' : ch);
         }
-        return fileName;
+
+        var sanitized = sb.ToString();
+        
+        return string.IsNullOrWhiteSpace(sanitized) ? "unnamed_file" : sanitized;
     }
 }
