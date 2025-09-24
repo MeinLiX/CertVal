@@ -1,5 +1,6 @@
 ﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
+using CertVal.Application.Configuration;
 using CertVal.Application.DTOs;
 using CertVal.Application.Services;
 using CertVal.Core.Entities;
@@ -7,6 +8,7 @@ using CertVal.Core.Repositories;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 namespace CertVal.Application.Features.Certificates.Commands;
 
@@ -49,12 +51,21 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
     private readonly ICertificateProcessorService _certificateProcessor;
+    private readonly ICertificateStorageService _storageService;
+    private readonly CertificateStorageConfiguration _config;
 
-    public UploadCertificatesCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser, ICertificateProcessorService certificateProcessor)
+    public UploadCertificatesCommandHandler(
+        IUnitOfWork unitOfWork,
+        ICurrentUserService currentUser,
+        ICertificateProcessorService certificateProcessor,
+        ICertificateStorageService storageService,
+        IOptions<CertificateStorageConfiguration> config)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
         _certificateProcessor = certificateProcessor;
+        _storageService = storageService;
+        _config = config.Value;
     }
 
     public async Task<Result<BulkUploadResultDto>> Handle(UploadCertificatesCommand request, CancellationToken cancellationToken)
@@ -67,6 +78,8 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
 
         if (request.Files == null || !request.Files.Any())
             return Result.Failure<BulkUploadResultDto>("No files provided");
+
+        await _storageService.EnsureBucketExistsAsync(cancellationToken);
 
         var results = new List<BulkUploadItemResult>();
         var successCount = 0;
@@ -111,17 +124,47 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                     continue;
                 }
 
-                var filePath = await SaveCertificateFileInWorkspace(certificateData, file.FileName, request.WorkspaceId);
+                var objectKey = await _storageService.StoreCertificateAsync(
+                    request.WorkspaceId,
+                    file.FileName,
+                    certificateData,
+                    cancellationToken);
+
                 Certificate? parentCertificate = null;
 
                 if (parsedCertificates.Count > 1)
                 {
-                    parentCertificate = Certificate.Create(request.WorkspaceId, $"Bundle: {file.FileName}", "Certificate Bundle", $"BUNDLE_{Guid.NewGuid():N}", parsedCertificates.Min(c => c.NotBefore), parsedCertificates.Max(c => c.NotAfter), file.FileName, filePath, newCertificates.First().Format, file.Length, null, null, true);
+                    parentCertificate = Certificate.Create(
+                        request.WorkspaceId,
+                        $"Bundle: {file.FileName}",
+                        "Certificate Bundle",
+                        $"BUNDLE_{Guid.NewGuid():N}",
+                        parsedCertificates.Min(c => c.NotBefore),
+                        parsedCertificates.Max(c => c.NotAfter),
+                        file.FileName,
+                        objectKey,
+                        newCertificates.First().Format,
+                        file.Length,
+                        null,
+                        null,
+                        true);
                     await _unitOfWork.Certificates.AddAsync(parentCertificate, cancellationToken);
 
                     foreach (var parsedCert in newCertificates)
                     {
-                        var childCert = Certificate.Create(request.WorkspaceId, parsedCert.Subject, parsedCert.Issuer, parsedCert.Thumbprint, parsedCert.NotBefore, parsedCert.NotAfter, file.FileName, filePath, parsedCert.Format, file.Length, parsedCert.SerialNumber, parentCertificate.Id);
+                        var childCert = Certificate.Create(
+                            request.WorkspaceId,
+                            parsedCert.Subject,
+                            parsedCert.Issuer,
+                            parsedCert.Thumbprint,
+                            parsedCert.NotBefore,
+                            parsedCert.NotAfter,
+                            file.FileName,
+                            objectKey,
+                            parsedCert.Format,
+                            file.Length,
+                            parsedCert.SerialNumber,
+                            parentCertificate.Id);
                         await _unitOfWork.Certificates.AddAsync(childCert, cancellationToken);
                         existingThumbprints.Add(parsedCert.Thumbprint);
                     }
@@ -129,7 +172,18 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                 else
                 {
                     var mainCertificate = newCertificates.First();
-                    parentCertificate = Certificate.Create(request.WorkspaceId, mainCertificate.Subject, mainCertificate.Issuer, mainCertificate.Thumbprint, mainCertificate.NotBefore, mainCertificate.NotAfter, file.FileName, filePath, mainCertificate.Format, file.Length, mainCertificate.SerialNumber);
+                    parentCertificate = Certificate.Create(
+                        request.WorkspaceId,
+                        mainCertificate.Subject,
+                        mainCertificate.Issuer,
+                        mainCertificate.Thumbprint,
+                        mainCertificate.NotBefore,
+                        mainCertificate.NotAfter,
+                        file.FileName,
+                        objectKey,
+                        mainCertificate.Format,
+                        file.Length,
+                        mainCertificate.SerialNumber);
                     await _unitOfWork.Certificates.AddAsync(parentCertificate, cancellationToken);
                     existingThumbprints.Add(mainCertificate.Thumbprint);
                 }
@@ -164,21 +218,9 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
         if (!allowedExtensions.Contains(fileExtension))
             return Result.Failure($"Invalid file type. Allowed types: {string.Join(", ", allowedExtensions)}");
 
-        if (file.Length > 10 * 1024 * 1024) // 10 MB
-            return Result.Failure("File size exceeds 10 MB limit");
+        if (file.Length > _config.MaxFileSize)
+            return Result.Failure($"File size exceeds {_config.MaxFileSize / (1024 * 1024)} MB limit");
 
         return Result.Success();
-    }
-
-    private async Task<string> SaveCertificateFileInWorkspace(byte[] data, string fileName, Guid workspaceId)
-    {
-        var uploadsDir = Path.Combine("wwwroot", "uploads", "certificates", workspaceId.ToString());
-        Directory.CreateDirectory(uploadsDir);
-
-        var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(fileName)}";
-        var filePath = Path.Combine(uploadsDir, uniqueFileName);
-
-        await File.WriteAllBytesAsync(filePath, data);
-        return filePath;
     }
 }
