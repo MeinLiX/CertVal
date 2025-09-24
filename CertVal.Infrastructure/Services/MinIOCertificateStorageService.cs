@@ -44,7 +44,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
                 {
                     ["X-Workspace-Id"] = workspaceId.ToString(),
                     ["X-Original-Filename"] = fileName,
-                    ["X-Upload-Date"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                    ["X-Upload-Date"] = DateTimeOffset.UtcNow.ToString("O")
                 });
 
             await _minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
