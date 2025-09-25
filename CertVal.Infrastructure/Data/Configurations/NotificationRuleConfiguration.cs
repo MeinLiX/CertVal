@@ -1,4 +1,5 @@
 ﻿using CertVal.Core.Entities;
+using CertVal.Core.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -31,6 +32,11 @@ public class NotificationRuleConfiguration : IEntityTypeConfiguration<Notificati
             .IsRequired()
             .HasMaxLength(2000)
             .HasDefaultValue("{}");
+
+        builder.Property(nr => nr.RecipientAggregationMode)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(RecipientAggregationMode.Individual);
 
         builder.Property(nr => nr.IsEnabled)
             .HasDefaultValue(true);

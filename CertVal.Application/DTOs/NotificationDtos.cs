@@ -13,6 +13,7 @@ public record NotificationRuleDto
     public string Frequency { get; init; } = string.Empty;
     public string ChannelType { get; init; } = string.Empty;
     public string ChannelConfig { get; init; } = string.Empty;
+    public RecipientAggregationMode RecipientAggregationMode { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; init; }
 }
@@ -34,12 +35,14 @@ public record CreateNotificationRuleRequest
     public List<Guid>? RecipientUserIds { get; init; }
 
     public NotificationFrequency Frequency { get; init; } = NotificationFrequency.Once;
+    public RecipientAggregationMode RecipientAggregationMode { get; init; } = RecipientAggregationMode.Individual;
 }
 
 public record UpdateNotificationRuleRequest
 {
     [Required]
     public string ChannelConfig { get; init; } = "{}";
+    public RecipientAggregationMode? RecipientAggregationMode { get; init; }
 }
 
 public record NotificationHistoryDto

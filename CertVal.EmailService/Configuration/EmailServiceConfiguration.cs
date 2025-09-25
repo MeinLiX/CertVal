@@ -12,6 +12,7 @@ public class EmailServiceConfiguration
     public string BaseUrl { get; set; } = string.Empty;
     public int MaxRetryAttempts { get; set; } = 3;
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromMinutes(5);
+    public bool AggregatedUseBcc { get; set; } = false;
 }
 
 public class SmtpSettings

@@ -48,6 +48,7 @@ public class GetNotificationRulesQueryHandler : IRequestHandler<GetNotificationR
             Frequency = r.Frequency.ToString(),
             ChannelType = r.ChannelType.ToString(),
             ChannelConfig = r.ChannelConfig,
+            RecipientAggregationMode = r.RecipientAggregationMode,
             CreatedAt = r.CreatedAt,
             UpdatedAt = r.UpdatedAt
         });

@@ -58,7 +58,8 @@ public class NotificationsController : ControllerBase
             ChannelType = request.ChannelType,
             ChannelConfig = request.ChannelConfig,
             RecipientUserIds = request.RecipientUserIds,
-            Frequency = request.Frequency
+            Frequency = request.Frequency,
+            RecipientAggregationMode = request.RecipientAggregationMode
         };
 
         var result = await _mediator.Send(command, cancellationToken);
