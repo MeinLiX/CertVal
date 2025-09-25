@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Expiring Soon - {{CompanyName}}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #ff7b7b 0%, #ff9500 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { color: white; margin: 0; font-size: 28px; }
+        .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+        .button { display: inline-block; padding: 15px 30px; background: #ff7b7b; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: #ff6b6b; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+        .alert { background: #ffebee; border: 1px solid #ffcdd2; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .cert-details { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>?? Certificate Expiring Soon</h1>
+    </div>
+    <div class="content">
+        <h2>Certificate Expiration Alert</h2>
+        <p>This is a reminder that one of your SSL certificates is expiring soon and requires your attention.</p>
+        
+        <div class="alert">
+            <strong>Action Required:</strong> Your certificate will expire in {{DaysUntilExpiry}} day(s) on {{ExpiryDate}}.
+        </div>
+        
+        <div class="cert-details">
+            <strong>Certificate Details:</strong><br>
+            <strong>Subject:</strong> {{CertificateSubject}}<br>
+            <strong>Issuer:</strong> {{CertificateIssuer}}<br>
+            <strong>Workspace:</strong> {{WorkspaceName}}<br>
+            <strong>Expires:</strong> {{ExpiryDate}}
+        </div>
+        
+        <p>To avoid service interruptions, please renew this certificate as soon as possible.</p>
+        
+        <div style="text-align: center;">
+            <a href="{{DashboardUrl}}" class="button">View in Dashboard</a>
+        </div>
+        
+        <p>If you have already renewed this certificate, please upload the new certificate to your {{CompanyName}} workspace.</p>
+        
+        <p>If you need assistance, contact our support team at <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>.</p>
+        
+        <p>Best regards,<br>The {{CompanyName}} Team</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 {{CompanyName}}. All rights reserved.</p>
+    </div>
+</body>
+</html>

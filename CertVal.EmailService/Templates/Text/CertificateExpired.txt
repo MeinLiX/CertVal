@@ -1,0 +1,24 @@
+Certificate Expired - {{CompanyName}}
+
+?? CRITICAL: CERTIFICATE EXPIRED ??
+
+Your SSL certificate has expired and requires immediate attention to prevent service disruptions.
+
+CRITICAL: Your certificate expired on {{ExpiryDate}}. This may cause service interruptions and security warnings for your users.
+
+Certificate Details:
+- Subject: {{CertificateSubject}}
+- Issuer: {{CertificateIssuer}}
+- Workspace: {{WorkspaceName}}
+- Expired: {{ExpiryDate}}
+
+Please renew and install a new certificate immediately to restore secure connections.
+
+View in Dashboard: {{DashboardUrl}}
+
+If you have already renewed this certificate, please upload the new certificate to your {{CompanyName}} workspace.
+
+For urgent assistance, contact our support team at {{SupportEmail}}.
+
+Best regards,
+The {{CompanyName}} Team

@@ -1,7 +1,7 @@
 ﻿using CertVal.Core.Messaging;
 using CertVal.EmailService.Configuration;
+using CertVal.EmailService.Services.Abstractions;
 using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
@@ -9,119 +9,128 @@ namespace CertVal.EmailService.Services;
 
 public class SmtpEmailService : IEmailService
 {
+    private readonly EmailServiceConfiguration _config;
     private readonly SmtpSettings _smtpSettings;
-    private readonly IEmailTemplateService _templateService;
+    private readonly ITemplateService _templateService;
     private readonly ILogger<SmtpEmailService> _logger;
 
     public SmtpEmailService(
         IOptions<EmailServiceConfiguration> configuration,
-        IEmailTemplateService templateService,
+        ITemplateService templateService,
         ILogger<SmtpEmailService> logger)
     {
-        _smtpSettings = configuration.Value.Smtp;
+        _config = configuration.Value;
+        _smtpSettings = _config.Smtp;
         _templateService = templateService;
         _logger = logger;
-
-        _logger.LogInformation("SMTP Configuration: Host={Host}, Port={Port}, UseSsl={UseSsl}, FromEmail={FromEmail}",
-            _smtpSettings.Host, _smtpSettings.Port, _smtpSettings.UseSsl, _smtpSettings.FromEmail);
     }
 
     public async Task<bool> SendEmailAsync(EmailNotificationMessage message)
     {
+        using var _ = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["MessageId"] = message.MessageId,
+            ["CorrelationId"] = message.CorrelationId
+        });
+
         try
         {
-            if (string.IsNullOrWhiteSpace(_smtpSettings.Host))
-            {
-                _logger.LogError("SMTP Host is not configured. Please check EmailService:Smtp:Host in configuration");
-                return false;
-            }
+            ValidateConfiguration();
+            ValidateMessage(message);
 
-            if (string.IsNullOrWhiteSpace(_smtpSettings.FromEmail))
-            {
-                _logger.LogError("SMTP FromEmail is not configured. Please check EmailService:Smtp:FromEmail in configuration");
-                return false;
-            }
+            var template = await _templateService.RenderTemplateAsync(message).ConfigureAwait(false);
+            var mimeMessage = CreateMimeMessage(message, template);
 
-            _logger.LogInformation("Generating email template for message {MessageId} of type {Type}",
-                message.MessageId, message.Type);
+            await SendEmailInternal(mimeMessage).ConfigureAwait(false);
 
-            var template = await _templateService.GenerateTemplateAsync(message);
-
-            var mimeMessage = new MimeMessage();
-            mimeMessage.From.Add(new MailboxAddress(_smtpSettings.FromName, _smtpSettings.FromEmail));
-            mimeMessage.To.Add(new MailboxAddress(message.ToName, message.ToEmail));
-            mimeMessage.Subject = template.Subject;
-
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = template.HtmlBody,
-                TextBody = template.TextBody
-            };
-
-            mimeMessage.Body = bodyBuilder.ToMessageBody();
-
-            mimeMessage.Headers.Add("X-Message-Id", message.MessageId);
-            if (!string.IsNullOrEmpty(message.CorrelationId))
-            {
-                mimeMessage.Headers.Add("X-Correlation-Id", message.CorrelationId);
-            }
-
-            _logger.LogInformation("Connecting to SMTP server {Host}:{Port}", _smtpSettings.Host, _smtpSettings.Port);
-
-            using var client = new SmtpClient();
-
-            var sslOptions = GetSslOptions();
-            _logger.LogDebug("Using SSL options: {SslOptions} for port {Port}", sslOptions, _smtpSettings.Port);
-
-            await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, sslOptions);
-
-            if (!string.IsNullOrEmpty(_smtpSettings.Username))
-            {
-                _logger.LogDebug("Authenticating with SMTP server using username: {Username}", _smtpSettings.Username);
-                await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password);
-            }
-            else
-            {
-                _logger.LogDebug("No SMTP authentication configured");
-            }
-
-            _logger.LogInformation("Sending email to {ToEmail} with subject: {Subject}", message.ToEmail, template.Subject);
-
-            await client.SendAsync(mimeMessage);
-            await client.DisconnectAsync(true);
-
-            _logger.LogInformation("Email sent successfully. MessageId: {MessageId}, Type: {Type}, To: {Email}",
-                message.MessageId, message.Type, message.ToEmail);
-
+            _logger.LogInformation("Email sent successfully to {ToEmail}", message.ToEmail);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email. MessageId: {MessageId}, Type: {Type}, To: {Email}. Error: {Error}",
-                message.MessageId, message.Type, message.ToEmail, ex.Message);
+            _logger.LogError(ex, "Failed to send email to {ToEmail}: {Error}", message.ToEmail, ex.Message);
             return false;
         }
     }
 
-    private SecureSocketOptions GetSslOptions()
+    private void ValidateConfiguration()
     {
-        if (!string.IsNullOrEmpty(_smtpSettings.SslMode))
+        if (string.IsNullOrWhiteSpace(_smtpSettings.Host))
+            throw new InvalidOperationException("SMTP Host is not configured");
+
+        if (string.IsNullOrWhiteSpace(_smtpSettings.FromEmail))
+            throw new InvalidOperationException("SMTP FromEmail is not configured");
+
+        if (_smtpSettings.Port <= 0 || _smtpSettings.Port > 65535)
+            throw new InvalidOperationException("SMTP Port is invalid");
+
+        if (!MailboxAddress.TryParse(_smtpSettings.FromEmail, out _))
+            throw new InvalidOperationException("SMTP FromEmail is invalid");
+    }
+
+    private static void ValidateMessage(EmailNotificationMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(message.ToEmail))
+            throw new ArgumentException("Recipient email is required", nameof(message));
+
+        if (!MailboxAddress.TryParse(message.ToEmail, out _))
+            throw new ArgumentException("Recipient email is invalid", nameof(message));
+    }
+
+    private MimeMessage CreateMimeMessage(EmailNotificationMessage message, Models.EmailTemplate template)
+    {
+        var mimeMessage = new MimeMessage
         {
-            return _smtpSettings.SslMode.ToLowerInvariant() switch
-            {
-                "none" => SecureSocketOptions.None,
-                "starttls" => SecureSocketOptions.StartTls,
-                "sslonconnect" => SecureSocketOptions.SslOnConnect,
-                _ => SecureSocketOptions.Auto
-            };
+            Subject = template.Subject,
+        };
+
+        var from = CreateMailbox(_smtpSettings.FromName, _smtpSettings.FromEmail);
+        mimeMessage.From.Add(from);
+
+        var to = CreateMailbox(message.ToName, message.ToEmail);
+        mimeMessage.To.Add(to);
+
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = template.HtmlBody,
+            TextBody = template.TextBody
+        };
+
+        mimeMessage.Body = bodyBuilder.ToMessageBody();
+        mimeMessage.Headers.Add("X-Message-Id", message.MessageId);
+
+        if (!string.IsNullOrEmpty(message.CorrelationId))
+        {
+            mimeMessage.Headers.Add("X-Correlation-Id", message.CorrelationId);
         }
 
-        return _smtpSettings.Port switch
+        return mimeMessage;
+    }
+
+    private static MailboxAddress CreateMailbox(string? name, string email)
+    {
+        if (!MailboxAddress.TryParse(email, out var parsed))
+            throw new InvalidOperationException("Invalid email address format");
+
+        return string.IsNullOrWhiteSpace(name)
+            ? new MailboxAddress(parsed.Name, parsed.Address)
+            : new MailboxAddress(name, parsed.Address);
+    }
+
+    private async Task SendEmailInternal(MimeMessage message)
+    {
+        using var client = new SmtpClient();
+
+        await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, _smtpSettings.GetSslOptions).ConfigureAwait(false);
+
+        if (!string.IsNullOrEmpty(_smtpSettings.Username))
         {
-            465 => SecureSocketOptions.SslOnConnect,
-            587 => SecureSocketOptions.StartTls,
-            25 => SecureSocketOptions.StartTlsWhenAvailable,
-            _ => _smtpSettings.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None
-        };
+            client.AuthenticationMechanisms.Remove("XOAUTH2");
+            await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password).ConfigureAwait(false);
+        }
+
+        await client.SendAsync(message).ConfigureAwait(false);
+        await client.DisconnectAsync(true).ConfigureAwait(false);
     }
 }

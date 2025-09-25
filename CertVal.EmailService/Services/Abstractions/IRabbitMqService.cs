@@ -1,4 +1,4 @@
-﻿namespace CertVal.EmailService.Services;
+﻿namespace CertVal.EmailService.Services.Abstractions;
 
 public interface IRabbitMqService : IAsyncDisposable
 {

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Expired - {{CompanyName}}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { color: white; margin: 0; font-size: 28px; }
+        .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+        .button { display: inline-block; padding: 15px 30px; background: #d32f2f; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: #b71c1c; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+        .critical { background: #ffebee; border: 1px solid #f44336; padding: 15px; border-radius: 5px; margin: 20px 0; color: #d32f2f; }
+        .cert-details { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>?? Certificate Expired</h1>
+    </div>
+    <div class="content">
+        <h2>Certificate Expiration Alert</h2>
+        <p>Your SSL certificate has expired and requires immediate attention to prevent service disruptions.</p>
+        
+        <div class="critical">
+            <strong>CRITICAL:</strong> Your certificate expired on {{ExpiryDate}}. This may cause service interruptions and security warnings for your users.
+        </div>
+        
+        <div class="cert-details">
+            <strong>Certificate Details:</strong><br>
+            <strong>Subject:</strong> {{CertificateSubject}}<br>
+            <strong>Issuer:</strong> {{CertificateIssuer}}<br>
+            <strong>Workspace:</strong> {{WorkspaceName}}<br>
+            <strong>Expired:</strong> {{ExpiryDate}}
+        </div>
+        
+        <p>Please renew and install a new certificate immediately to restore secure connections.</p>
+        
+        <div style="text-align: center;">
+            <a href="{{DashboardUrl}}" class="button">View in Dashboard</a>
+        </div>
+        
+        <p>If you have already renewed this certificate, please upload the new certificate to your {{CompanyName}} workspace.</p>
+        
+        <p>For urgent assistance, contact our support team at <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>.</p>
+        
+        <p>Best regards,<br>The {{CompanyName}} Team</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 {{CompanyName}}. All rights reserved.</p>
+    </div>
+</body>
+</html>

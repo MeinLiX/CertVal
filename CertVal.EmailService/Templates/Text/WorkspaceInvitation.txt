@@ -1,0 +1,19 @@
+Workspace Invitation - {{CompanyName}}
+
+Hello {{InviteeName}}!
+
+{{InviterName}} has invited you to join the "{{WorkspaceName}}" workspace on {{CompanyName}} as a {{Role}}.
+
+Workspace: {{WorkspaceName}}
+Role: {{Role}}
+Invited by: {{InviterName}}
+
+To accept this invitation, visit:
+{{InvitationUrl}}
+
+This invitation will expire in 7 days. If you don't have a {{CompanyName}} account yet, you'll be prompted to create one.
+
+If you have any questions, contact our support team at {{SupportEmail}}.
+
+Best regards,
+The {{CompanyName}} Team
