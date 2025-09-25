@@ -1,6 +1,6 @@
 Certificate Expiring Soon - {{CompanyName}}
 
-?? CERTIFICATE EXPIRATION ALERT ??
+CERTIFICATE EXPIRATION ALERT
 
 This is a reminder that one of your SSL certificates is expiring soon and requires your attention.
 
