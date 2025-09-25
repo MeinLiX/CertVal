@@ -60,6 +60,7 @@ public class ToggleNotificationRuleCommandHandler : IRequestHandler<ToggleNotifi
             Frequency = rule.Frequency.ToString(),
             ChannelType = rule.ChannelType.ToString(),
             ChannelConfig = rule.ChannelConfig,
+            RecipientAggregationMode = rule.RecipientAggregationMode,
             CreatedAt = rule.CreatedAt,
             UpdatedAt = rule.UpdatedAt
         };
