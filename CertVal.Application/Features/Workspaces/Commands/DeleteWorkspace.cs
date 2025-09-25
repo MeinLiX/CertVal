@@ -29,7 +29,7 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
     private readonly ILogger<DeleteWorkspaceCommandHandler> _logger;
 
     public DeleteWorkspaceCommandHandler(
-        IUnitOfWork unitOfWork, 
+        IUnitOfWork unitOfWork,
         ICurrentUserService currentUser,
         ICertificateStorageService storageService,
         IOptions<CertificateStorageConfiguration> config,
@@ -59,8 +59,8 @@ public class DeleteWorkspaceCommandHandler : IRequestHandler<DeleteWorkspaceComm
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 var certificateCount = await _unitOfWork.Certificates.GetWorkspaceCertificateCountAsync(request.WorkspaceId, cancellationToken);
-                
-                _logger.LogInformation("Deleting workspace {WorkspaceId} with {CertificateCount} certificates", 
+
+                _logger.LogInformation("Deleting workspace {WorkspaceId} with {CertificateCount} certificates",
                     request.WorkspaceId, certificateCount);
 
                 await _unitOfWork.Workspaces.DeleteAsync(request.WorkspaceId, cancellationToken);

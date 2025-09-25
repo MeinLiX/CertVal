@@ -16,7 +16,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
     private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
 
     public MinIOCertificateStorageService(
-        IMinioClient minioClient, 
+        IMinioClient minioClient,
         ILogger<MinIOCertificateStorageService> logger,
         IOptions<CertificateStorageConfiguration> config)
     {
@@ -33,9 +33,9 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
             var uniqueFileName = $"{Guid.NewGuid():N}_{SanitizeFileName(fileName)}";
             var objectKey = _config.GetObjectKey(workspaceId, uniqueFileName);
-            
+
             using var stream = new MemoryStream(fileContent);
-            
+
             var putObjectArgs = new PutObjectArgs()
                 .WithBucket(_config.BucketName)
                 .WithObject(objectKey)
@@ -51,7 +51,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
             await _minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
 
-            _logger.LogInformation("Successfully stored certificate {OriginalFileName} as {ObjectKey} for workspace {WorkspaceId}", 
+            _logger.LogInformation("Successfully stored certificate {OriginalFileName} as {ObjectKey} for workspace {WorkspaceId}",
                 fileName, objectKey, workspaceId);
 
             return objectKey;
@@ -142,7 +142,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
             {
                 var makeBucketArgs = new MakeBucketArgs().WithBucket(_config.BucketName);
                 await _minioClient.MakeBucketAsync(makeBucketArgs, cancellationToken);
-                
+
                 _logger.LogInformation("Created MinIO bucket: {BucketName}", _config.BucketName);
             }
         }
@@ -194,7 +194,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
                     }
                 }
 
-                _logger.LogInformation("Completed workspace {WorkspaceId} cleanup: {SuccessCount} files deleted, {ErrorCount} errors", 
+                _logger.LogInformation("Completed workspace {WorkspaceId} cleanup: {SuccessCount} files deleted, {ErrorCount} errors",
                     workspaceId, successCount, errorCount);
             }
         }
@@ -221,7 +221,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
         }
 
         var sanitized = sb.ToString();
-        
+
         return string.IsNullOrWhiteSpace(sanitized) ? "unnamed_file" : sanitized;
     }
 }

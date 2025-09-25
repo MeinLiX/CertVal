@@ -69,11 +69,16 @@ public class CreateNotificationRuleCommandHandler : IRequestHandler<CreateNotifi
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
+    private readonly IWebhookSecurityService _webhookSecurity;
 
-    public CreateNotificationRuleCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public CreateNotificationRuleCommandHandler(
+        IUnitOfWork unitOfWork,
+        ICurrentUserService currentUser,
+        IWebhookSecurityService webhookSecurity)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
+        _webhookSecurity = webhookSecurity;
     }
 
     public async Task<Result<NotificationRuleDto>> Handle(CreateNotificationRuleCommand request, CancellationToken cancellationToken)
@@ -81,130 +86,24 @@ public class CreateNotificationRuleCommandHandler : IRequestHandler<CreateNotifi
         if (!await CanManageWorkspace(request.WorkspaceId, cancellationToken))
             return Result.Failure<NotificationRuleDto>("Access denied - insufficient permissions to manage this workspace");
 
-        string channelConfig;
         var existingRules = (await _unitOfWork.NotificationRules.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken)).ToList();
 
-        if (request.ChannelType == NotificationChannelType.Email)
+        var channelConfigResult = request.ChannelType switch
         {
-            if (request.RecipientUserIds == null || !request.RecipientUserIds.Any())
-            {
-                return Result.Failure<NotificationRuleDto>("Recipient user IDs are required for email notifications.");
-            }
+            NotificationChannelType.Email => await BuildEmailChannelConfigAsync(request, existingRules, cancellationToken),
+            NotificationChannelType.Webhook => await BuildWebhookChannelConfigAsync(request, existingRules, cancellationToken),
+            _ => Result.Failure<string>($"Channel type '{request.ChannelType}' is not implemented.")
+        };
 
-            var distinctUserIds = request.RecipientUserIds.Distinct().ToList();
-
-            var workspaceMembers = await _unitOfWork.WorkspaceMembers.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken);
-            var workspaceOwner = (await _unitOfWork.Workspaces.GetByIdAsync(request.WorkspaceId, cancellationToken))?.Owner;
-            var validUserIds = workspaceMembers.Select(m => m.UserId).ToList();
-            if (workspaceOwner != null)
-            {
-                validUserIds.Add(workspaceOwner.Id);
-            }
-
-            var invalidUserIds = distinctUserIds.Except(validUserIds).ToList();
-            if (invalidUserIds.Any())
-            {
-                return Result.Failure<NotificationRuleDto>($"The following user IDs are not members of this workspace: {string.Join(", ", invalidUserIds)}");
-            }
-
-            var existingEmailUserIds = existingRules
-                .Where(r => r.ChannelType == NotificationChannelType.Email)
-                .SelectMany(r =>
-                {
-                    try
-                    {
-                        using var doc = JsonDocument.Parse(r.ChannelConfig);
-                        if (doc.RootElement.TryGetProperty("userIds", out var arr) && arr.ValueKind == JsonValueKind.Array)
-                        {
-                            var list = new List<Guid>();
-                            foreach (var el in arr.EnumerateArray())
-                            {
-                                if (el.ValueKind == JsonValueKind.String &&
-                                    Guid.TryParse(el.GetString(), out var g))
-                                {
-                                    list.Add(g);
-                                }
-                            }
-                            return list;
-                        }
-                    }
-                    catch
-                    {
-                    }
-                    return new List<Guid>();
-                })
-                .ToHashSet();
-
-            var duplicateUserIds = distinctUserIds.Where(existingEmailUserIds.Contains).ToList();
-            if (duplicateUserIds.Any())
-            {
-                var userNames = new List<string>();
-                foreach (var dupId in duplicateUserIds)
-                {
-                    var user = await _unitOfWork.Users.GetByIdAsync(dupId, cancellationToken);
-                    userNames.Add(user?.FullName ?? dupId.ToString());
-                }
-
-                return Result.Failure<NotificationRuleDto>($"Notification rule already exists for the following users: {string.Join(", ", userNames)}");
-            }
-
-            channelConfig = JsonSerializer.Serialize(new { userIds = distinctUserIds });
-        }
-        else if (request.ChannelType == NotificationChannelType.Webhook)
-        {
-            try
-            {
-                using var newDoc = JsonDocument.Parse(request.ChannelConfig);
-                if (!newDoc.RootElement.TryGetProperty("url", out var urlElement) || string.IsNullOrWhiteSpace(urlElement.GetString()))
-                {
-                    return Result.Failure<NotificationRuleDto>("Webhook URL is missing in channel configuration.");
-                }
-
-                var newUrl = urlElement.GetString()!.Trim();
-
-                var existingWebhookUrls = existingRules
-                    .Where(r => r.ChannelType == NotificationChannelType.Webhook)
-                    .Select(r =>
-                    {
-                        try
-                        {
-                            using var doc = JsonDocument.Parse(r.ChannelConfig);
-                            return doc.RootElement.TryGetProperty("url", out var existingUrlEl)
-                                ? existingUrlEl.GetString()
-                                : null;
-                        }
-                        catch
-                        {
-                            return null;
-                        }
-                    })
-                    .Where(u => !string.IsNullOrWhiteSpace(u))
-                    .Select(u => u!.Trim())
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                if (existingWebhookUrls.Contains(newUrl))
-                {
-                    return Result.Failure<NotificationRuleDto>($"A notification rule with the URL '{newUrl}' already exists in this workspace.");
-                }
-
-                channelConfig = request.ChannelConfig;
-            }
-            catch (JsonException)
-            {
-                return Result.Failure<NotificationRuleDto>("Invalid JSON format for webhook channel configuration.");
-            }
-        }
-        else
-        {
-            channelConfig = request.ChannelConfig;
-        }
+        if (channelConfigResult.IsFailure)
+            return Result.Failure<NotificationRuleDto>(channelConfigResult.Error);
 
         var rule = NotificationRule.Create(
             request.WorkspaceId,
             request.Name,
             request.DaysBeforeExpiry,
             request.ChannelType,
-            channelConfig,
+            channelConfigResult.Value,
             request.Frequency
         );
 
@@ -226,6 +125,120 @@ public class CreateNotificationRuleCommandHandler : IRequestHandler<CreateNotifi
         };
 
         return Result.Success(ruleDto);
+    }
+
+    private async Task<Result<string>> BuildEmailChannelConfigAsync(
+        CreateNotificationRuleCommand request,
+        List<NotificationRule> existingRules,
+        CancellationToken cancellationToken)
+    {
+        if (request.RecipientUserIds == null || request.RecipientUserIds.Count == 0)
+            return Result.Failure<string>("Recipient user IDs are required for email notifications.");
+
+        var distinctUserIds = request.RecipientUserIds.Distinct().ToList();
+
+        var workspaceMembers = await _unitOfWork.WorkspaceMembers.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken);
+        var workspaceOwner = (await _unitOfWork.Workspaces.GetByIdAsync(request.WorkspaceId, cancellationToken))?.Owner;
+        var validUserIds = workspaceMembers.Select(m => m.UserId).ToList();
+        if (workspaceOwner != null) validUserIds.Add(workspaceOwner.Id);
+
+        var invalidUserIds = distinctUserIds.Except(validUserIds).ToList();
+        if (invalidUserIds.Count != 0)
+            return Result.Failure<string>($"The following user IDs are not members of this workspace: {string.Join(", ", invalidUserIds)}");
+
+        var existingEmailUserIds = existingRules
+            .Where(r => r.ChannelType == NotificationChannelType.Email)
+            .SelectMany(r => ExtractEmailUserIds(r.ChannelConfig))
+            .ToHashSet();
+
+        var duplicateUserIds = distinctUserIds.Where(existingEmailUserIds.Contains).ToList();
+        if (duplicateUserIds.Count != 0)
+        {
+            var userNames = new List<string>();
+            foreach (var dupId in duplicateUserIds)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(dupId, cancellationToken);
+                userNames.Add(user?.FullName ?? dupId.ToString());
+            }
+            return Result.Failure<string>($"Notification rule already exists for the following users: {string.Join(", ", userNames)}");
+        }
+
+        var configJson = JsonSerializer.Serialize(new { userIds = distinctUserIds });
+        return Result.Success(configJson);
+    }
+
+    private async Task<Result<string>> BuildWebhookChannelConfigAsync(
+        CreateNotificationRuleCommand request,
+        List<NotificationRule> existingRules,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var newDoc = JsonDocument.Parse(request.ChannelConfig);
+            if (!newDoc.RootElement.TryGetProperty("url", out var urlElement) || string.IsNullOrWhiteSpace(urlElement.GetString()))
+                return Result.Failure<string>("Webhook URL is missing in channel configuration.");
+
+            var newUrlRaw = urlElement.GetString()!.Trim();
+
+            var existingWebhookUrls = existingRules
+                .Where(r => r.ChannelType == NotificationChannelType.Webhook)
+                .Select(r =>
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(r.ChannelConfig);
+                        return doc.RootElement.TryGetProperty("url", out var existingUrlEl)
+                            ? existingUrlEl.GetString()
+                            : null;
+                    }
+                    catch { return null; }
+                })
+                .Where(u => !string.IsNullOrWhiteSpace(u))
+                .Select(u => u!.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (existingWebhookUrls.Contains(newUrlRaw))
+                return Result.Failure<string>($"A notification rule with the URL '{newUrlRaw}' already exists in this workspace.");
+
+            var (isValid, uri, error) = await _webhookSecurity.ValidateUrlAsync(newUrlRaw, cancellationToken);
+            if (!isValid || uri == null)
+                return Result.Failure<string>($"Webhook URL rejected: {error}");
+
+            Dictionary<string, string>? sanitizedHeaders = null;
+            if (newDoc.RootElement.TryGetProperty("headers", out var headersElement) && headersElement.ValueKind == JsonValueKind.Object)
+            {
+                var temp = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var prop in headersElement.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.String)
+                        temp[prop.Name] = prop.Value.GetString() ?? string.Empty;
+                }
+                sanitizedHeaders = _webhookSecurity.SanitizeHeaders(temp).ToDictionary(k => k.Key, v => v.Value);
+            }
+
+            var serialized = sanitizedHeaders is { Count: > 0 }
+                ? JsonSerializer.Serialize(new { url = uri.ToString(), headers = sanitizedHeaders })
+                : JsonSerializer.Serialize(new { url = uri.ToString() });
+
+            return Result.Success(serialized);
+        }
+        catch (JsonException)
+        {
+            return Result.Failure<string>("Invalid JSON format for webhook channel configuration.");
+        }
+    }
+
+    private static IEnumerable<Guid> ExtractEmailUserIds(string channelConfig)
+    {
+        using var doc = JsonDocument.Parse(channelConfig);
+        if (doc.RootElement.TryGetProperty("userIds", out var arr) && arr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var el in arr.EnumerateArray())
+            {
+                if (el.ValueKind == JsonValueKind.String && Guid.TryParse(el.GetString(), out var g))
+                    yield return g;
+            }
+        }
     }
 
     private async Task<bool> CanManageWorkspace(Guid workspaceId, CancellationToken cancellationToken)
