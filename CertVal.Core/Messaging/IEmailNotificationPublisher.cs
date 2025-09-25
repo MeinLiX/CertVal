@@ -13,4 +13,7 @@ public interface IEmailNotificationPublisher : IAsyncDisposable
     Task PublishCertificateExpiringAsync(string email, string workspaceName, string certificateSubject,
         string certificateIssuer, DateTime expiryDate, int daysUntilExpiry,
         CancellationToken cancellationToken = default);
+    Task PublishCertificateExpiringAggregatedAsync(IEnumerable<string> emails, string workspaceName, string certificateSubject,
+        string certificateIssuer, DateTime expiryDate, int daysUntilExpiry,
+        CancellationToken cancellationToken = default);
 }

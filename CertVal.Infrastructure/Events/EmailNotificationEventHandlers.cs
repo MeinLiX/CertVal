@@ -203,13 +203,14 @@ public class EmailNotificationEventHandlers :
                 continue;
             }
 
-            foreach (var user in recipients)
+            if (rule.RecipientAggregationMode == RecipientAggregationMode.SingleEmailToAll)
             {
+                var aggregatedEmails = recipients.Select(r => r.Email).Distinct().ToList();
                 try
                 {
                     var notification = NotificationHistory.Create(
                         rule.Id, certificateId, NotificationChannelType.Email,
-                        user.Email,
+                        string.Join(",", aggregatedEmails),
                         GenerateEmailSubject(certificate, daysUntilExpiry, isExpired),
                         GenerateEmailMessage(certificate, workspace, daysUntilExpiry, isExpired),
                         DateTime.UtcNow
@@ -218,8 +219,8 @@ public class EmailNotificationEventHandlers :
                     await _unitOfWork.NotificationHistory.AddAsync(notification, cancellationToken);
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                    await _emailPublisher.PublishCertificateExpiringAsync(
-                        user.Email,
+                    await _emailPublisher.PublishCertificateExpiringAggregatedAsync(
+                        aggregatedEmails,
                         workspace.Name,
                         certificate.Subject,
                         certificate.Issuer,
@@ -230,20 +231,65 @@ public class EmailNotificationEventHandlers :
                     notification.MarkAsSent();
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                    _logger.LogInformation("Sent certificate notification for certificate {CertificateId} to {Email} via rule {RuleId}",
-                       certificateId, user.Email, rule.Id);
+                    _logger.LogInformation("Sent aggregated certificate notification for certificate {CertificateId} to {Count} recipients via rule {RuleId}",
+                        certificateId, aggregatedEmails.Count, rule.Id);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to send certificate notification for certificate {CertificateId} to {Email}",
-                        certificateId, user.Email);
-
+                    _logger.LogError(ex, "Failed to send aggregated certificate notification for certificate {CertificateId}", certificateId);
                     var failedNotification = await _unitOfWork.NotificationHistory
                         .GetLastNotificationAsync(certificateId, rule.Id, cancellationToken);
                     if (failedNotification != null && failedNotification.Status == NotificationStatus.Pending)
                     {
                         failedNotification.MarkAsFailed(ex.Message);
                         await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var user in recipients)
+                {
+                    try
+                    {
+                        var notification = NotificationHistory.Create(
+                            rule.Id, certificateId, NotificationChannelType.Email,
+                            user.Email,
+                            GenerateEmailSubject(certificate, daysUntilExpiry, isExpired),
+                            GenerateEmailMessage(certificate, workspace, daysUntilExpiry, isExpired),
+                            DateTime.UtcNow
+                        );
+
+                        await _unitOfWork.NotificationHistory.AddAsync(notification, cancellationToken);
+                        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                        await _emailPublisher.PublishCertificateExpiringAsync(
+                            user.Email,
+                            workspace.Name,
+                            certificate.Subject,
+                            certificate.Issuer,
+                            expiryDate,
+                            daysUntilExpiry,
+                            cancellationToken);
+
+                        notification.MarkAsSent();
+                        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                        _logger.LogInformation("Sent certificate notification for certificate {CertificateId} to {Email} via rule {RuleId}",
+                           certificateId, user.Email, rule.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send certificate notification for certificate {CertificateId} to {Email}",
+                            certificateId, user.Email);
+
+                        var failedNotification = await _unitOfWork.NotificationHistory
+                            .GetLastNotificationAsync(certificateId, rule.Id, cancellationToken);
+                        if (failedNotification != null && failedNotification.Status == NotificationStatus.Pending)
+                        {
+                            failedNotification.MarkAsFailed(ex.Message);
+                            await _unitOfWork.SaveChangesAsync(cancellationToken);
+                        }
                     }
                 }
             }

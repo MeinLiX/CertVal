@@ -19,6 +19,7 @@ public record CreateNotificationRuleCommand : IRequest<Result<NotificationRuleDt
     public string ChannelConfig { get; init; } = string.Empty;
     public NotificationFrequency Frequency { get; init; }
     public List<Guid>? RecipientUserIds { get; init; }
+    public RecipientAggregationMode RecipientAggregationMode { get; init; } = RecipientAggregationMode.Individual;
 }
 
 public class CreateNotificationRuleCommandValidator : AbstractValidator<CreateNotificationRuleCommand>
@@ -107,6 +108,8 @@ public class CreateNotificationRuleCommandHandler : IRequestHandler<CreateNotifi
             request.Frequency
         );
 
+        rule.SetRecipientAggregationMode(request.RecipientAggregationMode);
+
         await _unitOfWork.NotificationRules.AddAsync(rule, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -120,6 +123,7 @@ public class CreateNotificationRuleCommandHandler : IRequestHandler<CreateNotifi
             Frequency = rule.Frequency.ToString(),
             ChannelType = rule.ChannelType.ToString(),
             ChannelConfig = rule.ChannelConfig,
+            RecipientAggregationMode = rule.RecipientAggregationMode,
             CreatedAt = rule.CreatedAt,
             UpdatedAt = rule.UpdatedAt
         };

@@ -1,6 +1,7 @@
 using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
+using CertVal.Core.Enums;
 using CertVal.Core.Repositories;
 using FluentValidation;
 using MediatR;
@@ -12,6 +13,7 @@ public record UpdateNotificationRuleCommand : IRequest<Result<NotificationRuleDt
     public Guid WorkspaceId { get; init; }
     public Guid RuleId { get; init; }
     public string ChannelConfig { get; init; } = string.Empty;
+    public RecipientAggregationMode? RecipientAggregationMode { get; init; }
 }
 
 public class UpdateNotificationRuleCommandValidator : AbstractValidator<UpdateNotificationRuleCommand>
@@ -50,6 +52,10 @@ public class UpdateNotificationRuleCommandHandler : IRequestHandler<UpdateNotifi
             return Result.Failure<NotificationRuleDto>("Notification rule not found");
 
         rule.UpdateConfig(request.ChannelConfig);
+        if (request.RecipientAggregationMode.HasValue)
+        {
+            rule.SetRecipientAggregationMode(request.RecipientAggregationMode.Value);
+        }
 
         await _unitOfWork.NotificationRules.UpdateAsync(rule, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -64,6 +70,7 @@ public class UpdateNotificationRuleCommandHandler : IRequestHandler<UpdateNotifi
             Frequency = rule.Frequency.ToString(),
             ChannelType = rule.ChannelType.ToString(),
             ChannelConfig = rule.ChannelConfig,
+            RecipientAggregationMode = rule.RecipientAggregationMode,
             CreatedAt = rule.CreatedAt,
             UpdatedAt = rule.UpdatedAt
         };

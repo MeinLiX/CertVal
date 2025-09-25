@@ -11,13 +11,13 @@ public class NotificationRule : BaseEntity
     public string Name { get; private set; } = string.Empty;
     public bool IsEnabled { get; private set; } = true;
 
-    // Notification timing
     public int DaysBeforeExpiry { get; private set; }
     public NotificationFrequency Frequency { get; private set; } = NotificationFrequency.Once;
 
-    // Channel configuration
     public NotificationChannelType ChannelType { get; private set; } = NotificationChannelType.Email;
     public string ChannelConfig { get; private set; } = "{}"; // JSON configuration
+
+    public RecipientAggregationMode RecipientAggregationMode { get; private set; } = RecipientAggregationMode.Individual;
 
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
@@ -52,6 +52,15 @@ public class NotificationRule : BaseEntity
         rule.AddDomainEvent(new NotificationRuleCreatedEvent(rule.Id, rule.WorkspaceId, rule.Name, rule.DaysBeforeExpiry));
 
         return rule;
+    }
+
+    public void SetRecipientAggregationMode(RecipientAggregationMode mode)
+    {
+        if (RecipientAggregationMode != mode)
+        {
+            RecipientAggregationMode = mode;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 
     public void Toggle()

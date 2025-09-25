@@ -151,6 +151,40 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
         await PublishAsync(message, cancellationToken);
     }
 
+    public async Task PublishCertificateExpiringAggregatedAsync(IEnumerable<string> emails, string workspaceName,
+        string certificateSubject, string certificateIssuer, DateTime expiryDate, int daysUntilExpiry,
+        CancellationToken cancellationToken = default)
+    {
+        var emailList = emails.Distinct().ToList();
+        if (emailList.Count == 0) return;
+
+        var notificationType = daysUntilExpiry <= 0
+            ? EmailNotificationType.CertificateExpired
+            : EmailNotificationType.CertificateExpiring;
+
+        var primary = emailList[0];
+        var message = new EmailNotificationMessage
+        {
+            MessageId = Guid.NewGuid().ToString(),
+            Type = notificationType,
+            ToEmail = primary,
+            ToName = string.Empty,
+            Recipients = emailList,
+            Data = new Dictionary<string, object>
+            {
+                ["WorkspaceName"] = workspaceName,
+                ["CertificateSubject"] = certificateSubject,
+                ["CertificateIssuer"] = certificateIssuer,
+                ["ExpiryDate"] = expiryDate,
+                ["DaysUntilExpiry"] = daysUntilExpiry
+            },
+            CreatedAt = DateTime.UtcNow,
+            RetryCount = 0
+        };
+
+        await PublishAsync(message, cancellationToken);
+    }
+
     private IModel CreateChannel()
     {
         try

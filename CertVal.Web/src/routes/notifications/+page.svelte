@@ -43,7 +43,8 @@
 		channelType: 'Email',
 		channelConfig: '{}',
 		frequency: 'Once',
-		recipientUserIds: []
+		recipientUserIds: [],
+		recipientAggregationMode: 'SingleEmailToAll'
 	});
 	let webhookUrl = $state('');
 	let errors = $state<Record<string, string>>({});
@@ -156,7 +157,8 @@
 			channelType: 'Email',
 			channelConfig: '{}',
 			frequency: 'Once',
-			recipientUserIds: []
+			recipientUserIds: [],
+			recipientAggregationMode: 'SingleEmailToAll'
 		};
 		webhookUrl = '';
 		errors = {};
@@ -168,7 +170,7 @@
 		isProcessing = true;
 		errors = {};
 
-		const { recipientUserIds, ...restOfForm } = createForm;
+		const { recipientUserIds, recipientAggregationMode, ...restOfForm } = createForm;
 
 		let payload: any = { ...restOfForm };
 
@@ -179,6 +181,7 @@
 				return;
 			}
 			payload.recipientUserIds = recipientUserIds;
+			payload.recipientAggregationMode = recipientAggregationMode;
 		} else if (createForm.channelType === 'Webhook') {
 			try {
 				new URL(webhookUrl);
@@ -272,7 +275,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold">{t('notifications.title', $language)}</h1>
-			<p class="mt-1 text-base-content/70">{t('notifications.subtitle', $language)}</p>
+			<p class="text-base-content/70 mt-1">{t('notifications.subtitle', $language)}</p>
 		</div>
 		<div>
 			<Button
@@ -299,12 +302,12 @@
 	{:else if workspaces.length === 0}
 		<div class="py-16 text-center">
 			<div
-				class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-base-100 text-base-content/50 shadow-inner"
+				class="bg-base-100 text-base-content/50 mx-auto flex h-24 w-24 items-center justify-center rounded-full shadow-inner"
 			>
 				<Icon name="workspaces" class="h-12 w-12" />
 			</div>
 			<h3 class="mt-4 text-xl font-semibold">{t('notifications.noWorkspaces', $language)}</h3>
-			<p class="mt-2 text-base-content/60">{t('notifications.createFirstWorkspace', $language)}</p>
+			<p class="text-base-content/60 mt-2">{t('notifications.createFirstWorkspace', $language)}</p>
 			<div class="mt-6 flex justify-center">
 				<Button onclick={() => goto('/workspaces')}>
 					{t('workspaces.create', $language)}
@@ -325,7 +328,7 @@
 			{#if rules.length === 0}
 				<div class="py-16 text-center">
 					<h3 class="text-xl font-semibold">{t('notifications.noRules', $language)}</h3>
-					<p class="mt-2 text-base-content/60">{t('notifications.createFirstRule', $language)}</p>
+					<p class="text-base-content/60 mt-2">{t('notifications.createFirstRule', $language)}</p>
 					<div class="mt-6 flex justify-center">
 						<Button onclick={openCreateModal}>
 							{t('notifications.createRule', $language)}
@@ -338,11 +341,11 @@
 					{@const recipients = getRecipientsForRule(rule)}
 					{@const isOpen = openRuleId === rule.id}
 					<div
-						class="rounded-xl border border-base-content/10 bg-base-100 shadow-sm transition-colors"
+						class="border-base-content/10 bg-base-100 rounded-xl border shadow-sm transition-colors"
 					>
 						<div
 							role="button"
-							class="group flex w-full items-start gap-4 px-5 py-4 text-left focus:outline-none focus-visible:ring focus-visible:ring-primary/40"
+							class="focus-visible:ring-primary/40 group flex w-full items-start gap-4 px-5 py-4 text-left focus:outline-none focus-visible:ring"
 							aria-expanded={isOpen}
 							tabindex="0"
 							onclick={() => toggleRule(rule.id)}
@@ -355,7 +358,7 @@
 						>
 							<div class="flex-grow space-y-1">
 								<div class="flex items-start justify-between gap-4">
-									<p class="leading-tight font-semibold">{rule.name}</p>
+									<p class="font-semibold leading-tight">{rule.name}</p>
 									<div class="flex items-center gap-3">
 										<div class="flex items-center gap-2">
 											<span
@@ -367,7 +370,7 @@
 											</span>
 											<button
 												type="button"
-												class="inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-base-200 focus:outline-none focus-visible:ring focus-visible:ring-primary/40"
+												class="hover:bg-base-200 focus-visible:ring-primary/40 inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 focus:outline-none focus-visible:ring"
 												onclick={(e) => e.stopPropagation()}
 												onkeydown={(e) => {
 													if (e.key === 'Enter' || e.key === ' ') {
@@ -405,9 +408,18 @@
 									{t('notifications.daysBeforeExpirySuffix', $language)}.
 									{t('notifications.channel', $language)} <strong>{rule.channelType}</strong>.
 									{t('notifications.frequency', $language)}: <strong>{rule.frequency}</strong>.
+									{#if rule.channelType === 'Email'}
+										<span class="ml-1">
+											{#if rule.recipientAggregationMode === 'SingleEmailToAll'}
+												<strong>[{t('notifications.aggregatedBadge', $language)}]</strong>
+											{:else}
+												<strong>[{t('notifications.individualBadge', $language)}]</strong>
+											{/if}
+										</span>
+									{/if}
 								</p>
 								{#if isDisabled}
-									<div role="alert" class="mt-2 alert alert-warning p-2 text-xs">
+									<div role="alert" class="alert alert-warning mt-2 p-2 text-xs">
 										<span>{t('notifications.disabledInProfileWarning', $language)}</span>
 									</div>
 								{/if}
@@ -417,7 +429,7 @@
 								aria-hidden="true"
 							>
 								<svg
-									class="h-4 w-4 text-base-content/60 transition-transform"
+									class="text-base-content/60 h-4 w-4 transition-transform"
 									viewBox="0 0 20 20"
 									fill="none"
 									stroke="currentColor"
@@ -430,13 +442,13 @@
 							</div>
 						</div>
 						{#if isOpen && rule.channelType === 'Email' && recipients.length > 0}
-							<div class="border-t border-base-content/10 px-5 py-3">
+							<div class="border-base-content/10 border-t px-5 py-3">
 								<p class="mb-2 text-sm font-medium">
 									{t('notifications.recipients', $language)} ({recipients.length})
 								</p>
 								<div class="max-h-48 space-y-2 overflow-y-auto pr-1">
 									{#each recipients as member (member.userId)}
-										<div class="flex items-center gap-3 rounded-lg bg-base-200/60 p-2">
+										<div class="bg-base-200/60 flex items-center gap-3 rounded-lg p-2">
 											<UserAvatar
 												firstName={member.user.firstName}
 												lastName={member.user.lastName}
@@ -446,7 +458,7 @@
 											<div class="flex flex-col">
 												<span class="label-text">{member.user.fullName}</span>
 												{#if selectedWorkspace && member.userId === selectedWorkspace.ownerId}
-													<span class="mt-1 badge badge-xs badge-primary"
+													<span class="badge badge-xs badge-primary mt-1"
 														>{t('common.owner', $language)}</span
 													>
 												{/if}
@@ -490,16 +502,15 @@
 
 		{#if createForm.channelType === 'Email'}
 			<fieldset class="form-control">
-				<legend class="label">
-					<span class="label-text font-medium">{t('notifications.recipients', $language)}</span>
-				</legend>
+				<label class="label" for="recipient-aggregation-mode">
+					<span class="label-text">{t('notifications.recipientAggregation', $language)}</span>
+				</label>
 				<div
-					class="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-base-content/20 p-2"
+					id="recipient-aggregation-mode"
+					class="border-base-content/20 max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2"
 				>
 					{#each workspaceMembers as member (member.userId)}
-						<label
-							class="flex cursor-pointer items-center justify-between rounded-lg p-2 transition-colors hover:bg-base-200"
-						>
+						<div class="bg-base-200/60 flex items-center justify-between gap-3 rounded-lg p-2">
 							<div class="flex items-center gap-3">
 								<UserAvatar
 									firstName={member.user.firstName}
@@ -510,7 +521,7 @@
 								<div class="flex flex-col">
 									<span class="label-text">{member.user.fullName}</span>
 									{#if selectedWorkspace && member.userId === selectedWorkspace.ownerId}
-										<span class="mt-1 badge badge-xs badge-primary"
+										<span class="badge badge-xs badge-primary mt-1"
 											>{t('common.owner', $language)}</span
 										>
 									{/if}
@@ -522,9 +533,32 @@
 								value={member.userId}
 								class="checkbox checkbox-primary"
 							/>
-						</label>
+						</div>
 					{/each}
 				</div>
+
+				{#if createForm.recipientUserIds.length > 1}
+					<div class="mt-3">
+						<label class="label" for="recipient-aggregation-select">
+							<span class="label-text">{t('notifications.recipientAggregation', $language)}</span>
+						</label>
+						<select
+							id="recipient-aggregation-select"
+							bind:value={createForm.recipientAggregationMode}
+							class="select select-bordered w-full"
+						>
+							<option value="SingleEmailToAll">
+								{t('notifications.aggregationAllOption', $language)}
+							</option>
+							<option value="Individual">
+								{t('notifications.aggregationIndividualOption', $language)}
+							</option>
+						</select>
+						<p class="mt-1 text-xs opacity-70">
+							{t('notifications.recipientAggregationHelp', $language)}
+						</p>
+					</div>
+				{/if}
 			</fieldset>
 		{:else if createForm.channelType === 'Webhook'}
 			<Input
@@ -579,7 +613,7 @@
 			<p class="py-8 text-center">{t('notifications.noHistory', $language)}</p>
 		{:else}
 			{#each history as item}
-				<div class="rounded-lg border border-base-content/10 p-2 text-sm">
+				<div class="border-base-content/10 rounded-lg border p-2 text-sm">
 					<div class="flex justify-between">
 						<span class="max-w-xs truncate font-semibold">{item.subject}</span>
 						<span class="badge badge-sm {item.status === 'Sent' ? 'badge-success' : 'badge-error'}"
