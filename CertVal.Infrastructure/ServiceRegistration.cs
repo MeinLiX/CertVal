@@ -30,6 +30,7 @@ public static class ServiceRegistration
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IWebhookSecurityService, WebhookSecurityService>();
 
         return services;
     }
