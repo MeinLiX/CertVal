@@ -1,4 +1,4 @@
-﻿using CertVal.EmailService.Services;
+﻿using CertVal.EmailService.Services.Abstractions;
 
 namespace CertVal.EmailService;
 
@@ -27,10 +27,7 @@ public class EmailWorkerService : BackgroundService
             await _rabbitMqService.StartConsumingAsync(stoppingToken);
             _logger.LogInformation("Email Worker Service started successfully");
 
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
-            }
+            await Task.Delay(Timeout.Infinite, stoppingToken);
         }
         catch (OperationCanceledException)
         {

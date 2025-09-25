@@ -15,6 +15,7 @@
 	  <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
 	  <PackageReference Include="MimeKit" />
 	  <PackageReference Include="RabbitMQ.Client" />
+	  <PackageReference Include="Fluid.Core" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -25,6 +26,7 @@
 	<ItemGroup>
 	  <Content Include="Templates\**\*">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 	  </Content>
 	</ItemGroup>
 
