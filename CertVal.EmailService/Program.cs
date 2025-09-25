@@ -2,12 +2,15 @@
 using CertVal.EmailService;
 using CertVal.EmailService.Configuration;
 using CertVal.EmailService.Services;
+using CertVal.EmailService.Services.Abstractions;
 using CertVal.EmailService.Templates;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.AddServiceDefaults();
 builder.AddRabbitMQClient("CertVal-rabbitmq");
+
+builder.Services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(30));
 
 builder.Services.AddOptions<MessagingConfiguration>()
     .BindConfiguration(MessagingConfiguration.SectionName)
@@ -27,22 +30,10 @@ builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddHostedService<EmailWorkerService>();
 
 builder.Services.AddHealthChecks()
+    .AddCheck<CertVal.EmailService.HealthChecks.RabbitMqHealthCheck>("rabbitmq")
+    .AddCheck<CertVal.EmailService.HealthChecks.SmtpHealthCheck>("smtp")
     .AddCheck("email-service", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
-
-builder.Logging.SetMinimumLevel(LogLevel.Information);
 
 var host = builder.Build();
 
-try
-{
-    var logger = host.Services.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Starting Email Service");
-
-    await host.RunAsync();
-}
-catch (Exception ex)
-{
-    var logger = host.Services.GetService<ILogger<Program>>();
-    logger?.LogCritical(ex, "Email Service failed to start");
-    throw;
-}
+await host.RunAsync();
