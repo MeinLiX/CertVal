@@ -1,4 +1,5 @@
-﻿using CertVal.Core.Events;
+﻿using CertVal.Application.Common.Interfaces;
+using CertVal.Core.Events;
 using CertVal.Core.Repositories;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -12,6 +13,7 @@ public class WebhookNotificationEventHandlers :
     private readonly IUnitOfWork _unitOfWork;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<WebhookNotificationEventHandlers> _logger;
+    private readonly IWebhookSecurityService _security;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -22,10 +24,12 @@ public class WebhookNotificationEventHandlers :
     public WebhookNotificationEventHandlers(
         IUnitOfWork unitOfWork,
         IHttpClientFactory httpClientFactory,
+        IWebhookSecurityService security,
         ILogger<WebhookNotificationEventHandlers> logger)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+        _security = security ?? throw new ArgumentNullException(nameof(security));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -144,16 +148,23 @@ public class WebhookNotificationEventHandlers :
                 return;
             }
 
+            var (valid, uri, error) = await _security.ValidateUrlAsync(webhookConfig.Url, cancellationToken);
+            if (!valid || uri == null)
+            {
+                _logger.LogWarning("Webhook URL rejected for rule {RuleId}: {Error}", rule.Id, error);
+                return;
+            }
+
             var subject = GenerateSubject(certificate, daysUntilExpiry);
             var message = GenerateMessage(certificate, workspace, daysUntilExpiry);
 
             var notificationHistory = Core.Entities.NotificationHistory.Create(
                 rule.Id, certificate.Id, rule.ChannelType,
-                webhookConfig.Url, subject, message, DateTime.UtcNow);
+                uri.ToString(), subject, message, DateTime.UtcNow);
 
             await _unitOfWork.NotificationHistory.AddAsync(notificationHistory, cancellationToken);
 
-            var success = await SendWebhookAsync(webhookConfig, certificate, workspace, daysUntilExpiry, cancellationToken);
+            var success = await SendWebhookAsync(uri, webhookConfig, certificate, workspace, daysUntilExpiry, cancellationToken);
 
             if (success)
             {
@@ -173,6 +184,7 @@ public class WebhookNotificationEventHandlers :
     }
 
     private async Task<bool> SendWebhookAsync(
+        Uri uri,
         WebhookConfig config,
         Core.Entities.Certificate certificate,
         Core.Entities.Workspace workspace,
@@ -191,39 +203,37 @@ public class WebhookNotificationEventHandlers :
                 Certificate = new
                 {
                     certificate.Id,
-                    certificate.Subject,
-                    certificate.Issuer,
-                    certificate.SerialNumber,
+                    Subject = _security.SanitizeValue(certificate.Subject, 256),
+                    Issuer = _security.SanitizeValue(certificate.Issuer, 256),
+                    SerialNumber = _security.SanitizeValue(certificate.SerialNumber, 128),
                     certificate.NotAfter,
                     DaysUntilExpiry = daysUntilExpiry,
                     IsExpired = daysUntilExpiry <= 0,
-                    FileName = certificate.OriginalFileName
+                    FileName = _security.SanitizeValue(certificate.OriginalFileName, 128)
                 },
                 Workspace = new
                 {
                     workspace.Id,
-                    workspace.Name,
-                    Owner = workspace.Owner.Email
+                    Name = _security.SanitizeValue(workspace.Name, 200),
+                    Owner = _security.SanitizeValue(workspace.Owner.Email, 200)
                 }
             };
 
             var json = JsonSerializer.Serialize(payload, JsonOptions);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-            if (config.Headers != null)
+            var headers = _security.SanitizeHeaders(config.Headers);
+            foreach (var (key, value) in headers)
             {
-                foreach (var (key, value) in config.Headers)
-                {
-                    httpClient.DefaultRequestHeaders.TryAddWithoutValidation(key, value);
-                }
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation(key, value);
             }
 
-            var response = await httpClient.PostAsync(config.Url, content, cancellationToken);
+            var response = await httpClient.PostAsync(uri, content, cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending webhook to {Url}", config.Url);
+            _logger.LogError(ex, "Error sending webhook to {Url}", uri);
             return false;
         }
     }
