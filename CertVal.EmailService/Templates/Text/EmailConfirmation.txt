@@ -1,0 +1,16 @@
+Welcome to {{CompanyName}}!
+
+Hello {{FirstName}}!
+
+Thank you for registering with {{CompanyName}}. To complete your registration and activate your account, please confirm your email address by visiting:
+
+{{ConfirmationUrl}}
+
+This confirmation link will expire in 24 hours. If you didn't create this account, you can safely ignore this email.
+
+Once confirmed, you'll be able to create workspaces, upload certificates, set up notifications, and more.
+
+If you have any questions, contact us at {{SupportEmail}}.
+
+Best regards,
+The {{CompanyName}} Team

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace Invitation - {{CompanyName}}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { color: white; margin: 0; font-size: 28px; }
+        .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+        .button { display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: #5a6fd8; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+        .info-box { background: #e3f2fd; border: 1px solid #81d4fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Workspace Invitation</h1>
+    </div>
+    <div class="content">
+        <h2>Hello {{InviteeName}}!</h2>
+        <p>{{InviterName}} has invited you to join the "{{WorkspaceName}}" workspace on {{CompanyName}} as a {{Role}}.</p>
+        
+        <div class="info-box">
+            <strong>Workspace:</strong> {{WorkspaceName}}<br>
+            <strong>Role:</strong> {{Role}}<br>
+            <strong>Invited by:</strong> {{InviterName}}
+        </div>
+        
+        <p>Click the button below to accept this invitation:</p>
+        
+        <div style="text-align: center;">
+            <a href="{{InvitationUrl}}" class="button">Accept Invitation</a>
+        </div>
+        
+        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 5px;">{{InvitationUrl}}</p>
+        
+        <p>This invitation will expire in 7 days. If you don't have a {{CompanyName}} account yet, you'll be prompted to create one.</p>
+        
+        <p>If you have any questions, contact our support team at <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>.</p>
+        
+        <p>Best regards,<br>The {{CompanyName}} Team</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 {{CompanyName}}. All rights reserved.</p>
+    </div>
+</body>
+</html>

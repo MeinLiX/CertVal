@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{CompanyName}}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { color: white; margin: 0; font-size: 28px; }
+        .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
+        .button { display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+        .button:hover { background: #5a6fd8; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Welcome to {{CompanyName}}!</h1>
+    </div>
+    <div class="content">
+        <h2>Hello {{FirstName}}!</h2>
+        <p>Thank you for registering with {{CompanyName}}. We're excited to help you monitor and manage your SSL certificates efficiently.</p>
+        
+        <p>To complete your registration and activate your account, please confirm your email address by clicking the button below:</p>
+        
+        <div style="text-align: center;">
+            <a href="{{ConfirmationUrl}}" class="button">Confirm Email Address</a>
+        </div>
+        
+        <div class="warning">
+            <strong>Security Note:</strong> This confirmation link will expire in 24 hours. If you didn't create this account, you can safely ignore this email.
+        </div>
+        
+        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 5px;">{{ConfirmationUrl}}</p>
+        
+        <p>Once confirmed, you'll be able to:</p>
+        <ul>
+            <li>Create workspaces for organizing your certificates</li>
+            <li>Upload and monitor SSL certificates</li>
+            <li>Set up automated expiry notifications</li>
+            <li>Generate detailed reports</li>
+        </ul>
+        
+        <p>If you have any questions, feel free to contact our support team at <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>.</p>
+        
+        <p>Best regards,<br>The {{CompanyName}} Team</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 {{CompanyName}}. All rights reserved.</p>
+        <p>This email was sent to {{Email}}</p>
+    </div>
+</body>
+</html>

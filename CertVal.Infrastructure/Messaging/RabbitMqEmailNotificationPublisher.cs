@@ -82,7 +82,6 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
                 ["LastName"] = lastName,
                 ["Email"] = email,
                 ["ConfirmationToken"] = confirmationToken,
-                ["BaseUrl"] = GetBaseUrl()
             },
             userId.ToString());
 
@@ -104,7 +103,6 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
                 ["WorkspaceName"] = workspaceName,
                 ["WorkspaceId"] = workspaceId.ToString(),
                 ["InvitationToken"] = invitationToken,
-                ["BaseUrl"] = GetBaseUrl(),
                 ["Role"] = role
             },
             workspaceId.ToString());
@@ -123,7 +121,6 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
             {
                 ["FirstName"] = firstName,
                 ["ResetToken"] = resetToken,
-                ["BaseUrl"] = GetBaseUrl(),
                 ["ExpiresAt"] = expiresAt
             });
 
@@ -148,8 +145,7 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
                 ["CertificateSubject"] = certificateSubject,
                 ["CertificateIssuer"] = certificateIssuer,
                 ["ExpiryDate"] = expiryDate,
-                ["DaysUntilExpiry"] = daysUntilExpiry,
-                ["BaseUrl"] = GetBaseUrl()
+                ["DaysUntilExpiry"] = daysUntilExpiry
             });
 
         await PublishAsync(message, cancellationToken);
@@ -229,9 +225,6 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
             CorrelationId = correlationId
         };
     }
-
-    private string GetBaseUrl() =>
-        _appConfig["EmailService:Templates:BaseUrl"] ?? throw new InvalidOperationException("Missing configuration: EmailService:Templates:BaseUrl");
 
     public void Dispose()
     {

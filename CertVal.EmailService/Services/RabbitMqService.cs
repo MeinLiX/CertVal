@@ -1,4 +1,5 @@
 ﻿using CertVal.Core.Messaging;
+using CertVal.EmailService.Services.Abstractions;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -18,7 +19,7 @@ public class RabbitMqService : IRabbitMqService
     private string? _consumerTag;
     private bool _disposed;
 
-    private static readonly JsonSerializerOptions DeserializerOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
@@ -31,9 +32,18 @@ public class RabbitMqService : IRabbitMqService
         ILogger<RabbitMqService> logger)
     {
         _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-        _config = messagingOptions.Value ?? throw new ArgumentNullException(nameof(messagingOptions));
+        _config = messagingOptions?.Value ?? throw new ArgumentNullException(nameof(messagingOptions));
         _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        _connection.CallbackException += (_, args) =>
+            _logger.LogError(args.Exception, "RabbitMQ connection callback exception");
+        _connection.ConnectionShutdown += (_, reason) =>
+            _logger.LogWarning("RabbitMQ connection shutdown: {ReplyText}", reason.ReplyText);
+        _connection.ConnectionBlocked += (_, reason) =>
+            _logger.LogWarning("RabbitMQ connection blocked: {Reason}", reason.Reason);
+        _connection.ConnectionUnblocked += (_, __) =>
+            _logger.LogInformation("RabbitMQ connection unblocked");
     }
 
     public async Task StartConsumingAsync(CancellationToken cancellationToken)
@@ -42,17 +52,24 @@ public class RabbitMqService : IRabbitMqService
 
         try
         {
+            _logger.LogInformation("Config: Exchange={Exchange}, Queue={Queue}, RoutingKey={RoutingKey}",
+                _config.ExchangeName, _config.EmailQueueName, _config.EmailRoutingKey);
+
             SetupQueue();
             StartConsumer();
 
-            _logger.LogInformation("RabbitMQ consumer started for queue: {QueueName}",
-                _config.EmailQueueName);
+            if (cancellationToken.CanBeCanceled)
+            {
+                cancellationToken.Register(() => _ = StopConsumingAsync());
+            }
 
+            LogQueueStatus();
+            _logger.LogInformation("Started consuming messages from queue: {QueueName}", _config.EmailQueueName);
             await Task.CompletedTask;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to start RabbitMQ consumer");
+            _logger.LogError(ex, "Failed to start consuming messages");
             throw;
         }
     }
@@ -61,16 +78,16 @@ public class RabbitMqService : IRabbitMqService
     {
         try
         {
-            if (!string.IsNullOrEmpty(_consumerTag) && _channel != null)
+            if (!string.IsNullOrEmpty(_consumerTag) && _channel?.IsOpen == true)
             {
                 _channel.BasicCancel(_consumerTag);
                 _consumerTag = null;
-                _logger.LogInformation("RabbitMQ consumer stopped");
+                _logger.LogInformation("Stopped consuming messages");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error stopping RabbitMQ consumer");
+            _logger.LogError(ex, "Error stopping message consumer");
         }
 
         return Task.CompletedTask;
@@ -78,48 +95,105 @@ public class RabbitMqService : IRabbitMqService
 
     private void SetupQueue()
     {
-        _channel = _connection.CreateModel();
+        EnsureChannel();
+    }
 
-        // Configure channel
-        _channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+    private void StartConsumer()
+    {
+        var channel = EnsureChannel();
+        if (!string.IsNullOrEmpty(_consumerTag)) return;
 
-        // Declare exchange
-        _channel.ExchangeDeclare(
+        // Use synchronous EventingBasicConsumer to avoid DispatchConsumersAsync requirement
+        var consumer = new EventingBasicConsumer(channel);
+
+        consumer.Registered += (_, e) =>
+        {
+            _logger.LogInformation("Consumer registered: {ConsumerTag}", e.ConsumerTags.FirstOrDefault());
+        };
+        consumer.Shutdown += (_, e) =>
+        {
+            _logger.LogWarning("Consumer shutdown: {ReplyText}", e.ReplyText);
+        };
+        consumer.Received += (_, eventArgs) =>
+        {
+            try
+            {
+                // Process synchronously to keep single in-flight message per prefetch
+                ProcessMessageAsync(eventArgs).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in consumer Received handler");
+            }
+        };
+
+        _consumerTag = channel.BasicConsume(
+            queue: _config.EmailQueueName,
+            autoAck: false,
+            consumer: consumer);
+
+        _logger.LogInformation("BasicConsume started. ConsumerTag={ConsumerTag}", _consumerTag);
+    }
+
+    private IModel EnsureChannel()
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(RabbitMqService));
+
+        if (_channel?.IsOpen == true) return _channel;
+
+        try
+        {
+            _channel?.Dispose();
+            var ch = _connection.CreateModel();
+            ch.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+            ch.CallbackException += (_, args) => _logger.LogError(args.Exception, "RabbitMQ channel callback exception");
+            ch.ModelShutdown += (_, reason) => _logger.LogWarning("RabbitMQ channel shutdown: {ReplyText}", reason.ReplyText);
+            DeclareTopology(ch);
+            _channel = ch;
+            return ch;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create or configure RabbitMQ channel");
+            throw;
+        }
+    }
+
+    private void DeclareTopology(IModel ch)
+    {
+        ch.ExchangeDeclare(
             exchange: _config.ExchangeName,
             type: ExchangeType.Direct,
             durable: _config.DurableQueues);
 
-        // Declare queue
-        _channel.QueueDeclare(
+        ch.QueueDeclare(
             queue: _config.EmailQueueName,
             durable: _config.DurableQueues,
             exclusive: false,
             autoDelete: false);
 
-        // Bind queue
-        _channel.QueueBind(
+        ch.QueueBind(
             queue: _config.EmailQueueName,
             exchange: _config.ExchangeName,
             routingKey: _config.EmailRoutingKey);
 
-        _logger.LogDebug("Queue configured: Exchange={Exchange}, Queue={Queue}, RoutingKey={RoutingKey}",
+        _logger.LogDebug("Declared topology: Exchange={Exchange}, Queue={Queue}, RoutingKey={RoutingKey}",
             _config.ExchangeName, _config.EmailQueueName, _config.EmailRoutingKey);
     }
 
-    private void StartConsumer()
+    private void LogQueueStatus()
     {
-        if (_channel == null)
-            throw new InvalidOperationException("Channel not initialized");
-
-        var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += async (_, eventArgs) => await ProcessMessageAsync(eventArgs);
-
-        _consumerTag = _channel.BasicConsume(
-            queue: _config.EmailQueueName,
-            autoAck: false,
-            consumer: consumer);
-
-        _logger.LogDebug("Started consuming with tag: {ConsumerTag}", _consumerTag);
+        try
+        {
+            var channel = EnsureChannel();
+            var result = channel.QueueDeclarePassive(_config.EmailQueueName);
+            _logger.LogInformation("Queue status: {Queue} -> messages={MessageCount}, consumers={ConsumerCount}",
+                _config.EmailQueueName, result.MessageCount, result.ConsumerCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to query queue status for {Queue}", _config.EmailQueueName);
+        }
     }
 
     private async Task ProcessMessageAsync(BasicDeliverEventArgs eventArgs)
@@ -128,24 +202,19 @@ public class RabbitMqService : IRabbitMqService
 
         try
         {
-            var message = JsonSerializer.Deserialize<EmailNotificationMessage>(
-                messageBody, DeserializerOptions);
+            var message = JsonSerializer.Deserialize<EmailNotificationMessage>(messageBody, JsonOptions);
 
-            if (message == null)
+            if (message is null)
             {
-                _logger.LogWarning("Failed to deserialize message: {Message}", messageBody);
-                AcknowledgeMessage(eventArgs, false);
+                _logger.LogWarning("Failed to deserialize message, rejecting");
+                AcknowledgeMessage(eventArgs, success: false);
                 return;
             }
 
-            _logger.LogDebug("Processing email message {MessageId} of type {Type} to {Email}",
-                message.MessageId, message.Type, message.ToEmail);
-
             if (message.RetryCount >= _config.MaxRetryAttempts)
             {
-                _logger.LogError("Message {MessageId} exceeded max retry attempts. Discarding.",
-                    message.MessageId);
-                AcknowledgeMessage(eventArgs, false);
+                _logger.LogError("Message {MessageId} exceeded max retry attempts, discarding", message.MessageId);
+                AcknowledgeMessage(eventArgs, success: false);
                 return;
             }
 
@@ -153,39 +222,41 @@ public class RabbitMqService : IRabbitMqService
 
             if (success)
             {
-                AcknowledgeMessage(eventArgs, true);
-                _logger.LogInformation("Successfully processed email message {MessageId}",
-                    message.MessageId);
+                AcknowledgeMessage(eventArgs, success: true);
+                return;
             }
-            else
-            {
-                await HandleFailedMessage(message, eventArgs);
-            }
+
+            await HandleFailedMessage(message, eventArgs);
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "JSON deserialization failed for message: {Message}", messageBody);
-            AcknowledgeMessage(eventArgs, false);
+            _logger.LogError(ex, "Invalid message format, rejecting");
+            AcknowledgeMessage(eventArgs, success: false);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error processing message");
-            AcknowledgeMessage(eventArgs, false, requeue: true);
+            AcknowledgeMessage(eventArgs, success: false, requeue: true);
+        }
+        finally
+        {
+            LogQueueStatus();
         }
     }
 
     private async Task HandleFailedMessage(EmailNotificationMessage message, BasicDeliverEventArgs eventArgs)
     {
-        _logger.LogWarning("Failed to send email {MessageId}. Retry {RetryCount}/{MaxRetries}",
-            message.MessageId, message.RetryCount + 1, _config.MaxRetryAttempts);
-
         if (message.RetryCount + 1 < _config.MaxRetryAttempts)
         {
             var retryMessage = message with { RetryCount = message.RetryCount + 1 };
             await RequeueMessageAsync(retryMessage);
         }
+        else
+        {
+            _logger.LogError("Message {MessageId} failed permanently, discarding", message.MessageId);
+        }
 
-        AcknowledgeMessage(eventArgs, false);
+        AcknowledgeMessage(eventArgs, success: false);
     }
 
     private void AcknowledgeMessage(BasicDeliverEventArgs eventArgs, bool success, bool requeue = false)
@@ -209,42 +280,42 @@ public class RabbitMqService : IRabbitMqService
 
     private async Task RequeueMessageAsync(EmailNotificationMessage message)
     {
-        if (_channel == null) return;
+        var channel = EnsureChannel();
 
         try
         {
             await Task.Delay(_config.RetryDelay);
 
-            var messageJson = JsonSerializer.Serialize(message, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
+            var messageJson = JsonSerializer.Serialize(message, JsonOptions);
             var body = Encoding.UTF8.GetBytes(messageJson);
-            var properties = _channel.CreateBasicProperties();
-            properties.MessageId = message.MessageId;
-            properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            properties.Persistent = _config.PersistentMessages;
-            properties.Type = message.Type.ToString();
+            var properties = BuildProperties(message, channel);
 
-            if (!string.IsNullOrEmpty(message.CorrelationId))
-            {
-                properties.CorrelationId = message.CorrelationId;
-            }
-
-            _channel.BasicPublish(
+            channel.BasicPublish(
                 exchange: _config.ExchangeName,
                 routingKey: _config.EmailRoutingKey,
                 basicProperties: properties,
                 body: body);
-
-            _logger.LogDebug("Requeued message {MessageId} for retry {RetryCount}",
-                message.MessageId, message.RetryCount);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to requeue message {MessageId}", message.MessageId);
         }
+    }
+
+    private static IBasicProperties BuildProperties(EmailNotificationMessage message, IModel channel)
+    {
+        var properties = channel.CreateBasicProperties();
+        properties.MessageId = message.MessageId;
+        properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        properties.Persistent = true;
+        properties.Type = message.Type.ToString();
+
+        if (!string.IsNullOrWhiteSpace(message.CorrelationId))
+        {
+            properties.CorrelationId = message.CorrelationId;
+        }
+
+        return properties;
     }
 
     public async ValueTask DisposeAsync()
