@@ -1,6 +1,6 @@
 ﻿using CertVal.Core.Messaging;
 
-namespace CertVal.EmailService.Services;
+namespace CertVal.EmailService.Services.Abstractions;
 
 public interface IEmailService
 {
