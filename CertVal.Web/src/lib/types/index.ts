@@ -157,6 +157,7 @@ export interface NotificationRule {
     frequency: string;
     channelType: string;
     channelConfig: string;
+    recipientAggregationMode: 'Individual' | 'SingleEmailToAll';
     createdAt: string;
     updatedAt: string;
 }
@@ -184,6 +185,7 @@ export interface CreateNotificationRuleRequest {
     channelType: 'Email' | 'Webhook' | 'Slack' | 'Telegram';
     channelConfig: string;
     frequency: 'Once' | 'Daily' | 'Weekly' | 'Monthly';
+    recipientAggregationMode?: 'Individual' | 'SingleEmailToAll';
 }
 export interface UpdateUserRequest {
     firstName: string;

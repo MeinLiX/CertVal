@@ -365,7 +365,13 @@ export const translations = {
             noWorkspaces: 'У вас ще немає робочих просторів.',
             createFirstWorkspace: 'Створіть свій перший робочий простір, щоб керувати сповіщеннями.',
             recipients: 'Отримувачі',
-            viewRecipients: 'Переглянути отримувачів'
+            viewRecipients: 'Переглянути отримувачів',
+            recipientAggregation: 'Агрегація отримувачів',
+            recipientAggregationHelp: 'Якщо увімкнено — буде надіслано один лист усім отримувачам.',
+            aggregatedBadge: 'Агреговано',
+            individualBadge: 'Індивідуально',
+            aggregationIndividualOption: 'Окремий лист кожному',
+            aggregationAllOption: 'Один лист для всіх'
         },
         profile: {
             title: 'Профіль користувача',
@@ -777,7 +783,13 @@ export const translations = {
             noWorkspaces: "You don't have any workspaces yet.",
             createFirstWorkspace: 'Create your first workspace to manage notifications.',
             recipients: 'Recipients',
-            viewRecipients: 'View Recipients'
+            viewRecipients: 'View Recipients',
+            recipientAggregation: 'Recipient Aggregation',
+            recipientAggregationHelp: 'When enabled, a single email will be sent to all selected recipients.',
+            aggregatedBadge: 'Aggregated',
+            individualBadge: 'Individual',
+            aggregationIndividualOption: 'Separate email to each',
+            aggregationAllOption: 'One email to all recipients'
         },
         profile: {
             title: 'User Profile',
