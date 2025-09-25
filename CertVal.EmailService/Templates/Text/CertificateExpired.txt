@@ -1,6 +1,6 @@
 Certificate Expired - {{CompanyName}}
 
-?? CRITICAL: CERTIFICATE EXPIRED ??
+CRITICAL: CERTIFICATE EXPIRED
 
 Your SSL certificate has expired and requires immediate attention to prevent service disruptions.
 
