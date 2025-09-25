@@ -43,12 +43,19 @@ public class SmtpEmailService : IEmailService
 
             await SendEmailInternal(mimeMessage).ConfigureAwait(false);
 
-            _logger.LogInformation("Email sent successfully to {ToEmail}", message.ToEmail);
+            if (message.IsAggregated)
+            {
+                _logger.LogInformation("Aggregated email sent successfully to {Count} recipients (primary: {Primary})", message.Recipients!.Count, message.ToEmail);
+            }
+            else
+            {
+                _logger.LogInformation("Email sent successfully to {ToEmail}", message.ToEmail);
+            }
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {ToEmail}: {Error}", message.ToEmail, ex.Message);
+            _logger.LogError(ex, "Failed to send email (aggregated={Aggregated}) to {ToEmail}: {Error}", message.IsAggregated, message.ToEmail, ex.Message);
             return false;
         }
     }
@@ -70,11 +77,20 @@ public class SmtpEmailService : IEmailService
 
     private static void ValidateMessage(EmailNotificationMessage message)
     {
-        if (string.IsNullOrWhiteSpace(message.ToEmail))
-            throw new ArgumentException("Recipient email is required", nameof(message));
-
-        if (!MailboxAddress.TryParse(message.ToEmail, out _))
-            throw new ArgumentException("Recipient email is invalid", nameof(message));
+        if (message.IsAggregated)
+        {
+            if (message.Recipients is null || message.Recipients.Count == 0)
+                throw new ArgumentException("Aggregated message requires recipients list", nameof(message));
+            if (string.IsNullOrWhiteSpace(message.ToEmail))
+                throw new ArgumentException("Primary ToEmail is required for aggregated message (can be placeholder)", nameof(message));
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(message.ToEmail))
+                throw new ArgumentException("Recipient email is required", nameof(message));
+            if (!MailboxAddress.TryParse(message.ToEmail, out _))
+                throw new ArgumentException("Recipient email is invalid", nameof(message));
+        }
     }
 
     private MimeMessage CreateMimeMessage(EmailNotificationMessage message, Models.EmailTemplate template)
@@ -89,6 +105,14 @@ public class SmtpEmailService : IEmailService
 
         var to = CreateMailbox(message.ToName, message.ToEmail);
         mimeMessage.To.Add(to);
+
+        if (message.IsAggregated && message.Recipients is { Count: > 0 })
+            foreach (var rcpt in message.Recipients)
+                if (MailboxAddress.TryParse(rcpt, out var mb))
+                    if (_config.AggregatedUseBcc)
+                        mimeMessage.Bcc.Add(mb);
+                    else
+                        mimeMessage.To.Add(mb);
 
 
         var bodyBuilder = new BodyBuilder
