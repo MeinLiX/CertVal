@@ -67,7 +67,7 @@ public class NotificationHistoryConfiguration : IEntityTypeConfiguration<Notific
         builder.HasOne(nh => nh.Certificate)
             .WithMany(c => c.NotificationHistory)
             .HasForeignKey(nh => nh.CertificateId)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
+            .IsRequired(true)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
