@@ -8,6 +8,8 @@ public record EmailNotificationMessage
     public EmailNotificationType Type { get; init; }
     public string ToEmail { get; init; } = string.Empty;
     public string ToName { get; init; } = string.Empty;
+    public IReadOnlyCollection<string>? Recipients { get; init; }
+    public bool IsAggregated => Recipients is { Count: > 0 };
     public Dictionary<string, object> Data { get; init; } = new();
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
     public int RetryCount { get; init; } = 0;
