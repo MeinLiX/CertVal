@@ -1,5 +1,6 @@
 ﻿using CertVal.Core.Messaging;
 using CertVal.EmailService.Configuration;
+using CertVal.EmailService.Services.Abstractions;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Options;
 using MimeKit;
@@ -8,6 +9,7 @@ namespace CertVal.EmailService.Services;
 
 public class SmtpEmailService : IEmailService
 {
+    private readonly EmailServiceConfiguration _config;
     private readonly SmtpSettings _smtpSettings;
     private readonly ITemplateService _templateService;
     private readonly ILogger<SmtpEmailService> _logger;
@@ -17,29 +19,36 @@ public class SmtpEmailService : IEmailService
         ITemplateService templateService,
         ILogger<SmtpEmailService> logger)
     {
-        _smtpSettings = configuration.Value.Smtp;
+        _config = configuration.Value;
+        _smtpSettings = _config.Smtp;
         _templateService = templateService;
         _logger = logger;
     }
 
     public async Task<bool> SendEmailAsync(EmailNotificationMessage message)
     {
+        using var _ = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["MessageId"] = message.MessageId,
+            ["CorrelationId"] = message.CorrelationId
+        });
+
         try
         {
             ValidateConfiguration();
+            ValidateMessage(message);
 
-            var template = await _templateService.RenderTemplateAsync(message);
+            var template = await _templateService.RenderTemplateAsync(message).ConfigureAwait(false);
             var mimeMessage = CreateMimeMessage(message, template);
 
-            await SendEmailInternal(mimeMessage);
+            await SendEmailInternal(mimeMessage).ConfigureAwait(false);
 
-            _logger.LogInformation("Email sent successfully: {MessageId}", message.MessageId);
+            _logger.LogInformation("Email sent successfully to {ToEmail}", message.ToEmail);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email {MessageId}: {Error}",
-                message.MessageId, ex.Message);
+            _logger.LogError(ex, "Failed to send email to {ToEmail}: {Error}", message.ToEmail, ex.Message);
             return false;
         }
     }
@@ -51,14 +60,36 @@ public class SmtpEmailService : IEmailService
 
         if (string.IsNullOrWhiteSpace(_smtpSettings.FromEmail))
             throw new InvalidOperationException("SMTP FromEmail is not configured");
+
+        if (_smtpSettings.Port <= 0 || _smtpSettings.Port > 65535)
+            throw new InvalidOperationException("SMTP Port is invalid");
+
+        if (!MailboxAddress.TryParse(_smtpSettings.FromEmail, out _))
+            throw new InvalidOperationException("SMTP FromEmail is invalid");
+    }
+
+    private static void ValidateMessage(EmailNotificationMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(message.ToEmail))
+            throw new ArgumentException("Recipient email is required", nameof(message));
+
+        if (!MailboxAddress.TryParse(message.ToEmail, out _))
+            throw new ArgumentException("Recipient email is invalid", nameof(message));
     }
 
     private MimeMessage CreateMimeMessage(EmailNotificationMessage message, Models.EmailTemplate template)
     {
-        var mimeMessage = new MimeMessage();
-        mimeMessage.From.Add(new MailboxAddress(_smtpSettings.FromName, _smtpSettings.FromEmail));
-        mimeMessage.To.Add(new MailboxAddress(message.ToName, message.ToEmail));
-        mimeMessage.Subject = template.Subject;
+        var mimeMessage = new MimeMessage
+        {
+            Subject = template.Subject,
+        };
+
+        var from = CreateMailbox(_smtpSettings.FromName, _smtpSettings.FromEmail);
+        mimeMessage.From.Add(from);
+
+        var to = CreateMailbox(message.ToName, message.ToEmail);
+        mimeMessage.To.Add(to);
+
 
         var bodyBuilder = new BodyBuilder
         {
@@ -77,18 +108,29 @@ public class SmtpEmailService : IEmailService
         return mimeMessage;
     }
 
+    private static MailboxAddress CreateMailbox(string? name, string email)
+    {
+        if (!MailboxAddress.TryParse(email, out var parsed))
+            throw new InvalidOperationException("Invalid email address format");
+
+        return string.IsNullOrWhiteSpace(name)
+            ? new MailboxAddress(parsed.Name, parsed.Address)
+            : new MailboxAddress(name, parsed.Address);
+    }
+
     private async Task SendEmailInternal(MimeMessage message)
     {
         using var client = new SmtpClient();
 
-        await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, _smtpSettings.GetSslOptions);
+        await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, _smtpSettings.GetSslOptions).ConfigureAwait(false);
 
         if (!string.IsNullOrEmpty(_smtpSettings.Username))
         {
-            await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password);
+            client.AuthenticationMechanisms.Remove("XOAUTH2");
+            await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password).ConfigureAwait(false);
         }
 
-        await client.SendAsync(message);
-        await client.DisconnectAsync(true);
+        await client.SendAsync(message).ConfigureAwait(false);
+        await client.DisconnectAsync(true).ConfigureAwait(false);
     }
 }

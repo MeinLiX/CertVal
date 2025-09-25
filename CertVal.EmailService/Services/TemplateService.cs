@@ -1,15 +1,11 @@
 using CertVal.Core.Messaging;
 using CertVal.EmailService.Configuration;
 using CertVal.EmailService.Models;
+using CertVal.EmailService.Services.Abstractions;
 using CertVal.EmailService.Templates;
 using Microsoft.Extensions.Options;
 
 namespace CertVal.EmailService.Services;
-
-public interface ITemplateService
-{
-    Task<EmailTemplate> RenderTemplateAsync(EmailNotificationMessage message);
-}
 
 public class TemplateService : ITemplateService
 {
@@ -48,7 +44,10 @@ public class TemplateService : ITemplateService
             ["CompanyName"] = _config.CompanyName,
             ["SupportEmail"] = _config.SupportEmail,
             ["BaseUrl"] = _config.BaseUrl,
-            ["DashboardUrl"] = $"{_config.BaseUrl}/dashboard"
+            ["DashboardUrl"] = CombineUrl(_config.BaseUrl, "dashboard"),
+            ["Email"] = message.ToEmail,
+            ["FirstName"] = message.ToName ?? string.Empty,
+            ["ToName"] = message.ToName ?? string.Empty
         };
 
         foreach (var kvp in message.Data)
@@ -69,14 +68,14 @@ public class TemplateService : ITemplateService
             case EmailNotificationType.EmailConfirmation:
                 if (data.TryGetValue("ConfirmationToken", out var token))
                 {
-                    data["ConfirmationUrl"] = $"{_config.BaseUrl}/auth/confirm-email?token={Uri.EscapeDataString(token.ToString() ?? "")}";
+                    data["ConfirmationUrl"] = CombineUrl(_config.BaseUrl, "auth/confirm-email") + "?token=" + Uri.EscapeDataString(token?.ToString() ?? string.Empty);
                 }
                 break;
 
             case EmailNotificationType.PasswordReset:
                 if (data.TryGetValue("ResetToken", out var resetToken))
                 {
-                    data["ResetUrl"] = $"{_config.BaseUrl}/auth/reset-password?token={Uri.EscapeDataString(resetToken.ToString() ?? "")}";
+                    data["ResetUrl"] = CombineUrl(_config.BaseUrl, "auth/reset-password") + "?token=" + Uri.EscapeDataString(resetToken?.ToString() ?? string.Empty);
                 }
                 break;
 
@@ -84,7 +83,7 @@ public class TemplateService : ITemplateService
                 if (data.TryGetValue("WorkspaceId", out var workspaceId) &&
                     data.TryGetValue("InvitationToken", out var inviteToken))
                 {
-                    data["InvitationUrl"] = $"{_config.BaseUrl}/workspaces/{workspaceId}/join?token={Uri.EscapeDataString(inviteToken.ToString() ?? "")}";
+                    data["InvitationUrl"] = CombineUrl(_config.BaseUrl, $"workspaces/{workspaceId}/join") + "?token=" + Uri.EscapeDataString(inviteToken?.ToString() ?? string.Empty);
                 }
                 break;
         }
@@ -111,4 +110,12 @@ public class TemplateService : ITemplateService
         EmailNotificationType.CertificateExpired => $"Certificate expired - {_config.CompanyName}",
         _ => $"Notification - {_config.CompanyName}"
     };
+
+    private static string CombineUrl(string baseUrl, string relative)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl)) return "/" + relative.TrimStart('/');
+        var left = baseUrl.TrimEnd('/');
+        var right = relative.TrimStart('/');
+        return $"{left}/{right}";
+    }
 }
