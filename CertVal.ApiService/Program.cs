@@ -127,36 +127,23 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
+{
+    options.WithTitle("CertVal API Documentation");
+    options.WithTheme(ScalarTheme.Default);
+    options.WithDarkMode(false);
+    options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    options.Servers = Array.Empty<ScalarServer>();
+});
+
+app.MapGet("/", () => Results.Redirect("/scalar/v1"))
+    .ExcludeFromDescription();
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference(options =>
-    {
-        options.WithTitle("CertVal API Documentation");
-        options.WithTheme(ScalarTheme.Default);
-        options.WithDarkMode(false);
-        options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-        options.Servers = Array.Empty<ScalarServer>();
-    });
-
-    app.MapGet("/", () => Results.Redirect("/scalar/v1"))
-        .ExcludeFromDescription();
-
-    // Development-only database endpoints
-    var dbGroup = app.MapGroup("dev/db").WithTags("Development");
-
-    dbGroup.MapPost("/create", async (ApplicationDbContext db) =>
-    {
-        if (!db.EnsureCreate()) return Results.BadRequest("Database already exists");
-        await db.SaveChangesAsync();
-        return Results.Ok("Database created successfully");
-    }).WithDescription("Create database (Development only)");
-
-    dbGroup.MapPost("/delete", (ApplicationDbContext db) =>
-    {
-        if (!db.EnsureDelete()) return Results.BadRequest("Failed to delete database");
-        return Results.Ok("Database deleted successfully");
-    }).WithDescription("Delete database (Development only)");
+    // Development-only endpoints
+    var devGroup = app.MapGroup("dev").WithTags("Development");
 }
 
 app.UseCors("DefaultPolicy");

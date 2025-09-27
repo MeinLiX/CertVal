@@ -15,9 +15,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
     public DbSet<StoredEvent> StoredEvents => Set<StoredEvent>();
 
-    public bool EnsureDelete() => Database.EnsureDeleted();
-    public bool EnsureCreate() => Database.EnsureCreated();
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
