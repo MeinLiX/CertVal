@@ -117,7 +117,10 @@ builder.Services.AddCors(options =>
 });
 
 // Register background services
-builder.Services.AddHostedService<CertificateExpiryCheckerService>();
+builder.Services.AddSingleton<CertificateExpiryCheckerService>();
+builder.Services.AddSingleton<ICertificateExpiryChecker>(sp => sp.GetRequiredService<CertificateExpiryCheckerService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<CertificateExpiryCheckerService>());
+
 builder.Services.AddHostedService<CertificateStorageInitializationService>();
 
 builder.Services.AddHealthChecks()
@@ -144,6 +147,15 @@ if (app.Environment.IsDevelopment())
 {
     // Development-only endpoints
     var devGroup = app.MapGroup("dev").WithTags("Development");
+
+    devGroup.MapPost("/certificate-expiry/check-now", async (ICertificateExpiryChecker checker, CancellationToken ct) =>
+    {
+        await checker.TriggerCheckNowAsync(ct);
+        return Results.Accepted(value: new { message = "Triggered certificate expiry check" });
+    })
+    .WithName("TriggerCertificateExpiryCheckNow")
+    .WithDescription("Immediately triggers the certificate expiry checker to run and resets its delay.")
+    .WithTags("Development");
 }
 
 app.UseCors("DefaultPolicy");
