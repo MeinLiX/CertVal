@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CertVal.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250921094844_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250927195915_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -317,6 +317,11 @@ namespace CertVal.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<int>("RecipientAggregationMode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -668,7 +673,8 @@ namespace CertVal.Infrastructure.Migrations
                     b.HasOne("CertVal.Core.Entities.Certificate", "Certificate")
                         .WithMany("NotificationHistory")
                         .HasForeignKey("CertificateId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("CertVal.Core.Entities.NotificationRule", "NotificationRule")
                         .WithMany("NotificationHistory")
