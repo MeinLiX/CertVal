@@ -1,93 +1,64 @@
 services:
-  certval.postgres:
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT}:5432"
-
-  certval.rabbitmq:
-    environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
-    ports:
-      - "${RABBITMQ_PORT}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
-
-  certval.minio:
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-    ports:
-      - "${MINIO_API_PORT}:9000"
-      - "${MINIO_CONSOLE_PORT}:9001"
-
   certval.apiservice:
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_HTTP_PORTS=${APISERVICE_HTTP_PORT}
       - "ConnectionStrings__CertVal-database=Host=certval.postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       - "ConnectionStrings__CertVal-rabbitmq=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@certval.rabbitmq:5672/"
       - "ConnectionStrings__CertVal-minio=Endpoint=http://certval.minio:9000;AccessKey=${MINIO_ROOT_USER};SecretKey=${MINIO_ROOT_PASSWORD}"
-      - "JwtSettings__SecretKey=SuperSecretKey"
-      - "JwtSettings__Issuer=CertVal"
-      - "JwtSettings__Audience=CertVal-Users"
-      - "JwtSettings__ExpiryHours=24"
-      - "Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGINS__0}"
-      - "Cors__AllowedOrigins__1=${CORS_ALLOWED_ORIGINS__1}"
-      - "CertificateStorage__BucketName=certificates"
-      - "CertificateStorage__UseWorkspacePrefixes=true"
-      - "CertificateStorage__DeleteOnCertificateRemoval=true"
-      - "CertificateStorage__MaxFileSize=10485760"
-      - "NotificationSettings__ProcessingInterval=00:15:00"
-      - "NotificationSettings__MaxRetryAttempts=3"
-      - "NotificationSettings__RetryDelay=00:05:00"
-      - "RabbitMQ__ConnectionString=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@certval.rabbitmq:5672/"
-      - "Messaging__ConnectionString=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@certval.rabbitmq:5672/"
-      - "Messaging__ExchangeName=${MESSAGING_EXCHANGE}"
-      - "Messaging__EmailQueueName=${MESSAGING_EMAIL_QUEUE}"
-      - "Messaging__EmailRoutingKey=${MESSAGING_EMAIL_ROUTING_KEY}"
-      - "Messaging__DurableQueues=${MESSAGING_DURABLE_QUEUES}"
-      - "Messaging__PersistentMessages=${MESSAGING_PERSISTENT_MESSAGES}"
-      - "Messaging__MaxRetryAttempts=${MESSAGING_MAX_RETRY_ATTEMPTS}"
-      - "Messaging__RetryDelay=${MESSAGING_RETRY_DELAY}"
-      - "Messaging__ConnectionTimeout=${MESSAGING_CONNECTION_TIMEOUT}"
-      - "Messaging__MaxConnectionRetries=${MESSAGING_MAX_CONNECTION_RETRIES}"
-      - "Minio__Endpoint=http://certval.minio:9000"
-      - "Minio__AccessKey=${MINIO_ROOT_USER}"
-      - "Minio__SecretKey=${MINIO_ROOT_PASSWORD}"
-      - "Minio__UseSSL=false"
-      - "CertificateStorage__BucketName=${CERTIFICATE_BUCKET_NAME}"
+      - JwtSettings__SecretKey=${JwtSettings__SecretKey}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+      - JwtSettings__ExpiryHours=${JwtSettings__ExpiryHours}
+      - Cors__AllowedOrigins__0=${Cors__AllowedOrigins__0}
+      - Cors__AllowedOrigins__1=${Cors__AllowedOrigins__1}
+      - CertificateStorage__BucketName=${CertificateStorage__BucketName}
+      - CertificateStorage__UseWorkspacePrefixes=${CertificateStorage__UseWorkspacePrefixes}
+      - CertificateStorage__DeleteOnCertificateRemoval=${CertificateStorage__DeleteOnCertificateRemoval}
+      - CertificateStorage__MaxFileSize=${CertificateStorage__MaxFileSize}
+      - NotificationSettings__ProcessingInterval=${NotificationSettings__ProcessingInterval}
+      - NotificationSettings__MaxRetryAttempts=${NotificationSettings__MaxRetryAttempts}
+      - NotificationSettings__RetryDelay=${NotificationSettings__RetryDelay}
+      - Messaging__ExchangeName=${Messaging__ExchangeName}
+      - Messaging__EmailQueueName=${Messaging__EmailQueueName}
+      - Messaging__EmailRoutingKey=${Messaging__EmailRoutingKey}
+      - Messaging__DurableQueues=${Messaging__DurableQueues}
+      - Messaging__PersistentMessages=${Messaging__PersistentMessages}
+      - Messaging__MaxRetryAttempts=${Messaging__MaxRetryAttempts}
+      - Messaging__RetryDelay=${Messaging__RetryDelay}
+      - Messaging__ConnectionTimeout=${Messaging__ConnectionTimeout}
+      - Messaging__MaxConnectionRetries=${Messaging__MaxConnectionRetries}
+      - Minio__Endpoint=http://certval.minio:9000
+      - Minio__AccessKey=${MINIO_ROOT_USER}
+      - Minio__SecretKey=${MINIO_ROOT_PASSWORD}
+      - Minio__UseSSL=false
 
   certval.emailservice:
     environment:
-      - DOTNET_ENVIRONMENT=Development
+      - DOTNET_ENVIRONMENT=${DOTNET_ENVIRONMENT}
       - "ConnectionStrings__CertVal-rabbitmq=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@certval.rabbitmq:5672/"
-      - "EmailService__Smtp__Host=${SMTP_HOST}"
-      - "EmailService__Smtp__Port=${SMTP_PORT}"
-      - "EmailService__Smtp__UseSsl=${SMTP_USE_SSL}"
-      - "EmailService__Smtp__SslMode=${SMTP_SSL_MODE}"
-      - "EmailService__Smtp__Username=${SMTP_USERNAME}"
-      - "EmailService__Smtp__Password=${SMTP_PASSWORD}"
-      - "EmailService__Smtp__FromEmail=${SMTP_FROM_EMAIL}"
-      - "EmailService__Smtp__FromName=${SMTP_FROM_NAME}"
-      - "EmailService__SupportEmail=support@certval.halerka.dev"
-      - "EmailService__CompanyName=CertVal"
-      - "EmailService__BaseUrl=${EMAIL_BASE_URL}"
-      - "EmailService__MaxRetryAttempts=3"
-      - "EmailService__RetryDelay=00:05:00"
-      - "Messaging__ConnectionString=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@certval.rabbitmq:5672/"
-      - "RabbitMQ__ConnectionString=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@certval.rabbitmq:5672/"
-      - "Messaging__ExchangeName=${MESSAGING_EXCHANGE}"
-      - "Messaging__EmailQueueName=${MESSAGING_EMAIL_QUEUE}"
-      - "Messaging__EmailRoutingKey=${MESSAGING_EMAIL_ROUTING_KEY}"
-      - "Messaging__DurableQueues=${MESSAGING_DURABLE_QUEUES}"
-      - "Messaging__PersistentMessages=${MESSAGING_PERSISTENT_MESSAGES}"
-      - "Messaging__MaxRetryAttempts=${MESSAGING_MAX_RETRY_ATTEMPTS}"
-      - "Messaging__RetryDelay=${MESSAGING_RETRY_DELAY}"
-      - "Messaging__ConnectionTimeout=${MESSAGING_CONNECTION_TIMEOUT}"
-      - "Messaging__MaxConnectionRetries=${MESSAGING_MAX_CONNECTION_RETRIES}"
+      - EmailService__Smtp__Host=${EmailService__Smtp__Host}
+      - EmailService__Smtp__Port=${EmailService__Smtp__Port}
+      - EmailService__Smtp__UseSsl=${EmailService__Smtp__UseSsl}
+      - EmailService__Smtp__SslMode=${EmailService__Smtp__SslMode}
+      - EmailService__Smtp__Username=${EmailService__Smtp__Username}
+      - EmailService__Smtp__Password=${EmailService__Smtp__Password}
+      - EmailService__Smtp__FromEmail=${EmailService__Smtp__FromEmail}
+      - EmailService__Smtp__FromName=${EmailService__Smtp__FromName}
+      - EmailService__SupportEmail=${EmailService__SupportEmail}
+      - EmailService__CompanyName=${EmailService__CompanyName}
+      - EmailService__BaseUrl=${EmailService__BaseUrl}
+      - EmailService__MaxRetryAttempts=${EmailService__MaxRetryAttempts}
+      - EmailService__RetryDelay=${EmailService__RetryDelay}
+      - Messaging__ExchangeName=${Messaging__ExchangeName}
+      - Messaging__EmailQueueName=${Messaging__EmailQueueName}
+      - Messaging__EmailRoutingKey=${Messaging__EmailRoutingKey}
+      - Messaging__DurableQueues=${Messaging__DurableQueues}
+      - Messaging__PersistentMessages=${Messaging__PersistentMessages}
+      - Messaging__MaxRetryAttempts=${Messaging__MaxRetryAttempts}
+      - Messaging__RetryDelay=${Messaging__RetryDelay}
+      - Messaging__ConnectionTimeout=${Messaging__ConnectionTimeout}
+      - Messaging__MaxConnectionRetries=${Messaging__MaxConnectionRetries}
 
   certval.web:
     build:
@@ -95,4 +66,3 @@ services:
         PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
     environment:
       - PUBLIC_API_BASE_URL=${PUBLIC_API_BASE_URL}
-
