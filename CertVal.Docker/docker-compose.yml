@@ -1,0 +1,100 @@
+name: certval
+
+services:
+  certval.postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - certval-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h 127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - certval
+
+  certval.rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - certval-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - certval
+
+  certval.minio:
+    image: minio/minio:RELEASE.2024-08-17T01-24-54Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - certval-minio-data:/data
+    networks:
+      - certval
+
+  certval.apiservice:
+    image: ${DOCKER_REGISTRY}certvalapiservice
+    build:
+      context: ../
+      dockerfile: CertVal.ApiService/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      certval.postgres:
+        condition: service_healthy
+      certval.rabbitmq:
+        condition: service_healthy
+      certval.minio:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - certval
+
+  certval.emailservice:
+    image: ${DOCKER_REGISTRY}certvalemailservice
+    build:
+      context: ../
+      dockerfile: CertVal.EmailService/Dockerfile
+    depends_on:
+      certval.rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - certval
+
+  certval.web:
+    image: ${DOCKER_REGISTRY}certvalweb
+    build:
+      context: ../
+      dockerfile: CertVal.Web/Dockerfile
+    ports:
+      - "${WEB_HTTP_PORT}:3000"
+    depends_on:
+      certval.apiservice:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - certval
+
+networks:
+  certval:
+    driver: bridge
+
+volumes:
+  certval-postgres-data:
+  certval-rabbitmq-data:
+  certval-minio-data:
+
