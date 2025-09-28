@@ -12,5 +12,9 @@
     </None>
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
+    <None Include="infra\docker-compose.yml" />
+    <None Include="README.md" />
+    <None Include="scripts\manage.ps1" />
+    <None Include="scripts\manage.sh" />
   </ItemGroup>
 </Project>
