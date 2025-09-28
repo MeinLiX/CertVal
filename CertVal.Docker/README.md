@@ -6,31 +6,52 @@
 - `infra/docker-compose.yml`: infra (Postgres, RabbitMQ, MinIO, network).
 - `.env`: central configuration for both app and infra. Defaults target Production.
 
-## Usage (from CertVal.Docker)
+## Usage (from 'CertVal.Docker' directory)
 
-### Start services:
-1) Infrastructure:
+### Scripts (Windows + Linux/Mac)
+
+- Windows PowerShell:
+	- `./scripts/manage.ps1 up all` – start infra then app (builds images)
+	- `./scripts/manage.ps1 up infra` – start only infra
+	- `./scripts/manage.ps1 up app` – start only app
+	- `./scripts/manage.ps1 down app` – stop only app
+	- `./scripts/manage.ps1 down infra` – stop only infra
+	- `./scripts/manage.ps1 down all` – stop app then infra
+	- Optional: pass `--noBuild` to skip image build
+
+- Linux/Mac (bash):
+	- `./scripts/manage.sh up all` – start infra then app (builds images)
+	- `./scripts/manage.sh up infra` – start only infra
+	- `./scripts/manage.sh up app` – start only app
+	- `./scripts/manage.sh down app` – stop only app
+	- `./scripts/manage.sh down infra` – stop only infra
+	- `./scripts/manage.sh down all`– stop app then infra
+	- Optional: `--no-build` to skip image build
+
+Both scripts automatically use `.env` and compose files in this folder.
+
+### Manual docker compose
+
+Start infra:
 
 ```pwsh
 docker compose --env-file .env -f infra/docker-compose.yml up -d
 ```
 
-2) Application services:
+Start app services:
 
 ```pwsh
-docker compose up -d --build
-# docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --build
 ```
 
-### Stop services:
+Stop app services:
 
-1) Application services:
 ```pwsh
-docker compose down
-# docker compose -f docker-compose.yml -f docker-compose.override.yml down
+docker compose -f docker-compose.yml -f docker-compose.override.yml down
 ```
 
-2) infrastructure (keeps volumes):
+Stop infra (keeps volumes):
+
 ```pwsh
 docker compose --env-file .env -f infra/docker-compose.yml down
 ```
