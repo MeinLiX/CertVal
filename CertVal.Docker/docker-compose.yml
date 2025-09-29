@@ -1,0 +1,5 @@
+name: certval
+
+include:
+  - infra/docker-compose.yml
+  - services/docker-compose.yml
