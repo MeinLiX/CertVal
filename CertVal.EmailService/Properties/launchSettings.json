@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CertVal.EmailService": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

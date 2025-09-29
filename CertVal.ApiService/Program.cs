@@ -5,6 +5,7 @@ using CertVal.Infrastructure;
 using CertVal.Infrastructure.Authentication;
 using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using System.Text.Json;
@@ -12,6 +13,9 @@ using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+builder.Services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo("/home/app/dataprotection-keys"));
 
 builder.AddRabbitMQClient("CertVal-rabbitmq");
 
@@ -181,7 +185,13 @@ try
 }
 catch (Exception ex)
 {
-    var logger = app.Services.GetRequiredService<ILogger<Program>>();
-    logger.LogCritical(ex, "Application failed to start");
+    try
+    {
+        app.Logger.LogCritical(ex, "Application failed to start");
+    }
+    catch
+    {
+        Console.Error.WriteLine($"Application failed to start: {ex}");
+    }
     throw;
 }
