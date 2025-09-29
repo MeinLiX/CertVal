@@ -1,5 +1,14 @@
+name: certval-services
+
 services:
   certval.apiservice:
+    image: ${DOCKER_REGISTRY}certvalapiservice
+    build:
+      context: ../../
+      dockerfile: CertVal.ApiService/Dockerfile
+    ports:
+      - "${APISERVICE_HTTP_PORT}:8080"
+    restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_HTTP_PORTS=${APISERVICE_HTTP_PORT}
@@ -32,8 +41,15 @@ services:
       - Minio__AccessKey=${MINIO_ROOT_USER}
       - Minio__SecretKey=${MINIO_ROOT_PASSWORD}
       - Minio__UseSSL=false
+    networks:
+      - certval-net
 
   certval.emailservice:
+    image: ${DOCKER_REGISTRY}certvalemailservice
+    build:
+      context: ../../
+      dockerfile: CertVal.EmailService/Dockerfile
+    restart: unless-stopped
     environment:
       - DOTNET_ENVIRONMENT=${DOTNET_ENVIRONMENT}
       - "ConnectionStrings__CertVal-rabbitmq=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@certval.rabbitmq:5672/"
@@ -59,10 +75,23 @@ services:
       - Messaging__RetryDelay=${Messaging__RetryDelay}
       - Messaging__ConnectionTimeout=${Messaging__ConnectionTimeout}
       - Messaging__MaxConnectionRetries=${Messaging__MaxConnectionRetries}
+    networks:
+      - certval-net
 
   certval.web:
+    image: ${DOCKER_REGISTRY}certvalweb
     build:
+      context: ../../
+      dockerfile: CertVal.Web/Dockerfile
       args:
         PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
+    ports:
+      - "${WEB_HTTP_PORT}:3000"
     environment:
       - PUBLIC_API_BASE_URL=${PUBLIC_API_BASE_URL}
+    depends_on:
+      certval.apiservice:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - certval-net

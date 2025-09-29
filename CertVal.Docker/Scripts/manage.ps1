@@ -30,8 +30,8 @@ $root = Resolve-Path (Join-Path $scriptDir '..')
 Set-Location $root
 
 $composeInfra = "infra/docker-compose.yml"
-$composeApp = "docker-compose.yml"
-$composeOverride = "docker-compose.override.yml"
+$composeServices = "services/docker-compose.yml"
+$composeServicesNetworkOverlay = "services/networks.overlay.yml"
 $envFile = ".env"
 $networkName = "certval-net"
 
@@ -65,22 +65,22 @@ switch ($action) {
                 EnsureNetwork -name $networkName
                 $buildArgs = @()
                 if (-not $noBuild) { $buildArgs = @('--build') }
-                Compose @($composeApp, $composeOverride) (@('up', '-d') + $buildArgs)
+                Compose @($composeServicesNetworkOverlay, $composeServices) (@('up', '-d') + $buildArgs)
             }
             'all' {
                 Compose @($composeInfra) @('up', '-d')
                 $buildArgs = @()
                 if (-not $noBuild) { $buildArgs = @('--build') }
-                Compose @($composeApp, $composeOverride) (@('up', '-d') + $buildArgs)
+                Compose @($composeServicesNetworkOverlay, $composeServices) (@('up', '-d') + $buildArgs)
             }
         }
     }
     'down' {
         switch ($scope) {
             'infra' { Compose @($composeInfra) @('down') }
-            'app' { Compose @($composeApp, $composeOverride) @('down') }
+            'app' { Compose @($composeServicesNetworkOverlay, $composeServices) @('down') }
             'all' {
-                Compose @($composeApp, $composeOverride) @('down')
+                Compose @($composeServicesNetworkOverlay, $composeServices) @('down')
                 Compose @($composeInfra) @('down')
             }
         }

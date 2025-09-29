@@ -23,8 +23,8 @@ ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 cd "$ROOT"
 
 COMPOSE_INFRA="infra/docker-compose.yml"
-COMPOSE_APP="docker-compose.yml"
-COMPOSE_OVERRIDE="docker-compose.override.yml"
+COMPOSE_SERVICES="services/docker-compose.yml"
+COMPOSE_SERVICES_NET_OVERLAY="services/networks.overlay.yml"
 ENV_FILE=".env"
 NETWORK_NAME="certval-net"
 
@@ -70,15 +70,15 @@ case "$ACTION" in
   up)
     case "$SCOPE" in
       infra)
-        dc -f "$COMPOSE_INFRA" up -d
+  dc -f "$COMPOSE_INFRA" up -d
         ;;
       app)
         ensure_network
-        if [[ "$NO_BUILD" == false ]]; then dc -f "$COMPOSE_APP" -f "$COMPOSE_OVERRIDE" up -d --build; else dc -f "$COMPOSE_APP" -f "$COMPOSE_OVERRIDE" up -d; fi
+  if [[ "$NO_BUILD" == false ]]; then dc -f "$COMPOSE_SERVICES_NET_OVERLAY" -f "$COMPOSE_SERVICES" up -d --build; else dc -f "$COMPOSE_SERVICES_NET_OVERLAY" -f "$COMPOSE_SERVICES" up -d; fi
         ;;
       all)
-        dc -f "$COMPOSE_INFRA" up -d
-        if [[ "$NO_BUILD" == false ]]; then dc -f "$COMPOSE_APP" -f "$COMPOSE_OVERRIDE" up -d --build; else dc -f "$COMPOSE_APP" -f "$COMPOSE_OVERRIDE" up -d; fi
+  dc -f "$COMPOSE_INFRA" up -d
+  if [[ "$NO_BUILD" == false ]]; then dc -f "$COMPOSE_SERVICES_NET_OVERLAY" -f "$COMPOSE_SERVICES" up -d --build; else dc -f "$COMPOSE_SERVICES_NET_OVERLAY" -f "$COMPOSE_SERVICES" up -d; fi
         ;;
       *) usage; exit 1;;
     esac
@@ -86,14 +86,14 @@ case "$ACTION" in
   down)
     case "$SCOPE" in
       infra)
-        dc -f "$COMPOSE_INFRA" down
+  dc -f "$COMPOSE_INFRA" down
         ;;
       app)
-        dc -f "$COMPOSE_APP" -f "$COMPOSE_OVERRIDE" down
+  dc -f "$COMPOSE_SERVICES_NET_OVERLAY" -f "$COMPOSE_SERVICES" down
         ;;
       all)
-        dc -f "$COMPOSE_APP" -f "$COMPOSE_OVERRIDE" down
-        dc -f "$COMPOSE_INFRA" down
+  dc -f "$COMPOSE_SERVICES_NET_OVERLAY" -f "$COMPOSE_SERVICES" down
+  dc -f "$COMPOSE_INFRA" down
         ;;
       *) usage; exit 1;;
     esac

@@ -1,0 +1,19 @@
+services:
+  certval.apiservice:
+    depends_on:
+      certval.postgres:
+        condition: service_healthy
+      certval.rabbitmq:
+        condition: service_healthy
+      certval.minio:
+        condition: service_started
+
+  certval.emailservice:
+    depends_on:
+      certval.rabbitmq:
+        condition: service_healthy
+
+  certval.web:
+    depends_on:
+      certval.apiservice:
+        condition: service_started
