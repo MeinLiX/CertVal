@@ -4,8 +4,8 @@
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
       "serviceActions": {
-        "certval.apiservice": "StartDebugging",
-        "certval.emailservice": "StartDebugging"
+        "certval.apiservice": "StartWithoutDebugging",
+        "certval.emailservice": "StartWithoutDebugging"
       }
     }
   }
