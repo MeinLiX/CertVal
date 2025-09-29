@@ -2,7 +2,7 @@ Certificate Expired - {{CompanyName}}
 
 CRITICAL: CERTIFICATE EXPIRED
 
-Your SSL certificate has expired and requires immediate attention to prevent service disruptions.
+Your certificate has expired and requires immediate attention to prevent service disruptions.
 
 CRITICAL: Your certificate expired on {{ExpiryDate}}. This may cause service interruptions and security warnings for your users.
 

@@ -2,7 +2,7 @@ Certificate Expiring Soon - {{CompanyName}}
 
 CERTIFICATE EXPIRATION ALERT
 
-This is a reminder that one of your SSL certificates is expiring soon and requires your attention.
+This is a reminder that one of your certificates is expiring soon and requires your attention.
 
 ACTION REQUIRED: Your certificate will expire in {{DaysUntilExpiry}} day(s) on {{ExpiryDate}}.
 
