@@ -18,7 +18,7 @@
   - `./scripts/manage.ps1 down app` – stop only services
   - `./scripts/manage.ps1 down infra` – stop only infra
   - `./scripts/manage.ps1 down all` – stop services first, then infra
-  - Optional: pass `--noBuild` to skip image build
+  - Optional: pass `-noBuild` to skip image build
 
 - Linux/Mac (bash):
   - `./scripts/manage.sh up all` – start infra then services (builds images)
@@ -57,4 +57,19 @@ docker compose --env-file .env -f services/docker-compose.yml -f services/networ
 
 #stop
 docker compose -f services/docker-compose.yml down
+```
+
+### Auto-update running services
+
+1) Add GHCR credentials to `.env` :
+
+```
+GHCR_USER=your-gh-username
+GHCR_PAT=ghp_xxx_or_fine_grained_PAT_with_read:packages
+```
+
+2) Start services with watchtower override:
+
+```pwsh
+docker compose --env-file .env -f services/docker-compose.yml -f services/networks.overlay.yml -f services/docker-compose.watchtower.yml up -d
 ```

@@ -9,6 +9,10 @@ usage() {
   echo "  ./manage.sh up app" >&2
   echo "  ./manage.sh down app" >&2
   echo "  ./manage.sh down all" >&2
+  echo "Options:" >&2
+  echo "  --no-build         Skip building images (useful when pulling from GHCR)" >&2
+  echo "Env:" >&2
+  echo "  Set DOCKER_REGISTRY=ghcr.io/<owner>/ in .env to pull images from GHCR" >&2
 }
 
 ACTION=${1:-}
@@ -27,29 +31,6 @@ COMPOSE_SERVICES="services/docker-compose.yml"
 COMPOSE_SERVICES_NET_OVERLAY="services/networks.overlay.yml"
 ENV_FILE=".env"
 NETWORK_NAME="certval-net"
-
-compose() {
-  local -a FILES=("$@")
-  local -a CMD=(docker compose)
-  if [[ -f "$ENV_FILE" ]]; then CMD+=(--env-file "$ENV_FILE"); fi
-  for f in "${FILES[@]}"; do CMD+=( -f "$f" ); done
-  shift $(( $# - 1 )) || true
-}
-
-run_compose() {
-  local -a FILES=()
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -f) FILES+=("$2"); shift 2;;
-      *) break;;
-    esac
-  done
-}
-
-compose_run() {
-  local -a FILES=("$1"); shift
-  if [[ $# -gt 0 && $1 == "," ]]; then shift; fi
-}
 
 dc() {
   local -a CMD=(docker compose)
