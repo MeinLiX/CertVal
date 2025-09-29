@@ -21,6 +21,10 @@ function Write-Usage {
     Write-Host "  ./manage.ps1 up app" 
     Write-Host "  ./manage.ps1 down app" 
     Write-Host "  ./manage.ps1 down all" 
+    Write-Host "Options:" -ForegroundColor Yellow
+    Write-Host "  -noBuild           Skip building images (useful when pulling from GHCR)"
+    Write-Host "Env:" -ForegroundColor Yellow
+    Write-Host "  Set DOCKER_REGISTRY=ghcr.io/<owner>/ in .env to pull images from GHCR"
 }
 
 if (-not $action) { Write-Usage; exit 1 }
@@ -32,6 +36,7 @@ Set-Location $root
 $composeInfra = "infra/docker-compose.yml"
 $composeServices = "services/docker-compose.yml"
 $composeServicesNetworkOverlay = "services/networks.overlay.yml"
+$composeWatchtower = "services/docker-compose.watchtower.yml"
 $envFile = ".env"
 $networkName = "certval-net"
 
@@ -65,13 +70,17 @@ switch ($action) {
                 EnsureNetwork -name $networkName
                 $buildArgs = @()
                 if (-not $noBuild) { $buildArgs = @('--build') }
-                Compose @($composeServicesNetworkOverlay, $composeServices) (@('up', '-d') + $buildArgs)
+                $files = @($composeServicesNetworkOverlay, $composeServices)
+                if (Test-Path $composeWatchtower) { $files += $composeWatchtower }
+                Compose $files (@('up', '-d') + $buildArgs)
             }
             'all' {
                 Compose @($composeInfra) @('up', '-d')
                 $buildArgs = @()
                 if (-not $noBuild) { $buildArgs = @('--build') }
-                Compose @($composeServicesNetworkOverlay, $composeServices) (@('up', '-d') + $buildArgs)
+                $files = @($composeServicesNetworkOverlay, $composeServices)
+                if (Test-Path $composeWatchtower) { $files += $composeWatchtower }
+                Compose $files (@('up', '-d') + $buildArgs)
             }
         }
     }

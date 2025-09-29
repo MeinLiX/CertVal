@@ -1,0 +1,38 @@
+services:
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_SCOPE=certval
+      - WATCHTOWER_ROLLING_RESTART=true
+      - WATCHTOWER_DISABLE_STARTUP_MESSAGE=true
+      - WATCHTOWER_DEBUG=false
+      - REPO_USER=${GHCR_USER}
+      - REPO_PASS=${GHCR_PAT}
+    command: >-
+      --label-enable
+      --scope certval
+      --interval 300
+      --rolling-restart
+      --cleanup
+      --trace
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  certval.apiservice:
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=certval"
+
+  certval.emailservice:
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=certval"
+
+  certval.web:
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=certval"
