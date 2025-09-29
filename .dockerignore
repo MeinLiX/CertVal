@@ -1,0 +1,11 @@
+.git
+.vs
+**/.git
+**/.vs
+**/bin
+**/obj
+**/.svelte-kit
+**/node_modules
+**/build
+**/.DS_Store
+**/Thumbs.db

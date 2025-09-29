@@ -7,7 +7,13 @@ ENV VITE_API_BASE_URL=${PUBLIC_API_BASE_URL}
 
 COPY CertVal.Web/package*.json ./
 
-RUN npm ci
+RUN if [ -f package-lock.json ]; then \
+			echo "Using npm ci with existing lockfile"; \
+			npm ci; \
+		else \
+			echo "No package-lock.json found, using npm install"; \
+			npm install --no-audit --no-fund; \
+		fi
 COPY . .
 WORKDIR /app/CertVal.Web
 RUN npm run build
