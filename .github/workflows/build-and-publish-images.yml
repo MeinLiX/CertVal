@@ -1,0 +1,126 @@
+name: Build and publish images
+
+on:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: "Comma-separated list: apiservice,emailservice,web (empty = all)"
+        required: false
+        default: ""
+      tag:
+        description: "Image tag (default sha-<short-sha>)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [apiservice, emailservice, web]
+        include:
+          - service: apiservice
+            context: .
+            dockerfile: CertVal.ApiService/Dockerfile
+            image: certvalapiservice
+          - service: emailservice
+            context: .
+            dockerfile: CertVal.EmailService/Dockerfile
+            image: certvalemailservice
+          - service: web
+            context: .
+            dockerfile: CertVal.Web/Dockerfile
+            image: certvalweb
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve PUBLIC_API_BASE_URL via gh
+        id: resolve_api
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VALUE=$(gh variable get PUBLIC_API_BASE_URL -R "$GITHUB_REPOSITORY" 2>/dev/null || true)
+          echo "value=$VALUE" >> $GITHUB_OUTPUT
+
+      - name: Filter matrix by input
+        id: filter
+        shell: bash
+        run: |
+          SERVICE="${{ matrix.service }}"
+          INPUT="${{ inputs.services }}"
+          if [ -z "$INPUT" ]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          INPUT_LC=$(echo "$INPUT" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+          IFS=',' read -ra ITEMS <<< "$INPUT_LC"
+          for i in "${ITEMS[@]}"; do
+            if [ "$i" = "$SERVICE" ]; then
+              echo "build=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          done
+          echo "build=false" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        if: steps.filter.outputs.build == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Web input
+        if: steps.filter.outputs.build == 'true' && matrix.service == 'web'
+        shell: bash
+        run: |
+          if [ -z "${{ steps.resolve_api.outputs.value }}" ]; then
+            echo "PUBLIC_API_BASE_URL is required when building 'web'. Set a Repository Variable named PUBLIC_API_BASE_URL (Settings → Secrets and variables → Actions → Variables)." >&2
+            exit 1
+          fi
+
+      - name: Log in to GHCR
+        if: steps.filter.outputs.build == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tags
+        if: steps.filter.outputs.build == 'true'
+        id: tags
+        shell: bash
+        run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+          OWNER_LC=$(echo "${{ env.OWNER }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="${{ env.REGISTRY }}/$OWNER_LC/${{ matrix.image }}"
+          TAG_INPUT='${{ inputs.tag }}'
+          if [ -z "$TAG_INPUT" ]; then TAG_INPUT="sha-$SHORT_SHA"; fi
+          TAGS="$IMAGE_NAME:$TAG_INPUT"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "Resolved tags: $TAGS"
+
+      - name: Build and push ${{ matrix.image }}
+        if: steps.filter.outputs.build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            ${{ matrix.service == 'web' && steps.resolve_api.outputs.value != '' && format('PUBLIC_API_BASE_URL={0}', steps.resolve_api.outputs.value) || '' }}
+
+      - name: Output published image
+        if: steps.filter.outputs.build == 'true'
+        run: |
+          echo "Pushed: ${{ steps.tags.outputs.tags }}"
