@@ -8,7 +8,7 @@ on:
         required: false
         default: ""
       tag:
-        description: "Image tag (default sha-<short-sha>)"
+        description: "Image tag (default sha-<short-sha>), use: latest"
         required: false
         default: ""
 
@@ -45,15 +45,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Resolve PUBLIC_API_BASE_URL via gh
-        id: resolve_api
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          VALUE=$(gh variable get PUBLIC_API_BASE_URL -R "$GITHUB_REPOSITORY" 2>/dev/null || true)
-          echo "value=$VALUE" >> $GITHUB_OUTPUT
-
       - name: Filter matrix by input
         id: filter
         shell: bash
@@ -78,14 +69,10 @@ jobs:
         if: steps.filter.outputs.build == 'true'
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate Web input
-        if: steps.filter.outputs.build == 'true' && matrix.service == 'web'
-        shell: bash
+      - name: Ensure PUBLIC_API_BASE_URL set for web
+        if: steps.filter.outputs.build == 'true' && matrix.service == 'web' && (vars.PUBLIC_API_BASE_URL == '' || vars.PUBLIC_API_BASE_URL == null)
         run: |
-          if [ -z "${{ steps.resolve_api.outputs.value }}" ]; then
-            echo "PUBLIC_API_BASE_URL is required when building 'web'. Set a Repository Variable named PUBLIC_API_BASE_URL (Settings → Secrets and variables → Actions → Variables)." >&2
-            exit 1
-          fi
+          echo "::error::PUBLIC_API_BASE_URL is required when building 'web'." && exit 1
 
       - name: Log in to GHCR
         if: steps.filter.outputs.build == 'true'
@@ -109,8 +96,8 @@ jobs:
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
           echo "Resolved tags: $TAGS"
 
-      - name: Build and push ${{ matrix.image }}
-        if: steps.filter.outputs.build == 'true'
+      - name: Build and push web
+        if: steps.filter.outputs.build == 'true' && matrix.service == 'web'
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
@@ -118,7 +105,16 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
-            ${{ matrix.service == 'web' && steps.resolve_api.outputs.value != '' && format('PUBLIC_API_BASE_URL={0}', steps.resolve_api.outputs.value) || '' }}
+            PUBLIC_API_BASE_URL=${{ vars.PUBLIC_API_BASE_URL }}
+
+      - name: Build and push ${{ matrix.image }}
+        if: steps.filter.outputs.build == 'true' && matrix.service != 'web'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
 
       - name: Output published image
         if: steps.filter.outputs.build == 'true'
