@@ -1,6 +1,8 @@
 import { auth } from '$lib/stores/auth';
+import { language } from '$lib/stores/language';
 import { get } from 'svelte/store';
-import type { ApiResponse } from '$lib/types';
+import { t } from '$lib/i18n';
+import type { ApiResponse, ErrorResponseDto } from '$lib/types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -31,9 +33,24 @@ class ApiClient {
         }
         return null;
     }
+
     private getAuthHeader() {
         const authState = get(auth);
         return authState.token ? { Authorization: `Bearer ${authState.token}` } : {};
+    }
+
+    private handleError(error: ErrorResponseDto, fallbackKey: string): string {
+        const currentLang = get(language);
+
+        if (error.errors) {
+            const errorMessages: string[] = [];
+            for (const messages of Object.values(error.errors)) {
+                errorMessages.push(...messages);
+            }
+            return errorMessages.join(', ') || error.message;
+        }
+
+        return error.message || t(fallbackKey, currentLang);
     }
 
     async request<T>(
@@ -51,41 +68,34 @@ class ApiClient {
                 )
             });
 
-            let data;
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    return { data };
+                }
+                return { data: null as unknown as T };
+            }
+
+            if (response.status === 401) {
+                auth.logout();
+            }
+
             const contentType = response.headers.get('content-type');
-
             if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                const text = await response.text();
-                data = text ? { message: text } : {};
+                const errorData = await response.json() as ErrorResponseDto;
+                const errorMessage = this.handleError(errorData, 'errors.api.requestFailed');
+                throw new Error(errorMessage);
             }
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    auth.logout();
-                }
+            const currentLang = get(language);
+            throw new Error(t('errors.api.requestFailed', currentLang));
 
-                if (response.status === 400 && data.errors) {
-                    const errorMessages = [];
-                    for (const [field, messages] of Object.entries(data.errors)) {
-                        if (Array.isArray(messages)) {
-                            errorMessages.push(...messages);
-                        } else {
-                            errorMessages.push(messages as string);
-                        }
-                    }
-                    throw new Error(errorMessages.join(', ') || 'Validation error');
-                }
-
-                throw new Error(data.message || data.title || 'Request failed');
-            }
-
-            return { data };
         } catch (error) {
             console.error('API Error:', error);
+            const currentLang = get(language);
             return {
-                message: error instanceof Error ? error.message : 'Unknown error'
+                message: error instanceof Error ? error.message : t('errors.api.unknownError', currentLang)
             };
         }
     }
@@ -124,41 +134,39 @@ class ApiClient {
                 body: formData
             });
 
-            let data;
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    return { data };
+                }
+                return { data: null as unknown as T };
+            }
+
+            if (response.status === 401) {
+                auth.logout();
+            }
+
             const contentType = response.headers.get('content-type');
-
             if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                const text = await response.text();
-                data = text ? { message: text } : {};
+                try {
+                    const errorData = await response.json() as ErrorResponseDto;
+                    const errorMessage = this.handleError(errorData, 'errors.api.uploadFailed');
+                    throw new Error(errorMessage);
+                } catch (parseError) {
+                    const currentLang = get(language);
+                    throw new Error(t('errors.api.uploadFailed', currentLang));
+                }
             }
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    auth.logout();
-                }
+            const currentLang = get(language);
+            throw new Error(t('errors.api.uploadFailed', currentLang));
 
-                if (response.status === 400 && data.errors) {
-                    const errorMessages = [];
-                    for (const [field, messages] of Object.entries(data.errors)) {
-                        if (Array.isArray(messages)) {
-                            errorMessages.push(...messages);
-                        } else {
-                            errorMessages.push(messages as string);
-                        }
-                    }
-                    throw new Error(errorMessages.join(', ') || 'Upload failed');
-                }
-
-                throw new Error(data.message || data.title || 'Upload failed');
-            }
-
-            return { data };
         } catch (error) {
             console.error('Upload Error:', error);
+            const currentLang = get(language);
             return {
-                message: error instanceof Error ? error.message : 'Upload failed'
+                message: error instanceof Error ? error.message : t('errors.api.uploadFailed', currentLang)
             };
         }
     }
@@ -171,24 +179,37 @@ class ApiClient {
                 ),
             });
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    auth.logout();
-                }
-                const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
-                throw new Error(errorData.message || 'Download failed');
+            if (response.ok) {
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = this.parseFilenameFromContentDisposition(contentDisposition) || 'downloaded_file';
+                const blob = await response.blob();
+                return { blob, filename };
             }
 
-            const contentDisposition = response.headers.get('content-disposition');
-            let filename = this.parseFilenameFromContentDisposition(contentDisposition) || 'downloaded_file';
+            if (response.status === 401) {
+                auth.logout();
+            }
 
-            const blob = await response.blob();
-            return { blob, filename };
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    const errorData = await response.json() as ErrorResponseDto;
+                    const errorMessage = this.handleError(errorData, 'errors.api.downloadFailed');
+                    throw new Error(errorMessage);
+                } catch (parseError) {
+                    const currentLang = get(language);
+                    throw new Error(t('errors.api.downloadFailed', currentLang));
+                }
+            }
+
+            const currentLang = get(language);
+            throw new Error(t('errors.api.downloadFailed', currentLang));
 
         } catch (error) {
             console.error('API Download Error:', error);
+            const currentLang = get(language);
             return {
-                message: error instanceof Error ? error.message : 'Unknown error'
+                message: error instanceof Error ? error.message : t('errors.api.downloadFailed', currentLang)
             };
         }
     }
@@ -197,65 +218,77 @@ class ApiClient {
         endpoint: string,
         opts?: { onProgress?: (percent: number) => void; suggestedFileName?: string; signal?: AbortSignal }
     ): Promise<{ success: true } | { message: string }> {
-        const controller = new AbortController();
-        const signal = opts?.signal ?? controller.signal;
         try {
             const response = await fetch(`${API_BASE}${endpoint}`, {
                 headers: Object.assign(
                     this.getAuthHeader(),
                 ),
-                signal
+                signal: opts?.signal
             });
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    auth.logout();
+            if (response.ok) {
+                const total = Number(response.headers.get('content-length')) || 0;
+                const contentType = response.headers.get('content-type') || 'application/octet-stream';
+                const headerName = this.parseFilenameFromContentDisposition(response.headers.get('content-disposition'));
+                const filename = headerName || opts?.suggestedFileName || 'downloaded_file';
+
+                if (!response.body) {
+                    const blob = await response.blob();
+                    this.saveBlob(blob, filename);
+                    return { success: true };
                 }
-                const errText = await response.text().catch(() => 'Request failed');
+
+                const reader = response.body.getReader();
+                const chunks: Uint8Array[] = [];
+                let received = 0;
+
                 try {
-                    const json = JSON.parse(errText);
-                    throw new Error(json.message || json.title || 'Download failed');
-                } catch {
-                    throw new Error(errText || 'Download failed');
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        if (value) {
+                            chunks.push(value);
+                            received += value.length;
+                            if (total > 0 && opts?.onProgress) {
+                                const percent = Math.min(100, Math.round((received / total) * 100));
+                                opts.onProgress(percent);
+                            }
+                        }
+                    }
+                } finally {
+                    reader.releaseLock();
                 }
-            }
 
-            const total = Number(response.headers.get('content-length')) || 0;
-            const contentType = response.headers.get('content-type') || 'application/octet-stream';
-            const headerName = this.parseFilenameFromContentDisposition(response.headers.get('content-disposition'));
-            const filename = headerName || opts?.suggestedFileName || 'downloaded_file';
-
-            if (!response.body) {
-                const blob = await response.blob();
+                const parts: BlobPart[] = chunks.map((c) => c.slice(0).buffer as ArrayBuffer);
+                const blob = new Blob(parts, { type: contentType });
                 this.saveBlob(blob, filename);
+                if (opts?.onProgress) opts.onProgress(100);
                 return { success: true };
             }
 
-            const reader = response.body.getReader();
-            const chunks: Uint8Array[] = [];
-            let received = 0;
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                if (value) {
-                    chunks.push(value);
-                    received += value.length;
-                    if (total > 0 && opts?.onProgress) {
-                        const percent = Math.min(100, Math.round((received / total) * 100));
-                        opts.onProgress(percent);
-                    }
+            if (response.status === 401) {
+                auth.logout();
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    const errorData = await response.json() as ErrorResponseDto;
+                    const errorMessage = this.handleError(errorData, 'errors.api.downloadFailed');
+                    throw new Error(errorMessage);
+                } catch (parseError) {
+                    const currentLang = get(language);
+                    throw new Error(t('errors.api.downloadFailed', currentLang));
                 }
             }
 
-            const parts: BlobPart[] = chunks.map((c) => c.slice(0).buffer as ArrayBuffer);
-            const blob = new Blob(parts, { type: contentType });
-            this.saveBlob(blob, filename);
-            if (opts?.onProgress) opts.onProgress(100);
-            return { success: true };
+            const currentLang = get(language);
+            throw new Error(t('errors.api.downloadFailed', currentLang));
+
         } catch (error) {
             console.error('API Download Error:', error);
-            return { message: error instanceof Error ? error.message : 'Unknown error' };
-        } finally {
+            const currentLang = get(language);
+            return { message: error instanceof Error ? error.message : t('errors.api.downloadFailed', currentLang) };
         }
     }
 

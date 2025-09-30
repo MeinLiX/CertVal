@@ -61,7 +61,11 @@ export interface Certificate {
 export interface ApiResponse<T> {
     data?: T;
     message?: string;
-    errors?: Record<string, string>;
+}
+
+export interface ErrorResponseDto {
+    message: string;
+    errors?: Record<string, string[]>;
 }
 
 export interface PagedResult<T> {
