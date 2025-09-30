@@ -124,12 +124,6 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                     continue;
                 }
 
-                var objectKey = await _storageService.StoreCertificateAsync(
-                    request.WorkspaceId,
-                    file.FileName,
-                    certificateData,
-                    cancellationToken);
-
                 Certificate? parentCertificate = null;
 
                 if (parsedCertificates.Count > 1)
@@ -142,12 +136,21 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                         parsedCertificates.Min(c => c.NotBefore),
                         parsedCertificates.Max(c => c.NotAfter),
                         file.FileName,
-                        objectKey,
+                        string.Empty,
                         newCertificates.First().Format,
                         file.Length,
                         null,
                         null,
                         true);
+
+                    var objectKey = await _storageService.StoreCertificateAsync(
+                        request.WorkspaceId,
+                        parentCertificate.Id,
+                        file.FileName,
+                        certificateData,
+                        cancellationToken);
+
+                    parentCertificate.UpdateFilePath(objectKey);
                     await _unitOfWork.Certificates.AddAsync(parentCertificate, cancellationToken);
 
                     foreach (var parsedCert in newCertificates)
@@ -172,6 +175,7 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                 else
                 {
                     var mainCertificate = newCertificates.First();
+                    
                     parentCertificate = Certificate.Create(
                         request.WorkspaceId,
                         mainCertificate.Subject,
@@ -180,10 +184,19 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                         mainCertificate.NotBefore,
                         mainCertificate.NotAfter,
                         file.FileName,
-                        objectKey,
+                        string.Empty,
                         mainCertificate.Format,
                         file.Length,
                         mainCertificate.SerialNumber);
+
+                    var objectKey = await _storageService.StoreCertificateAsync(
+                        request.WorkspaceId,
+                        parentCertificate.Id,
+                        file.FileName,
+                        certificateData,
+                        cancellationToken);
+
+                    parentCertificate.UpdateFilePath(objectKey);
                     await _unitOfWork.Certificates.AddAsync(parentCertificate, cancellationToken);
                     existingThumbprints.Add(mainCertificate.Thumbprint);
                 }

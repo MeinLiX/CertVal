@@ -2,6 +2,7 @@
 using CertVal.Application.Common.Models;
 using CertVal.Core.Repositories;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace CertVal.Application.Features.Certificates.Queries;
 
@@ -12,15 +13,18 @@ public class DownloadCertificateQueryHandler : IRequestHandler<DownloadCertifica
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
     private readonly ICertificateStorageService _storageService;
+    private readonly ILogger<DownloadCertificateQueryHandler> _logger;
 
     public DownloadCertificateQueryHandler(
         IUnitOfWork unitOfWork,
         ICurrentUserService currentUser,
-        ICertificateStorageService storageService)
+        ICertificateStorageService storageService,
+        ILogger<DownloadCertificateQueryHandler> logger)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
         _storageService = storageService;
+        _logger = logger;
     }
 
     public async Task<Result<(byte[] FileContents, string FileName, string ContentType)>> Handle(DownloadCertificateQuery request, CancellationToken cancellationToken)
@@ -37,6 +41,8 @@ public class DownloadCertificateQueryHandler : IRequestHandler<DownloadCertifica
 
         if (!await _storageService.CertificateExistsAsync(certificate.FilePath, cancellationToken))
         {
+            _logger.LogWarning("Certificate file not found in storage - CertificateId: {CertificateId}, FilePath: '{FilePath}', OriginalFileName: '{OriginalFileName}'",
+                request.CertificateId, certificate.FilePath, certificate.OriginalFileName);
             return Result.Failure<(byte[], string, string)>("Certificate file not found in storage.");
         }
 
@@ -50,6 +56,8 @@ public class DownloadCertificateQueryHandler : IRequestHandler<DownloadCertifica
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to retrieve certificate file - CertificateId: {CertificateId}, FilePath: '{FilePath}'",
+                request.CertificateId, certificate.FilePath);
             return Result.Failure<(byte[], string, string)>($"Failed to retrieve certificate file: {ex.Message}");
         }
     }

@@ -107,6 +107,12 @@ public class Certificate : BaseEntity
         }
     }
 
+    public void UpdateFilePath(string filePath)
+    {
+        FilePath = filePath;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public bool IsExpired => DateTime.UtcNow > NotAfter;
     public bool IsExpiringSoon(int days) => DateTime.UtcNow.AddDays(days) >= NotAfter && !IsExpired;
 
