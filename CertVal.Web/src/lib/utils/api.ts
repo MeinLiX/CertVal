@@ -5,6 +5,32 @@ import type { ApiResponse } from '$lib/types';
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 class ApiClient {
+    private parseFilenameFromContentDisposition(header: string | null): string | null {
+        if (!header) return null;
+        try {
+            let cleanedHeader = header.trim();
+
+            const encodedFilenameMatch = cleanedHeader.match(/filename\*=UTF-8''([^;,]+)/);
+            if (encodedFilenameMatch && encodedFilenameMatch[1]) {
+                return decodeURIComponent(encodedFilenameMatch[1]);
+            }
+
+            const filenameMatches = cleanedHeader.match(/filename="?([^";,]+)"?/g);
+            if (filenameMatches && filenameMatches.length > 0) {
+                const lastMatch = filenameMatches[filenameMatches.length - 1];
+                const filenameMatch = lastMatch.match(/filename="?([^";,]+)"?/);
+                if (filenameMatch && filenameMatch[1]) {
+                    let name = filenameMatch[1].trim();
+                    name = name.replace(/^UTF-8''/, '').replace(/^\w+''/, '');
+                    name = name.split(';')[0].trim();
+                    name = name.replace(/^["']|["']$/g, '');
+                    return name;
+                }
+            }
+        } catch {
+        }
+        return null;
+    }
     private getAuthHeader() {
         const authState = get(auth);
         return authState.token ? { Authorization: `Bearer ${authState.token}` } : {};
@@ -154,30 +180,7 @@ class ApiClient {
             }
 
             const contentDisposition = response.headers.get('content-disposition');
-            let filename = 'downloaded_file';
-            if (contentDisposition) {
-                let cleanedHeader = contentDisposition.trim();
-                
-                const encodedFilenameMatch = cleanedHeader.match(/filename\*=UTF-8''([^;,]+)/);
-                if (encodedFilenameMatch && encodedFilenameMatch[1]) {
-                    filename = decodeURIComponent(encodedFilenameMatch[1]);
-                } else {
-                    const filenameMatches = cleanedHeader.match(/filename="?([^";,]+)"?/g);
-                    if (filenameMatches && filenameMatches.length > 0) {
-                        const lastMatch = filenameMatches[filenameMatches.length - 1];
-                        const filenameMatch = lastMatch.match(/filename="?([^";,]+)"?/);
-                        if (filenameMatch && filenameMatch[1]) {
-                            filename = filenameMatch[1].trim();
-                        }
-                    }
-                }
-                
-                filename = filename.replace(/^UTF-8''/, '').replace(/^\w+''/, '');
-                
-                filename = filename.split(';')[0].trim();
-                
-                filename = filename.replace(/^["']|["']$/g, '');
-            }
+            let filename = this.parseFilenameFromContentDisposition(contentDisposition) || 'downloaded_file';
 
             const blob = await response.blob();
             return { blob, filename };
@@ -188,6 +191,83 @@ class ApiClient {
                 message: error instanceof Error ? error.message : 'Unknown error'
             };
         }
+    }
+
+    async downloadAndSave(
+        endpoint: string,
+        opts?: { onProgress?: (percent: number) => void; suggestedFileName?: string; signal?: AbortSignal }
+    ): Promise<{ success: true } | { message: string }> {
+        const controller = new AbortController();
+        const signal = opts?.signal ?? controller.signal;
+        try {
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                headers: Object.assign(
+                    this.getAuthHeader(),
+                ),
+                signal
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    auth.logout();
+                }
+                const errText = await response.text().catch(() => 'Request failed');
+                try {
+                    const json = JSON.parse(errText);
+                    throw new Error(json.message || json.title || 'Download failed');
+                } catch {
+                    throw new Error(errText || 'Download failed');
+                }
+            }
+
+            const total = Number(response.headers.get('content-length')) || 0;
+            const contentType = response.headers.get('content-type') || 'application/octet-stream';
+            const headerName = this.parseFilenameFromContentDisposition(response.headers.get('content-disposition'));
+            const filename = headerName || opts?.suggestedFileName || 'downloaded_file';
+
+            if (!response.body) {
+                const blob = await response.blob();
+                this.saveBlob(blob, filename);
+                return { success: true };
+            }
+
+            const reader = response.body.getReader();
+            const chunks: Uint8Array[] = [];
+            let received = 0;
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) {
+                    chunks.push(value);
+                    received += value.length;
+                    if (total > 0 && opts?.onProgress) {
+                        const percent = Math.min(100, Math.round((received / total) * 100));
+                        opts.onProgress(percent);
+                    }
+                }
+            }
+
+            const parts: BlobPart[] = chunks.map((c) => c.slice(0).buffer as ArrayBuffer);
+            const blob = new Blob(parts, { type: contentType });
+            this.saveBlob(blob, filename);
+            if (opts?.onProgress) opts.onProgress(100);
+            return { success: true };
+        } catch (error) {
+            console.error('API Download Error:', error);
+            return { message: error instanceof Error ? error.message : 'Unknown error' };
+        } finally {
+        }
+    }
+
+    private saveBlob(blob: Blob, filename: string) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
     }
 
     async uploadSingleCertificate<T>(workspaceId: string, file: File, description?: string) {
