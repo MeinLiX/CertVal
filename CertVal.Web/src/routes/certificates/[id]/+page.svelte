@@ -18,8 +18,10 @@
 	let isDeleting = $state(false);
 	let isDownloading = $state(false);
 	let downloadProgress = $state(0);
+	let parentCertificate = $state<Certificate | null>(null);
 
-	const certificateId = page.params.id;
+	const certificateId = $derived(page.params.id);
+
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
 			goto('/auth/login');
@@ -28,12 +30,24 @@
 		await loadCertificate();
 	});
 
+	$effect(() => {
+		if (certificateId) {
+			loadCertificate();
+		}
+	});
+
 	async function loadCertificate() {
 		isLoading = true;
 		try {
 			const response = await api.get<Certificate>(`/v1/certificates/${certificateId}`);
 			if (response.data) {
 				certificate = response.data;
+				if (certificate.parentCertificateId && certificate.parentCertificateId !== certificate.id) {
+					const parentRes = await api.get<Certificate>(
+						`/v1/certificates/${certificate.parentCertificateId}`
+					);
+					if (parentRes.data) parentCertificate = parentRes.data;
+				}
 			}
 		} catch (err) {
 			console.error('Failed to load certificate:', err);
@@ -115,11 +129,13 @@
 
 		{@const status = getCertificateStatus(certificate.notAfter)}
 		<Card
-			class={status === 'expired'
-				? 'border-error bg-error/20'
-				: status === 'expiring'
-					? 'border-warning bg-warning/20'
-					: 'border-success bg-success/20'}
+			class={`mt-4 ${
+				status === 'expired'
+					? 'border-error bg-error/10'
+					: status === 'expiring'
+						? 'border-warning bg-warning/10'
+						: 'border-success bg-success/10'
+			}`}
 		>
 			<div class="flex items-center justify-between">
 				<div class="text-lg font-semibold">{t(`certificates.${status}`, $language)}</div>
@@ -146,13 +162,13 @@
 						</div>
 						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
 							<dt class="font-semibold opacity-70">{t('certificates.serialNumber', $language)}</dt>
-							<dd class="font-mono break-all md:col-span-2">{certificate.serialNumber}</dd>
+							<dd class="break-all font-mono md:col-span-2">{certificate.serialNumber}</dd>
 						</div>
 						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
 							<dt class="font-semibold opacity-70">
 								{t('certificates.thumbprint', $language)} (SHA-1)
 							</dt>
-							<dd class="font-mono break-all md:col-span-2">{certificate.thumbprint}</dd>
+							<dd class="break-all font-mono md:col-span-2">{certificate.thumbprint}</dd>
 						</div>
 						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
 							<dt class="font-semibold opacity-70">{t('certificates.validFrom', $language)}</dt>
@@ -171,7 +187,7 @@
 					>
 						<div class="space-y-2">
 							{#each certificate.childCertificates as child}
-								<div class="rounded-lg border border-base-content/10 p-3">
+								<div class="border-base-content/10 rounded-lg border p-3">
 									<p class="truncate text-sm font-semibold">{child.subject}</p>
 									<p class="text-xs opacity-60">
 										{t('certificates.expires', $language)}: {formatDate(child.notAfter)}
@@ -206,6 +222,40 @@
 						</div>
 					</dl>
 				</Card>
+
+				{#if certificate.parentCertificateId}
+					<Card title={t('certificates.baseCertificate', $language)}>
+						{#if parentCertificate}
+							<div class="flex items-center justify-between gap-4 text-sm">
+								<div class="min-w-0">
+									<div class="truncate font-semibold">{parentCertificate.subject}</div>
+									<div class="opacity-70">
+										{t('certificates.expires', $language)}: {formatDateTime(
+											parentCertificate.notAfter
+										)}
+									</div>
+								</div>
+								<div class="shrink-0">
+									<Button
+										size="sm"
+										onclick={() => {
+											if (parentCertificate?.id) {
+												goto(`/certificates/${parentCertificate.id}`);
+											}
+										}}
+									>
+										{t('common.view', $language)}
+									</Button>
+								</div>
+							</div>
+						{:else}
+							<div class="flex items-center gap-2 text-sm opacity-70">
+								<span class="loading loading-spinner loading-xs"></span>
+								<span>{t('common.loading', $language)}</span>
+							</div>
+						{/if}
+					</Card>
+				{/if}
 			</div>
 		</div>
 	{/if}
