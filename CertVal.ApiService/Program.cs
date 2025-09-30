@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using System.Text.Json;
+using CertVal.Application.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -132,7 +133,7 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.MapOpenApi();
 app.MapScalarApiReference(options =>
