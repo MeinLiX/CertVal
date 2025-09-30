@@ -68,6 +68,16 @@ export interface ErrorResponseDto {
     errors?: Record<string, string[]>;
 }
 
+export interface ProblemDetails {
+    type?: string;
+    title?: string;
+    status?: number;
+    detail?: string;
+    instance?: string;
+    errors?: Record<string, string[] | string>;
+    traceId?: string;
+};
+
 export interface PagedResult<T> {
     items: T[];
     totalCount: number;
