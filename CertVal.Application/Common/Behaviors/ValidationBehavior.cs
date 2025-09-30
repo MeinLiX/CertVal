@@ -1,4 +1,3 @@
-using CertVal.Application.Common.Models;
 using FluentValidation;
 using MediatR;
 
@@ -24,37 +23,17 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
                 _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
 
             var failures = validationResults
-                .Where(r => r.Errors.Any())
+                .Where(r => r.Errors.Count != 0)
                 .SelectMany(r => r.Errors)
                 .ToList();
 
-            if (failures.Any())
+            if (failures.Count != 0)
             {
-                // For Result<T> responses, return a failure result instead of throwing
-                if (typeof(TResponse).IsGenericType &&
-                    typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
-                {
-                    var errors = failures.Select(f => f.ErrorMessage).ToList();
-                    var resultType = typeof(TResponse);
-                    var method = typeof(Result<>).MakeGenericType(resultType.GetGenericArguments()[0])
-                        .GetMethod(nameof(Result.Failure), new[] { typeof(string) });
-
-                    if (method != null)
-                    {
-                        var result = method.Invoke(null, new object[] { string.Join("; ", errors) });
-                        return (TResponse)result!;
-                    }
-                }
-                else if (typeof(TResponse) == typeof(Result))
-                {
-                    var errors = failures.Select(f => f.ErrorMessage).ToList();
-                    return (TResponse)(object)Result.Failure(string.Join("; ", errors));
-                }
-
+                // Throw and let GlobalExceptionMiddleware format the response
                 throw new Exceptions.ValidationException(failures);
             }
         }
 
-        return await next();
+        return await next(cancellationToken);
     }
 }

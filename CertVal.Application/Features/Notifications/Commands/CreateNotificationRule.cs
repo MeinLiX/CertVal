@@ -35,7 +35,7 @@ public class CreateNotificationRuleCommandValidator : AbstractValidator<CreateNo
 
         RuleFor(x => x.DaysBeforeExpiry)
             .GreaterThan(0).WithMessage("Days before expiry must be greater than 0")
-            .LessThanOrEqualTo(365).WithMessage("Days before expiry must not exceed 365 days");
+            .LessThanOrEqualTo(89).WithMessage("Days before expiry must not exceed 89 days");
 
         RuleFor(x => x.ChannelType)
             .IsInEnum().WithMessage("Channel type must be a valid notification channel");
