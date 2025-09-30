@@ -17,6 +17,7 @@
 	let showDeleteModal = $state(false);
 	let isDeleting = $state(false);
 	let isDownloading = $state(false);
+	let downloadProgress = $state(0);
 
 	const certificateId = page.params.id;
 	onMount(async () => {
@@ -57,31 +58,22 @@
 	async function handleDownload() {
 		if (!certificate) return;
 		isDownloading = true;
+		downloadProgress = 0;
 		try {
-			const response = await api.download(`/v1/certificates/${certificate.id}/download`);
-
-			if ('blob' in response) {
-				const url = window.URL.createObjectURL(response.blob);
-				const a = document.createElement('a');
-				a.href = url;
-				a.download = response.filename;
-				document.body.appendChild(a);
-				a.click();
-				a.remove();
-				window.URL.revokeObjectURL(url);
-			} else {
-				alert(response.message);
+			const res = await api.downloadAndSave(`/v1/certificates/${certificate.id}/download`, {
+				onProgress: (p) => (downloadProgress = p),
+				suggestedFileName: certificate.originalFileName
+			});
+			if ('message' in res) {
+				alert(res.message);
 			}
 		} catch (err) {
 			console.error('Failed to download certificate:', err);
 			alert('Download failed.');
 		} finally {
 			isDownloading = false;
+			downloadProgress = 0;
 		}
-	}
-
-	function copyToClipboard(text: string | undefined) {
-		if (text) navigator.clipboard.writeText(text);
 	}
 </script>
 
@@ -112,7 +104,7 @@
 				<h1 class="max-w-lg truncate text-2xl font-bold">{certificate.subject}</h1>
 				<div class="flex gap-2">
 					<Button variant="ghost" onclick={handleDownload} loading={isDownloading}>
-						{t('common.download', $language)}
+						{t('common.download', $language)}{isDownloading ? ` (${downloadProgress}%)` : ''}
 					</Button>
 					<Button variant="danger" onclick={() => (showDeleteModal = true)}>
 						{t('common.delete', $language)}
