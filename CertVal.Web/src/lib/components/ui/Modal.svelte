@@ -6,13 +6,15 @@
 		title = '',
 		onClose,
 		children,
-		class: className = ''
+		class: className = '',
+		allowClickOutsideToClose = false
 	}: {
 		isOpen?: boolean;
 		title?: string;
 		onClose?: () => void;
 		children?: any;
 		class?: string;
+		allowClickOutsideToClose?: boolean;
 	} = $props();
 
 	let dialog: HTMLDialogElement | undefined = $state();
@@ -44,13 +46,16 @@
 	<dialog
 		bind:this={dialog}
 		class="modal {className}"
-		onclose={onClose}
 		oncancel={(e) => {
 			e.preventDefault();
-			onClose?.();
+			if (allowClickOutsideToClose) {
+				onClose?.();
+			}
 		}}
 		onclick={(e) => {
-			if (e.currentTarget === e.target) onClose?.();
+			if (allowClickOutsideToClose && e.currentTarget === e.target) {
+				onClose?.();
+			}
 		}}
 	>
 		<div class="modal-box">
