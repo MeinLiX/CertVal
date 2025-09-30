@@ -2,11 +2,19 @@ import { auth } from '$lib/stores/auth';
 import { language } from '$lib/stores/language';
 import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
-import type { ApiResponse, ErrorResponseDto } from '$lib/types';
+import type { ApiResponse, ErrorResponseDto, ProblemDetails } from '$lib/types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
 class ApiClient {
+    private isJsonResponse(response: Response): boolean {
+        const ct = response.headers.get('content-type')?.toLowerCase() || '';
+        return ct.includes('application/json') || ct.includes('application/problem+json') || ct.includes('+json') || ct.includes('json');
+    }
     private parseFilenameFromContentDisposition(header: string | null): string | null {
         if (!header) return null;
         try {
@@ -34,23 +42,30 @@ class ApiClient {
         return null;
     }
 
-    private getAuthHeader() {
+    private getAuthHeader(): Record<string, string> {
         const authState = get(auth);
         return authState.token ? { Authorization: `Bearer ${authState.token}` } : {};
     }
 
-    private handleError(error: ErrorResponseDto, fallbackKey: string): string {
+    private handleError(errorData: unknown, fallbackKey: string): string {
         const currentLang = get(language);
 
-        if (error.errors) {
-            const errorMessages: string[] = [];
-            for (const messages of Object.values(error.errors)) {
-                errorMessages.push(...messages);
+        if (isRecord(errorData)) {
+            const bag = errorData['errors'];
+            if (isRecord(bag)) {
+                const collected: string[] = [];
+                for (const value of Object.values(bag as Record<string, unknown>)) {
+                    if (Array.isArray(value)) collected.push(...(value as string[]));
+                    else if (typeof value === 'string') collected.push(value);
+                }
+                if (collected.length) return collected.join(', ');
             }
-            return errorMessages.join(', ') || error.message;
+
+            const msg = (errorData['message'] ?? errorData['title'] ?? errorData['detail']) as string | undefined;
+            if (typeof msg === 'string' && msg.trim()) return msg;
         }
 
-        return error.message || t(fallbackKey, currentLang);
+        return t(fallbackKey, currentLang);
     }
 
     async request<T>(
@@ -69,9 +84,8 @@ class ApiClient {
             });
 
             if (response.ok) {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    const data = await response.json();
+                if (this.isJsonResponse(response)) {
+                    const data = (await response.json()) as T;
                     return { data };
                 }
                 return { data: null as unknown as T };
@@ -81,9 +95,8 @@ class ApiClient {
                 auth.logout();
             }
 
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const errorData = await response.json() as ErrorResponseDto;
+            if (this.isJsonResponse(response)) {
+                const errorData = (await response.json()) as ProblemDetails | ErrorResponseDto;
                 const errorMessage = this.handleError(errorData, 'errors.api.requestFailed');
                 throw new Error(errorMessage);
             }
@@ -135,9 +148,8 @@ class ApiClient {
             });
 
             if (response.ok) {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    const data = await response.json();
+                if (this.isJsonResponse(response)) {
+                    const data = (await response.json()) as T;
                     return { data };
                 }
                 return { data: null as unknown as T };
@@ -147,16 +159,10 @@ class ApiClient {
                 auth.logout();
             }
 
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                try {
-                    const errorData = await response.json() as ErrorResponseDto;
-                    const errorMessage = this.handleError(errorData, 'errors.api.uploadFailed');
-                    throw new Error(errorMessage);
-                } catch (parseError) {
-                    const currentLang = get(language);
-                    throw new Error(t('errors.api.uploadFailed', currentLang));
-                }
+            if (this.isJsonResponse(response)) {
+                const errorData = (await response.json()) as ProblemDetails | ErrorResponseDto;
+                const errorMessage = this.handleError(errorData, 'errors.api.uploadFailed');
+                throw new Error(errorMessage);
             }
 
             const currentLang = get(language);
@@ -190,16 +196,10 @@ class ApiClient {
                 auth.logout();
             }
 
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                try {
-                    const errorData = await response.json() as ErrorResponseDto;
-                    const errorMessage = this.handleError(errorData, 'errors.api.downloadFailed');
-                    throw new Error(errorMessage);
-                } catch (parseError) {
-                    const currentLang = get(language);
-                    throw new Error(t('errors.api.downloadFailed', currentLang));
-                }
+            if (this.isJsonResponse(response)) {
+                const errorData = (await response.json()) as ProblemDetails | ErrorResponseDto;
+                const errorMessage = this.handleError(errorData, 'errors.api.downloadFailed');
+                throw new Error(errorMessage);
             }
 
             const currentLang = get(language);
@@ -270,16 +270,10 @@ class ApiClient {
                 auth.logout();
             }
 
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                try {
-                    const errorData = await response.json() as ErrorResponseDto;
-                    const errorMessage = this.handleError(errorData, 'errors.api.downloadFailed');
-                    throw new Error(errorMessage);
-                } catch (parseError) {
-                    const currentLang = get(language);
-                    throw new Error(t('errors.api.downloadFailed', currentLang));
-                }
+            if (this.isJsonResponse(response)) {
+                const errorData = (await response.json()) as ProblemDetails | ErrorResponseDto;
+                const errorMessage = this.handleError(errorData, 'errors.api.downloadFailed');
+                throw new Error(errorMessage);
             }
 
             const currentLang = get(language);
