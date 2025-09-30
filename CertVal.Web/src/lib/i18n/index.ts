@@ -408,7 +408,13 @@ export const translations = {
             fileTooBig: 'Файл занадто великий',
             invalidFileFormat: 'Невірний формат файлу',
             uploadFailed: 'Помилка завантаження файлу',
-            invalidUrl: 'Будь ласка, введіть дійсну URL-адресу.'
+            invalidUrl: 'Будь ласка, введіть дійсну URL-адресу.',
+            api: {
+                requestFailed: 'Виникла помилка при виконанні запиту',
+                uploadFailed: 'Помилка при завантаженні файлу',
+                downloadFailed: 'Помилка при завантаженні',
+                unknownError: 'Виникла невідома помилка'
+            }
         },
         success: {
             saved: 'Збережено успішно',
@@ -827,7 +833,13 @@ export const translations = {
             fileTooBig: 'File too large',
             invalidFileFormat: 'Invalid file format',
             uploadFailed: 'File upload failed',
-            invalidUrl: 'Please enter a valid URL.'
+            invalidUrl: 'Please enter a valid URL.',
+            api: {
+                requestFailed: 'Request failed',
+                uploadFailed: 'File upload failed',
+                downloadFailed: 'Download failed',
+                unknownError: 'Unknown error occurred'
+            }
         },
         success: {
             saved: 'Saved successfully',
