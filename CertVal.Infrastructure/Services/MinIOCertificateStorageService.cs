@@ -13,7 +13,6 @@ public class MinIOCertificateStorageService : ICertificateStorageService
     private readonly IMinioClient _minioClient;
     private readonly ILogger<MinIOCertificateStorageService> _logger;
     private readonly CertificateStorageConfiguration _config;
-    private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
 
     public MinIOCertificateStorageService(
         IMinioClient minioClient,
@@ -27,14 +26,31 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
     public async Task<string> StoreCertificateAsync(Guid workspaceId, string fileName, byte[] fileContent, CancellationToken cancellationToken = default)
     {
+        var certificateId = Guid.NewGuid();
+        return await StoreCertificateAsync(workspaceId, certificateId, fileName, fileContent, cancellationToken);
+    }
+
+    public async Task<string> StoreCertificateAsync(Guid workspaceId, Guid certificateId, string fileName, byte[] fileContent, CancellationToken cancellationToken = default)
+    {
         try
         {
             await EnsureBucketExistsAsync(cancellationToken);
 
-            var uniqueFileName = $"{Guid.NewGuid():N}_{SanitizeFileName(fileName)}";
-            var objectKey = _config.GetObjectKey(workspaceId, uniqueFileName);
+            var fileExtension = Path.GetExtension(fileName);
+            var objectKey = _config.GetObjectKey(workspaceId, $"{certificateId:N}{fileExtension}");
+
+            _logger.LogDebug("Storing certificate '{OriginalFileName}' with ObjectKey: '{ObjectKey}'", fileName, objectKey);
 
             using var stream = new MemoryStream(fileContent);
+
+            var meta = new Dictionary<string, string>
+            {
+                ["x-amz-meta-workspace-id"] = workspaceId.ToString(),
+                ["x-amz-meta-certificate-id"] = certificateId.ToString(),
+                ["x-amz-meta-upload-date"] = DateTimeOffset.UtcNow.ToString("O"),
+                ["x-amz-meta-original-filename-encoding"] = "utf-8-base64",
+                ["x-amz-meta-original-filename"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(fileName))
+            };
 
             var putObjectArgs = new PutObjectArgs()
                 .WithBucket(_config.BucketName)
@@ -42,17 +58,9 @@ public class MinIOCertificateStorageService : ICertificateStorageService
                 .WithStreamData(stream)
                 .WithObjectSize(fileContent.Length)
                 .WithContentType("application/octet-stream")
-                .WithHeaders(new Dictionary<string, string>
-                {
-                    ["X-Workspace-Id"] = workspaceId.ToString(),
-                    ["X-Original-Filename"] = fileName,
-                    ["X-Upload-Date"] = DateTimeOffset.UtcNow.ToString("O")
-                });
+                .WithHeaders(meta);
 
             await _minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
-
-            _logger.LogInformation("Successfully stored certificate {OriginalFileName} as {ObjectKey} for workspace {WorkspaceId}",
-                fileName, objectKey, workspaceId);
 
             return objectKey;
         }
@@ -67,6 +75,9 @@ public class MinIOCertificateStorageService : ICertificateStorageService
     {
         try
         {
+            _logger.LogDebug("Getting certificate with ObjectKey: '{ObjectKey}' from bucket '{Bucket}'", 
+                objectKey, _config.BucketName);
+            
             using var stream = new MemoryStream();
 
             var getObjectArgs = new GetObjectArgs()
@@ -79,7 +90,8 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
             await _minioClient.GetObjectAsync(getObjectArgs, cancellationToken);
 
-            _logger.LogDebug("Successfully retrieved certificate {ObjectKey}", objectKey);
+            _logger.LogDebug("Successfully retrieved certificate {ObjectKey}, size: {Size} bytes", 
+                objectKey, stream.Length);
 
             return stream.ToArray();
         }
@@ -100,7 +112,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
             await _minioClient.RemoveObjectAsync(removeObjectArgs, cancellationToken);
 
-            _logger.LogInformation("Successfully deleted certificate {ObjectKey}", objectKey);
+            _logger.LogDebug("Successfully deleted certificate {ObjectKey}", objectKey);
         }
         catch (Exception ex)
         {
@@ -113,15 +125,23 @@ public class MinIOCertificateStorageService : ICertificateStorageService
     {
         try
         {
+            _logger.LogDebug("Checking existence of ObjectKey: '{ObjectKey}' in bucket '{Bucket}'", 
+                objectKey, _config.BucketName);
+            
             var statObjectArgs = new StatObjectArgs()
                 .WithBucket(_config.BucketName)
                 .WithObject(objectKey);
 
-            await _minioClient.StatObjectAsync(statObjectArgs, cancellationToken);
+            var objectStat = await _minioClient.StatObjectAsync(statObjectArgs, cancellationToken);
+            
+            _logger.LogDebug("Certificate exists: '{ObjectKey}', Size: {Size} bytes, LastModified: {LastModified}", 
+                objectKey, objectStat.Size, objectStat.LastModified);
+            
             return true;
         }
-        catch (Minio.Exceptions.ObjectNotFoundException)
+        catch (Minio.Exceptions.ObjectNotFoundException ex)
         {
+            _logger.LogWarning("Certificate does not exist: '{ObjectKey}' - {ErrorMessage}", objectKey, ex.Message);
             return false;
         }
         catch (Exception ex)
@@ -144,6 +164,10 @@ public class MinIOCertificateStorageService : ICertificateStorageService
                 await _minioClient.MakeBucketAsync(makeBucketArgs, cancellationToken);
 
                 _logger.LogInformation("Created MinIO bucket: {BucketName}", _config.BucketName);
+            }
+            else
+            {
+                _logger.LogDebug("MinIO bucket exists: {BucketName}", _config.BucketName);
             }
         }
         catch (Exception ex)
@@ -203,25 +227,5 @@ public class MinIOCertificateStorageService : ICertificateStorageService
             _logger.LogError(ex, "Failed to delete certificates for workspace {WorkspaceId}", workspaceId);
             throw new InvalidOperationException($"Failed to delete certificates for workspace {workspaceId}: {ex.Message}", ex);
         }
-    }
-
-    private static string SanitizeFileName(string fileName)
-    {
-        if (string.IsNullOrEmpty(fileName))
-            return "unnamed_file";
-
-        var needsSanitization = fileName.AsSpan().IndexOfAny(InvalidFileNameChars) >= 0;
-        if (!needsSanitization)
-            return fileName;
-
-        var sb = new StringBuilder(fileName.Length);
-        foreach (var ch in fileName)
-        {
-            sb.Append(Array.IndexOf(InvalidFileNameChars, ch) >= 0 ? '_' : ch);
-        }
-
-        var sanitized = sb.ToString();
-
-        return string.IsNullOrWhiteSpace(sanitized) ? "unnamed_file" : sanitized;
     }
 }
