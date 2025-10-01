@@ -46,5 +46,6 @@
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
     <PackageVersion Include="System.Security.Cryptography.X509Certificates" Version="4.3.2" />
     <PackageVersion Include="Fluid.Core" Version="2.25.0" />
+    <PackageVersion Include="Google.Apis.Auth" Version="1.68.0" />
   </ItemGroup>
 </Project>

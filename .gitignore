@@ -55,5 +55,6 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
-/CertVal.ApiService/wwwroot/uploads/certificates
-appsettings.*.json
+
+
+**/appsettings.*.json

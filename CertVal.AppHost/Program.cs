@@ -43,6 +43,7 @@ var web = builder.AddNpmApp("web", "../CertVal.Web", scriptName: "dev", args: ["
     .WithNpmPackageInstallation()
     .WithReference(apiService)
     .WithEnvironment("VITE_API_BASE_URL", builder.Configuration.GetValue<string>("Web:ApiUrl") ?? throw new InvalidOperationException("Missing configuration: Web:ApiUrl"))
+    .WithEnvironment("VITE_GOOGLE_CLIENT_ID", builder.Configuration.GetValue<string>("Web:VITE_GOOGLE_CLIENT_ID") ?? throw new InvalidOperationException("Missing configuration: Web:VITE_GOOGLE_CLIENT_ID"))
     .WithHttpEndpoint(port: webPort, isProxied: false)
     .WaitFor(apiService)
     .PublishAsDockerFile();
