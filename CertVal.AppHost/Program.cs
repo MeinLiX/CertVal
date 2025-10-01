@@ -8,16 +8,19 @@ var minioUser = builder.AddParameter("minio-user", secret: true);
 var minioUserPassword = builder.AddParameter("minio-user-password", secret: true);
 
 var db = builder.AddPostgres("CertVal-sql-server", password: sqlpwd)
+    .WithImageTag("18") //sync version with docker compose
     .WithLifetime(ContainerLifetime.Persistent)
     .WithVolume("certval-sql-data", "/var/lib/postgresql/data")
     .AddDatabase("CertVal-database");
 
 var rabbitmq = builder.AddRabbitMQ("CertVal-rabbitmq")
+    .WithImageTag("4.1.4-management") //sync version with docker compose
     .WithManagementPlugin()
     .WithLifetime(ContainerLifetime.Persistent)
     .WithVolume("certval-rabbitmq-data", "/var/lib/rabbitmq");
 
 var minio = builder.AddMinioContainer("CertVal-minio", rootUser: minioUser, rootPassword: minioUserPassword)
+    .WithImageTag("RELEASE.2025-09-07T16-13-09Z") //sync version with docker compose
     .WithLifetime(ContainerLifetime.Persistent)
     .WithVolume("certval-minio-data", "/data");
 
