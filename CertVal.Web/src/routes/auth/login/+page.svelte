@@ -13,6 +13,7 @@
 	let formData = $state<LoginRequest>({ email: '', password: '' });
 	let errors = $state<Record<string, string>>({});
 	let isLoading = $state(false);
+	let googleReady = $state(false);
 
 	const isRegistered = $derived(page.url.searchParams.get('registered') === 'true');
 	const redirectUrl = $derived(page.url.searchParams.get('redirect') || '/dashboard');
@@ -21,7 +22,41 @@
 		if ($auth.isAuthenticated) {
 			goto('/dashboard');
 		}
+		loadGoogleScript($language);
 	});
+
+	$effect(() => {
+		loadGoogleScript($language);
+	});
+
+	function loadGoogleScript(currentLang: 'uk' | 'en') {
+		const scriptId = 'google-identity-script';
+		const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+		const desiredSrc = `https://accounts.google.com/gsi/client?hl=${currentLang}`;
+
+		if (existing && existing.src === desiredSrc) {
+			googleReady = true;
+			initGoogleButton();
+			return;
+		}
+
+		if (existing) {
+			existing.remove();
+			const container = document.getElementById('googleSignInDiv');
+			if (container) container.innerHTML = '';
+		}
+
+		const s = document.createElement('script');
+		s.src = desiredSrc;
+		s.async = true;
+		s.defer = true;
+		s.id = scriptId;
+		s.onload = () => {
+			googleReady = true;
+			initGoogleButton();
+		};
+		document.head.appendChild(s);
+	}
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
@@ -42,6 +77,57 @@
 			isLoading = false;
 		}
 	}
+
+	function initGoogleButton() {
+		errors = {};
+		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+		if (!clientId) {
+			errors.general = t('errors.googleClientIdMissing', $language);
+			return;
+		}
+		if (!window.google?.accounts?.id) return;
+
+		window.google.accounts.id.initialize({
+			client_id: clientId,
+			auto_select: false,
+			ux_mode: 'popup',
+			callback: onGoogleCredential
+		});
+
+		const btn = document.getElementById('googleSignInDiv');
+		if (btn) {
+			window.google.accounts.id.renderButton(btn, {
+				type: 'standard',
+				theme: 'outline',
+				size: 'large',
+				shape: 'rectangular',
+				text: 'signin_with',
+				logo_alignment: 'left',
+				width: 320
+			});
+		}
+
+		window.google.accounts.id.prompt();
+	}
+
+	async function onGoogleCredential(resp: any) {
+		try {
+			const idToken = resp?.credential as string | undefined;
+			if (!idToken) {
+				errors.general = t('errors.googleLoginFailed', $language);
+				return;
+			}
+			const result = await api.post<any>('/v1/auth/login/google', { idToken });
+			if (result.data) {
+				auth.login(result.data.token, result.data.user);
+				goto(redirectUrl);
+			} else {
+				errors.general = result.message || t('errors.googleLoginFailed', $language);
+			}
+		} catch {
+			errors.general = t('errors.network', $language);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -55,11 +141,11 @@
 			<p class="py-6 text-lg opacity-80">{t('auth.login.tagline', $language)}</p>
 		</div>
 		<div
-			class="card w-full max-w-sm shrink-0 glass shadow-2xl"
+			class="card glass w-full max-w-sm shrink-0 shadow-2xl"
 			style="background-color: oklch(from var(--color-base-100) l c h / 0.2);"
 		>
 			<form class="card-body p-8" onsubmit={handleSubmit}>
-				<h2 class="mb-4 card-title justify-center text-2xl font-bold">
+				<h2 class="card-title mb-4 justify-center text-2xl font-bold">
 					{t('auth.login.title', $language)}
 				</h2>
 
@@ -93,7 +179,7 @@
 						<input type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
 						<span class="label-text">{t('auth.login.rememberMe', $language)}</span>
 					</label>
-					<a href="/auth/forgot-password" class="link text-sm link-hover">
+					<a href="/auth/forgot-password" class="link link-hover text-sm">
 						{t('auth.login.forgot', $language)}
 					</a>
 				</div>
@@ -102,11 +188,14 @@
 						{t('auth.login.submit', $language)}
 					</Button>
 				</div>
+				<div class="mt-3 flex items-center justify-center">
+					<div id="googleSignInDiv" aria-label="Sign in with Google"></div>
+				</div>
 				<div class="divider text-xs"></div>
 				<div class="text-center text-sm">
 					<p>
 						{t('auth.login.noAccount', $language)}
-						<a href="/auth/register" class="link font-semibold link-primary"
+						<a href="/auth/register" class="link link-primary font-semibold"
 							>{t('auth.login.registerLink', $language)}</a
 						>
 					</p>
