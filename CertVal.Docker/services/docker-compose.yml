@@ -42,6 +42,10 @@ services:
       - Minio__AccessKey=${MINIO_ROOT_USER}
       - Minio__SecretKey=${MINIO_ROOT_PASSWORD}
       - Minio__UseSSL=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_SAMPLER=always_on
+      - OTEL_METRIC_EXPORT_INTERVAL=10000
     networks:
       - certval-net
 
@@ -76,6 +80,10 @@ services:
       - Messaging__RetryDelay=${Messaging__RetryDelay}
       - Messaging__ConnectionTimeout=${Messaging__ConnectionTimeout}
       - Messaging__MaxConnectionRetries=${Messaging__MaxConnectionRetries}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_SAMPLER=always_on
+      - OTEL_METRIC_EXPORT_INTERVAL=10000
     networks:
       - certval-net
 

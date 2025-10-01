@@ -24,6 +24,18 @@ services:
     networks:
       - certval-net
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.18.1
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@certval.postgres:5432/${POSTGRES_DB}?sslmode=disable"
+    ports:
+      - "9187:9187"
+    networks:
+      - certval-net
+    depends_on:
+      certval.postgres:
+        condition: service_healthy
+
   certval.rabbitmq:
     image: rabbitmq:3.13-management
     environment:
@@ -31,6 +43,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - certval-rabbitmq-data:/var/lib/rabbitmq
+      - ./observability/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -40,6 +53,7 @@ services:
     ports:
       - "${RABBITMQ_PORT}:5672"
       - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+      - "15692:15692"  # Prometheus metrics
     networks:
       - certval-net
 
@@ -49,11 +63,79 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+      MINIO_PROMETHEUS_URL: http://prometheus:9090
+      MINIO_PROMETHEUS_JOB_ID: minio
     volumes:
       - certval-minio-data:/data
     ports:
       - "${MINIO_API_PORT}:9000"
       - "${MINIO_CONSOLE_PORT}:9001"
+    networks:
+      - certval-net
+
+  # Observability stack
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.136.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    ports:
+      - "${OTEL_GRPC_PORT}:4317" # OTLP gRPC
+      - "${OTEL_HTTP_PORT}:4318" # OTLP HTTP
+      - "${OTEL_METRICS_PORT}:8889" # Prometheus
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    networks:
+      - certval-net
+
+  prometheus:
+    image: prom/prometheus:v3.6.0
+    restart: unless-stopped
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - certval-prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
+    networks:
+      - certval-net
+
+  loki:
+    image: grafana/loki:3.5.5
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ./observability/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - certval-loki-data:/loki
+    ports:
+      - "${LOKI_PORT}:3100"
+    networks:
+      - certval-net
+
+  tempo:
+    image: grafana/tempo:2.8.2
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo.yaml:ro
+      - certval-tempo-data:/var/tempo
+    ports:
+      - "${TEMPO_PORT}:3200"
+    networks:
+      - certval-net
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - certval-grafana-data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT}:3000"
     networks:
       - certval-net
 
@@ -66,3 +148,7 @@ volumes:
   certval-postgres-data:
   certval-rabbitmq-data:
   certval-minio-data:
+  certval-prometheus-data:
+  certval-loki-data:
+  certval-tempo-data:
+  certval-grafana-data:
