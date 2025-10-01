@@ -2,10 +2,16 @@
 
 ## Structure
 - `docker-compose.yml`: main aggregator; includes infra and services.
-- `infra/docker-compose.yml`: Postgres, RabbitMQ, MinIO, shared network/volumes.
+- `infra/docker-compose.yml`: Postgres, RabbitMQ, MinIO, shared network/volumes + observability.
 - `services/docker-compose.yml`: API, Email, Web definitions and dependencies.
 - `services/networks.overlay.yml`: declares shared network as external for services.
 - `.env`: central configuration for both app and infra.
+- `infra/observability/`
+  - `prometheus.yml`: Prometheus scrape configuration
+  - `otel-collector-config.yaml`: OpenTelemetry collector pipelines (uses otlphttp for Loki)
+  - `loki-config.yaml`: Loki configuration
+  - `tempo.yaml`: Tempo configuration
+  - `grafana/provisioning/`: Grafana datasources and dashboards
 
 ## Usage (from 'CertVal.Docker' directory)
 
@@ -13,7 +19,7 @@
 
 - Windows PowerShell:
   - `./scripts/manage.ps1 up all` – start infra then services (builds images)
-  - `./scripts/manage.ps1 up infra` – start only infra
+  - `./scripts/manage.ps1 up infra` – start only infra (includes observability)
   - `./scripts/manage.ps1 up app` – start only services
   - `./scripts/manage.ps1 down app` – stop only services
   - `./scripts/manage.ps1 down infra` – stop only infra
@@ -22,7 +28,7 @@
 
 - Linux/Mac (bash):
   - `./scripts/manage.sh up all` – start infra then services (builds images)
-  - `./scripts/manage.sh up infra` – start only infra
+  - `./scripts/manage.sh up infra` – start only infra (includes observability)
   - `./scripts/manage.sh up app` – start only services
   - `./scripts/manage.sh down app` – stop only services
   - `./scripts/manage.sh down infra` – stop only infra
@@ -41,7 +47,7 @@ docker compose up -d
 docker compose down
 ```
 
-Start infra:
+Start infra (including observability):
 
 ```pwsh
 docker compose --env-file .env -f infra/docker-compose.yml up -d
@@ -72,4 +78,7 @@ GHCR_PAT=ghp_xxx_or_fine_grained_PAT_with_read:packages
 
 ```pwsh
 docker compose --env-file .env -f services/docker-compose.yml -f services/networks.overlay.yml -f services/docker-compose.watchtower.yml up -d
+
+#stop
+docker compose -f services/docker-compose.yml -f services/networks.overlay.yml -f services/docker-compose.watchtower.yml down
 ```
