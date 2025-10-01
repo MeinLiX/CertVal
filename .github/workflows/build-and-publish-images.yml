@@ -74,6 +74,11 @@ jobs:
         run: |
           echo "::error::PUBLIC_API_BASE_URL is required when building 'web'." && exit 1
 
+      - name: Ensure PUBLIC_GOOGLE_CLIENT_ID set for web
+        if: steps.filter.outputs.build == 'true' && matrix.service == 'web' && (vars.PUBLIC_GOOGLE_CLIENT_ID == '' || vars.PUBLIC_GOOGLE_CLIENT_ID == null)
+        run: |
+          echo "::error::PUBLIC_GOOGLE_CLIENT_ID is required when building 'web'." && exit 1
+
       - name: Log in to GHCR
         if: steps.filter.outputs.build == 'true'
         uses: docker/login-action@v3
@@ -106,6 +111,7 @@ jobs:
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
             PUBLIC_API_BASE_URL=${{ vars.PUBLIC_API_BASE_URL }}
+            PUBLIC_GOOGLE_CLIENT_ID=${{ vars.PUBLIC_GOOGLE_CLIENT_ID }}
 
       - name: Build and push ${{ matrix.image }}
         if: steps.filter.outputs.build == 'true' && matrix.service != 'web'
