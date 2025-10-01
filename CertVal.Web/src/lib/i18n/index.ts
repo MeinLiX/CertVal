@@ -409,6 +409,9 @@ export const translations = {
             invalidFileFormat: 'Невірний формат файлу',
             uploadFailed: 'Помилка завантаження файлу',
             invalidUrl: 'Будь ласка, введіть дійсну URL-адресу.',
+            invalidCredentials: 'Невірна електронна пошта або пароль.',
+            googleClientIdMissing: 'Не налаштований Google Client ID.',
+            googleLoginFailed: 'Не вдалося увійти через Google.',
             api: {
                 requestFailed: 'Виникла помилка при виконанні запиту',
                 uploadFailed: 'Помилка при завантаженні файлу',
@@ -834,6 +837,9 @@ export const translations = {
             invalidFileFormat: 'Invalid file format',
             uploadFailed: 'File upload failed',
             invalidUrl: 'Please enter a valid URL.',
+            invalidCredentials: 'Invalid email or password.',
+            googleClientIdMissing: 'Google Client ID is not configured.',
+            googleLoginFailed: 'Google sign-in failed.',
             api: {
                 requestFailed: 'Request failed',
                 uploadFailed: 'File upload failed',
