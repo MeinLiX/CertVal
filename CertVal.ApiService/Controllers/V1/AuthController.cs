@@ -47,6 +47,20 @@ public class AuthController : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpPost("login/google")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<LoginResponse>> LoginWithGoogle([FromBody] LoginWithGoogleCommand request, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(request, cancellationToken);
+
+        if (!result.IsSuccess)
+            return Unauthorized(new ErrorResponseDto(result.Error));
+
+        return Ok(result.Value);
+    }
+
     [HttpGet("profile")]
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
