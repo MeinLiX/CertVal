@@ -26,6 +26,8 @@ builder.Services.AddSingleton<ITemplateRenderer, TemplateRenderer>();
 builder.Services.AddSingleton<ITemplateService, TemplateService>();
 builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
+builder.Services.AddSingleton<EmailServiceMetrics>(); // experimental metrics
+builder.Services.AddSingleton<IdempotencyTracker>();
 
 builder.Services.AddHostedService<EmailWorkerService>();
 

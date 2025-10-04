@@ -7,22 +7,30 @@ using MimeKit;
 
 namespace CertVal.EmailService.Services;
 
-public class SmtpEmailService : IEmailService
+public class SmtpEmailService : IEmailService, IDisposable
 {
     private readonly EmailServiceConfiguration _config;
     private readonly SmtpSettings _smtpSettings;
     private readonly ITemplateService _templateService;
     private readonly ILogger<SmtpEmailService> _logger;
+    private readonly EmailServiceMetrics _metrics;
+    private readonly SemaphoreSlim _connectionSemaphore = new(1, 1);
+    private SmtpClient? _smtpClient;
+    private DateTime _lastUsed = DateTime.MinValue;
+    private readonly TimeSpan _connectionTimeout = TimeSpan.FromMinutes(2);
+    private bool _disposed;
 
     public SmtpEmailService(
         IOptions<EmailServiceConfiguration> configuration,
         ITemplateService templateService,
-        ILogger<SmtpEmailService> logger)
+        ILogger<SmtpEmailService> logger,
+        EmailServiceMetrics metrics)
     {
         _config = configuration.Value;
         _smtpSettings = _config.Smtp;
         _templateService = templateService;
         _logger = logger;
+        _metrics = metrics;
     }
 
     public async Task<bool> SendEmailAsync(EmailNotificationMessage message)
@@ -51,6 +59,8 @@ public class SmtpEmailService : IEmailService
             {
                 _logger.LogInformation("Email sent successfully to {ToEmail}", message.ToEmail);
             }
+
+            _metrics.RecordEmailSent(message.Type.ToString(), message.IsAggregated);
             return true;
         }
         catch (Exception ex)
@@ -142,19 +152,92 @@ public class SmtpEmailService : IEmailService
             : new MailboxAddress(name, parsed.Address);
     }
 
+    //A simple solution for a small project. Implementing a connection pool would be a better
     private async Task SendEmailInternal(MimeMessage message)
     {
-        using var client = new SmtpClient();
+        await _connectionSemaphore.WaitAsync();
+        try
+        {
+            var client = await GetOrCreateSmtpClientAsync();
+            await client.SendAsync(message).ConfigureAwait(false);
+            _lastUsed = DateTime.UtcNow;
+        }
+        finally
+        {
+            _connectionSemaphore.Release();
+        }
+    }
 
-        await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, _smtpSettings.GetSslOptions).ConfigureAwait(false);
+    private async Task<SmtpClient> GetOrCreateSmtpClientAsync()
+    {
+        if (_smtpClient?.IsConnected == true &&
+            DateTime.UtcNow - _lastUsed > _connectionTimeout)
+        {
+            _logger.LogDebug("SMTP connection idle timeout, disconnecting");
+            await DisconnectSmtpClientAsync();
+        }
+
+        if (_smtpClient?.IsConnected == true)
+        {
+            return _smtpClient;
+        }
+
+        _smtpClient?.Dispose();
+        _smtpClient = null;
+
+        _logger.LogDebug("Creating new SMTP connection to {Host}:{Port}", _smtpSettings.Host, _smtpSettings.Port);
+        var client = new SmtpClient();
+
+        await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, _smtpSettings.GetSslOptions)
+                    .ConfigureAwait(false);
 
         if (!string.IsNullOrEmpty(_smtpSettings.Username))
         {
             client.AuthenticationMechanisms.Remove("XOAUTH2");
-            await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password).ConfigureAwait(false);
+            await client.AuthenticateAsync(_smtpSettings.Username, _smtpSettings.Password)
+                        .ConfigureAwait(false);
         }
 
-        await client.SendAsync(message).ConfigureAwait(false);
-        await client.DisconnectAsync(true).ConfigureAwait(false);
+        _smtpClient = client;
+        _lastUsed = DateTime.UtcNow;
+        _metrics.RecordSmtpConnectionCreated();
+        _logger.LogInformation("SMTP connection established successfully");
+        return client;
+    }
+
+    private async Task DisconnectSmtpClientAsync()
+    {
+        if (_smtpClient?.IsConnected == true)
+        {
+            try
+            {
+                await _smtpClient.DisconnectAsync(true).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error disconnecting SMTP client");
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        _connectionSemaphore.Wait();
+        try
+        {
+            DisconnectSmtpClientAsync().GetAwaiter().GetResult();
+            _smtpClient?.Dispose();
+            _smtpClient = null;
+        }
+        finally
+        {
+            _connectionSemaphore.Release();
+            _connectionSemaphore.Dispose();
+            _disposed = true;
+        }
+
+        GC.SuppressFinalize(this);
     }
 }
