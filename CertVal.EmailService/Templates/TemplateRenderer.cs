@@ -14,6 +14,7 @@ public class TemplateRenderer : ITemplateRenderer
     private readonly ConcurrentDictionary<string, Lazy<Task<IFluidTemplate>>> _templateCache = new();
     private readonly FluidParser _parser = new();
     private readonly TemplateOptions _options;
+    private const int MaxCacheSize = 100;
 
     public TemplateRenderer(IHostEnvironment env, ILogger<TemplateRenderer> logger)
     {
@@ -45,6 +46,13 @@ public class TemplateRenderer : ITemplateRenderer
 
     private Task<IFluidTemplate> GetTemplateAsync(string normalizedTemplatePath)
     {
+        // Simple cache eviction strategy, not need in this case but good to have
+        if (_templateCache.Count >= MaxCacheSize)
+        {
+            _logger.LogWarning("Template cache size limit reached ({MaxSize}), clearing cache", MaxCacheSize);
+            _templateCache.Clear();
+        }
+
         var loader = _templateCache.GetOrAdd(normalizedTemplatePath, key => new Lazy<Task<IFluidTemplate>>(() => LoadTemplateAsync(key)));
         return loader.Value;
     }
