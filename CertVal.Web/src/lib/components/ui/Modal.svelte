@@ -28,15 +28,16 @@
 		} else {
 			if (dialog) {
 				dialog.classList.add('modal-closing');
-				dialog.addEventListener(
-					'animationend',
-					() => {
-						dialog?.classList.remove('modal-closing');
-						dialog?.close();
-						isVisible = false;
-					},
-					{ once: true }
-				);
+
+				const closeDialog = () => {
+					dialog?.classList.remove('modal-closing');
+					dialog?.close();
+					isVisible = false;
+				};
+
+				dialog.addEventListener('animationend', closeDialog, { once: true });
+
+				setTimeout(closeDialog, 250);
 			}
 		}
 	});
@@ -62,7 +63,7 @@
 			{#if title}
 				<h3 class="text-lg font-bold">{title}</h3>
 			{/if}
-			<button class="btn absolute top-2 right-2 btn-circle btn-ghost btn-sm" onclick={onClose}>
+			<button class="btn btn-circle btn-ghost btn-sm absolute right-2 top-2" onclick={onClose}>
 				✕
 			</button>
 			<div>
@@ -85,16 +86,19 @@
 	}
 
 	dialog.modal::backdrop {
-		background-color: rgba(0, 0, 0, 0.45);
-		backdrop-filter: none;
+		background-color: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(8px);
 	}
 
 	.modal-box {
 		max-width: min(720px, 95vw);
 		width: 100%;
 		margin: 0 auto;
-		border-radius: 0.5rem;
-		box-shadow: 0 10px 30px rgba(2, 6, 23, 0.2);
+		border-radius: 1rem;
+		box-shadow:
+			0 20px 25px -5px rgb(0 0 0 / 0.1),
+			0 8px 10px -6px rgb(0 0 0 / 0.1);
+		border: 1px solid rgba(255, 255, 255, 0.1);
 	}
 
 	.modal {

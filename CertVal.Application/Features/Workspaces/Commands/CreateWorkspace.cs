@@ -44,6 +44,12 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
         if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
             return Result.Failure<WorkspaceDto>("User not authenticated");
 
+        var userWorkspaces = await _unitOfWork.Workspaces.GetUserWorkspacesAsync(_currentUser.UserId.Value, cancellationToken);
+        if (userWorkspaces.Any(w => w.OwnerId == _currentUser.UserId.Value && w.Name.Equals(request.Dto.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return Result.Failure<WorkspaceDto>($"You already have a workspace named '{request.Dto.Name}'");
+        }
+
         var workspace = Core.Entities.Workspace.Create(
             request.Dto.Name,
             _currentUser.UserId.Value,

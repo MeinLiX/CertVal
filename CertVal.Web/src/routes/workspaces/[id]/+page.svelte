@@ -3,11 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import { formatDate, getCertificateStatus } from '$lib/utils/date';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -21,6 +20,7 @@
 		TransferOwnershipRequest
 	} from '$lib/types';
 	import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 
 	let workspace = $state<Workspace | null>(null);
 	let certificates = $state<Certificate[]>([]);
@@ -40,8 +40,10 @@
 	let isProcessing = $state(false);
 
 	const workspaceId = $derived(page.params.id);
-	const currentUserMember = $derived(members.find(m => m.user.id === $auth.user?.id));
-	const canManage = $derived(currentUserMember?.role === 'Owner' || currentUserMember?.role === 'Admin');
+	const currentUserMember = $derived(members.find((m) => m.user.id === $auth.user?.id));
+	const canManage = $derived(
+		currentUserMember?.role === 'Owner' || currentUserMember?.role === 'Admin'
+	);
 
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
@@ -55,11 +57,11 @@
 		isLoading = true;
 		try {
 			const [wsRes, certsRes, membersRes] = await Promise.all([
-				api.get<Workspace>(`/v1/workspaces/${workspaceId}`),
+				api.get<Workspace>(`/workspaces/${workspaceId}`),
 				api.get<PagedResult<Certificate>>(
-					`/v1/certificates?workspaceId=${workspaceId}&pageSize=5&statusFilter=Expiring`
+					`/certificates?workspaceId=${workspaceId}&pageSize=5&statusFilter=Expiring`
 				),
-				api.get<WorkspaceMember[]>(`/v1/workspaces/${workspaceId}/members`)
+				api.get<WorkspaceMember[]>(`/workspaces/${workspaceId}/members`)
 			]);
 
 			if (wsRes.data) workspace = wsRes.data;
@@ -67,7 +69,7 @@
 			if (membersRes.data) members = membersRes.data;
 		} catch (err) {
 			console.error('Failed to load workspace data:', err);
-			errors.load = t('workspaces.loadError', $language);
+			errors.load = t('workspaces.loadError', language.current);
 		} finally {
 			isLoading = false;
 		}
@@ -79,7 +81,7 @@
 		isProcessing = true;
 		try {
 			const response = await api.post<WorkspaceMember>(
-				`/v1/workspaces/${workspaceId}/members/invite`,
+				`/workspaces/${workspaceId}/members/invite`,
 				inviteForm
 			);
 			if (response.data) {
@@ -87,10 +89,10 @@
 				showInviteModal = false;
 				inviteForm = { email: '', role: 'Viewer' };
 			} else {
-				errors.invite = response.message || t('errors.general', $language);
+				errors.invite = response.message || t('errors.general', language.current);
 			}
 		} catch (err) {
-			errors.invite = t('errors.network', $language);
+			errors.invite = t('errors.network', language.current);
 		} finally {
 			isProcessing = false;
 		}
@@ -102,7 +104,7 @@
 		isProcessing = true;
 		try {
 			const response = await api.delete(
-				`/v1/workspaces/${workspaceId}/members/${memberToRemove.userId}`
+				`/workspaces/${workspaceId}/members/${memberToRemove.userId}`
 			);
 			if (response.message) {
 				errors.removeMember = response.message;
@@ -112,7 +114,7 @@
 				memberToRemove = null;
 			}
 		} catch (err) {
-			errors.removeMember = t('errors.general', $language);
+			errors.removeMember = t('errors.general', language.current);
 		} finally {
 			isProcessing = false;
 		}
@@ -124,7 +126,7 @@
 		isProcessing = true;
 		try {
 			const response = await api.post<Workspace>(
-				`/v1/workspaces/${workspaceId}/members/transfer-ownership`,
+				`/workspaces/${workspaceId}/members/transfer-ownership`,
 				transferForm
 			);
 			if (response.data) {
@@ -133,10 +135,10 @@
 				transferForm.newOwnerEmail = '';
 				await loadData();
 			} else {
-				errors.transfer = response.message || t('errors.general', $language);
+				errors.transfer = response.message || t('errors.general', language.current);
 			}
 		} catch (err) {
-			errors.transfer = err instanceof Error ? err.message : t('errors.general', $language);
+			errors.transfer = err instanceof Error ? err.message : t('errors.general', language.current);
 		} finally {
 			isProcessing = false;
 		}
@@ -148,10 +150,10 @@
 		errors = {};
 		isProcessing = true;
 		try {
-			await api.delete(`/v1/workspaces/${workspaceId}`);
+			await api.delete(`/workspaces/${workspaceId}`);
 			goto('/workspaces');
 		} catch (err) {
-			errors.delete = t('errors.general', $language);
+			errors.delete = t('errors.general', language.current);
 		} finally {
 			isProcessing = false;
 			showDeleteModal = false;
@@ -187,183 +189,265 @@
 <svelte:head>
 	<title
 		>{workspace
-			? `${workspace.name} ${t('common.details', $language)}`
-			: t('common.workspace', $language)}</title
+			? `${workspace.name} ${t('common.details', language.current)}`
+			: t('common.workspace', language.current)}</title
 	>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 	{#if isLoading}
-		<div class="flex h-96 items-center justify-center">
-			<span class="loading loading-lg loading-spinner"></span>
+		<div class="grid grid-cols-1 gap-4">
+			<div class="skeleton h-32 w-full rounded-xl bg-base-200/50"></div>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+				{#each { length: 4 } as _}
+					<div class="skeleton h-24 w-full rounded-xl bg-base-200/50"></div>
+				{/each}
+			</div>
 		</div>
 	{:else if !workspace}
-		<Card>
-			<div class="py-12 text-center">
-				<h3 class="text-xl font-semibold">{t('workspaces.notFound', $language)}</h3>
-				<p class="mt-2 text-base-content/60">
-					{errors.load || t('workspaces.loadError', $language)}
-				</p>
-				<Button class="mt-6" onclick={() => goto('/workspaces')}
-					>{t('workspaces.back', $language)}</Button
-				>
+		<div class="flex flex-col items-center justify-center py-20 text-center bg-base-100/30 rounded-3xl border border-base-content/5 backdrop-blur-sm">
+			<div class="bg-base-200/50 p-6 rounded-full mb-6">
+				<Icon name="error" class="w-16 h-16 text-base-content/20" />
 			</div>
-		</Card>
+			<h3 class="text-xl font-bold mb-2">{t('workspaces.notFound', language.current)}</h3>
+			<p class="text-base-content/60 max-w-md mb-8">
+				{errors.load || t('workspaces.loadError', language.current)}
+			</p>
+			<Button onclick={() => goto('/workspaces')} variant="outline" class="shadow-sm">
+				<Icon name="leftArrow" class="w-4 h-4 mr-2" />
+				{t('workspaces.back', language.current)}
+			</Button>
+		</div>
 	{:else}
-		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-			<div>
-				<div class="breadcrumbs text-sm">
+		<div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between border-b border-base-content/10 pb-8">
+			<div class="space-y-4">
+				<div class="breadcrumbs text-sm text-base-content/60">
 					<ul>
 						<li>
-							<a href="/workspaces" class="link hover:link-primary"
-								>{t('nav.workspaces', $language)}</a
-							>
+							<a href="/workspaces" class="hover:text-primary transition-colors flex items-center gap-1">
+								<Icon name="workspaces" class="w-4 h-4" />
+								{t('nav.workspaces', language.current)}
+							</a>
 						</li>
-						<li><span class="font-semibold">{workspace.name}</span></li>
+						<li><span class="font-medium text-base-content">{workspace.name}</span></li>
 					</ul>
 				</div>
-				<h1 class="mt-2 text-3xl font-bold">{workspace.name}</h1>
-				<p class="mt-1 text-base-content/70">{workspace.description}</p>
+				<div>
+					<h1 class="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+						{workspace.name}
+					</h1>
+					<p class="text-lg text-base-content/60 mt-2 font-light max-w-2xl">{workspace.description}</p>
+				</div>
 			</div>
-			<div class="flex gap-2">
-				<Button variant="ghost" onclick={() => goto(`/certificates?workspace=${workspaceId}`)}
-					>{t('workspaces.viewCertificates', $language)}</Button
-				>
-				<Button onclick={() => goto(`/notifications?workspace=${workspaceId}`)}
-					>{t('workspaces.manageNotifications', $language)}</Button
-				>
+			<div class="flex flex-wrap gap-3">
+				<Button variant="outline" class="shadow-sm bg-base-100/50 backdrop-blur-sm" onclick={() => goto(`/certificates?workspace=${workspaceId}`)}>
+					<Icon name="certificates" class="w-4 h-4 mr-2" />
+					{t('workspaces.viewCertificates', language.current)}
+				</Button>
+				<Button variant="outline" class="shadow-sm bg-base-100/50 backdrop-blur-sm" onclick={() => goto(`/notifications?workspace=${workspaceId}`)}>
+					<Icon name="notifications" class="w-4 h-4 mr-2" />
+					{t('workspaces.manageNotifications', language.current)}
+				</Button>
 			</div>
 		</div>
 
-		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
-			<Card
-				><div class="stat">
-					<div class="stat-title">{t('nav.certificates', $language)}</div>
-					<div class="stat-value">{workspace.certificateCount} / {workspace.maxCertificates}</div>
-				</div></Card
-			>
-			<Card
-				><div class="stat">
-					<div class="stat-title">{t('common.members', $language)}</div>
-					<div class="stat-value">{workspace.memberCount}</div>
-				</div></Card
-			>
-			<Card
-				><div class="stat">
-					<div class="stat-title">{t('common.owner', $language)}</div>
-					<div class="stat-value truncate text-lg">{members.find(m => m.role === 'Owner')?.user.fullName || 'N/A'}</div>
-				</div></Card
-			>
-			<Card
-				><div class="stat">
-					<div class="stat-title">{t('common.created', $language)}</div>
-					<div class="stat-value text-lg">{formatDate(workspace.createdAt)}</div>
-				</div></Card
-			>
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-primary/20">
+				<div class="flex items-center gap-4">
+					<div class="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content transition-colors">
+						<Icon name="certificates" class="w-6 h-6" />
+					</div>
+					<div>
+						<p class="text-sm font-medium text-base-content/60">{t('nav.certificates', language.current)}</p>
+						<p class="text-2xl font-bold mt-1">{workspace.certificateCount} <span class="text-sm text-base-content/40 font-normal">/ {workspace.maxCertificates}</span></p>
+					</div>
+				</div>
+			</div>
+
+			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-secondary/20">
+				<div class="flex items-center gap-4">
+					<div class="p-3 rounded-xl bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-content transition-colors">
+						<Icon name="members" class="w-6 h-6" />
+					</div>
+					<div>
+						<p class="text-sm font-medium text-base-content/60">{t('common.members', language.current)}</p>
+						<p class="text-2xl font-bold mt-1">{workspace.memberCount}</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-accent/20">
+				<div class="flex items-center gap-4">
+					<div class="p-3 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-content transition-colors">
+						<Icon name="user" class="w-6 h-6" />
+					</div>
+					<div>
+						<p class="text-sm font-medium text-base-content/60">{t('common.owner', language.current)}</p>
+						<p class="text-lg font-bold mt-1 truncate max-w-[120px]" title={members.find((m) => m.role === 'Owner')?.user.fullName}>
+							{members.find((m) => m.role === 'Owner')?.user.fullName || 'N/A'}
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-info/20">
+				<div class="flex items-center gap-4">
+					<div class="p-3 rounded-xl bg-info/10 text-info group-hover:bg-info group-hover:text-info-content transition-colors">
+						<Icon name="calendar" class="w-6 h-6" />
+					</div>
+					<div>
+						<p class="text-sm font-medium text-base-content/60">{t('common.created', language.current)}</p>
+						<p class="text-lg font-bold mt-1">{formatDate(workspace.createdAt)}</p>
+					</div>
+				</div>
+			</div>
 		</div>
 
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+		<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 			<div class="space-y-6 lg:col-span-2">
-				<Card title={t('workspaces.expiringSoon', $language)}>
+				<div class="rounded-2xl border border-base-content/10 bg-base-100/50 p-6 backdrop-blur-sm">
+					<div class="flex items-center justify-between mb-6">
+						<h3 class="text-xl font-bold flex items-center gap-2">
+							<div class="p-2 rounded-lg bg-warning/10 text-warning">
+								<Icon name="time" class="w-5 h-5" />
+							</div>
+							{t('workspaces.expiringSoon', language.current)}
+						</h3>
+						{#if certificates.length > 0}
+							<Button size="sm" variant="ghost" onclick={() => goto(`/certificates?workspace=${workspaceId}&status=Expiring`)}>
+								{t('common.viewAll', language.current)}
+								<Icon name="rightArrow" class="w-4 h-4 ml-1" />
+							</Button>
+						{/if}
+					</div>
+
 					{#if certificates.length > 0}
 						<div class="overflow-x-auto">
-							<table class="table table-sm">
+							<table class="table w-full">
+								<thead>
+									<tr class="border-b border-base-content/10 text-base-content/60">
+										<th class="bg-transparent font-medium">{t('common.name', language.current)}</th>
+										<th class="bg-transparent font-medium">{t('certificates.expiresIn', language.current)}</th>
+										<th class="bg-transparent font-medium">{t('common.status', language.current)}</th>
+									</tr>
+								</thead>
 								<tbody>
 									{#each certificates as cert}
-										<tr>
-											<td
-												><a
-													href="/certificates/{cert.id}"
-													class="block max-w-md link truncate font-semibold link-hover"
-													>{cert.subject}</a
-												></td
-											>
-											<td
-												>{formatDate(cert.notAfter)} ({cert.daysUntilExpiry}
-												{t('certificates.days', $language)})</td
-											>
-											<td
-												><span class="badge badge-sm badge-warning"
-													>{t(
-														`certificates.${getCertificateStatus(cert.notAfter)}`,
-														$language
-													)}</span
-												></td
-											>
+										<tr class="border-b border-base-content/5 hover:bg-base-content/5 transition-colors group cursor-pointer" onclick={() => goto(`/certificates/${cert.id}`)}>
+											<td class="font-medium">
+												<div class="flex items-center gap-3">
+													<div class="p-2 rounded-lg bg-base-200 text-base-content/70 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+														<Icon name="document" class="w-4 h-4" />
+													</div>
+													<span class="truncate max-w-[200px]">{cert.subject}</span>
+												</div>
+											</td>
+											<td class="text-base-content/70">
+												{formatDate(cert.notAfter)} 
+												<span class="text-xs opacity-60 ml-1">({cert.daysUntilExpiry} {t('certificates.days', language.current)})</span>
+											</td>
+											<td>
+												<span class="badge badge-sm badge-warning gap-1 shadow-sm">
+													<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+													{t(`certificates.${getCertificateStatus(cert.notAfter)}`, language.current)}
+												</span>
+											</td>
 										</tr>
 									{/each}
 								</tbody>
 							</table>
 						</div>
 					{:else}
-						<p class="py-4 text-center text-sm text-base-content/70">
-							{t('workspaces.noExpiringCertificates', $language)}
-						</p>
+						<div class="flex flex-col items-center justify-center py-12 text-center">
+							<div class="bg-base-200/50 p-4 rounded-full mb-4">
+								<Icon name="checkCircle" class="w-8 h-8 text-success" />
+							</div>
+							<p class="text-base-content/70 font-medium">
+								{t('workspaces.noExpiringCertificates', language.current)}
+							</p>
+						</div>
 					{/if}
-				</Card>
+				</div>
 			</div>
 
-			<div class="space-y-6">
-				<Card title={t('common.members', $language)}>
-					<div class="space-y-2">
+			<div class="space-y-8">
+				<div class="rounded-2xl border border-base-content/10 bg-base-100/50 p-6 backdrop-blur-sm">
+					<div class="flex items-center justify-between mb-6">
+						<h3 class="text-xl font-bold flex items-center gap-2">
+							<div class="p-2 rounded-lg bg-secondary/10 text-secondary">
+								<Icon name="members" class="w-5 h-5" />
+							</div>
+							{t('common.members', language.current)}
+						</h3>
+						<span class="badge badge-ghost">{members.length}</span>
+					</div>
+
+					<div class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
 						{#each members as member}
 							{@const statusInfo = getStatusBadge(member.status)}
-							<div class="flex items-center justify-between">
+							<div class="flex items-center justify-between p-3 rounded-xl bg-base-100/50 border border-base-content/5 hover:border-base-content/20 transition-all">
 								<div class="flex items-center gap-3">
 									<UserAvatar
 										firstName={member.user.firstName}
 										lastName={member.user.lastName}
 										size="w-10"
-										textSize="text-1xl"
+										textSize="text-sm"
 									/>
-									<div>
-										<div class="font-bold">{member.user.fullName}</div>
-										<div class="text-xs opacity-50">{member.user.email}</div>
+									<div class="min-w-0">
+										<div class="font-bold text-sm truncate max-w-[120px]">{member.user.fullName}</div>
+										<div class="text-xs text-base-content/60 truncate max-w-[120px]">{member.user.email}</div>
 									</div>
 								</div>
-								<div class="flex items-center gap-2">
-									<span class="badge {statusInfo.class} badge-sm">{statusInfo.text}</span>
-									<span class="badge {getRoleBadgeClass(member.role)} badge-sm">
-										{t(`workspaces.roles.${member.role.toLowerCase()}`, $language)}
+								<div class="flex flex-col items-end gap-1">
+									<span class="badge {getRoleBadgeClass(member.role)} badge-xs font-medium">
+										{t(`workspaces.roles.${member.role.toLowerCase()}`, language.current)}
 									</span>
 									{#if canManage && member.role !== 'Owner'}
-										<Button
-											size="xs"
-											variant="ghost"
+										<button
+											class="text-xs text-error hover:underline flex items-center gap-1 mt-1"
 											onclick={() => {
 												memberToRemove = member;
 												showRemoveMemberModal = true;
-											}}>✕</Button
+											}}
 										>
+											{t('common.delete', language.current)}
+										</button>
 									{/if}
 								</div>
 							</div>
 						{/each}
 					</div>
+					
 					{#if canManage && workspace.allowMemberInvites}
-						<div class="mt-4 card-actions">
-							<Button class="w-full" variant="ghost" onclick={() => (showInviteModal = true)}
-								>{t('workspaces.inviteMember', $language)}</Button
-							>
+						<div class="mt-6 pt-6 border-t border-base-content/10">
+							<Button class="w-full shadow-sm" variant="outline" onclick={() => (showInviteModal = true)}>
+								<Icon name="plus" class="w-4 h-4 mr-2" />
+								{t('workspaces.inviteMember', language.current)}
+							</Button>
 						</div>
 					{/if}
-				</Card>
+				</div>
 
 				{#if currentUserMember?.role === 'Owner'}
-					<Card class="border-error">
-						<h3 class="card-title text-error">{t('workspaces.dangerZone', $language)}</h3>
-						<p class="text-sm text-base-content/70">
-							{t('workspaces.dangerZoneWarning', $language)}
+					<div class="rounded-2xl border border-error/20 bg-error/5 p-6 backdrop-blur-sm">
+						<h3 class="text-lg font-bold text-error flex items-center gap-2 mb-2">
+							<Icon name="warning" class="w-5 h-5" />
+							{t('workspaces.dangerZone', language.current)}
+						</h3>
+						<p class="text-sm text-base-content/70 mb-6">
+							{t('workspaces.dangerZoneWarning', language.current)}
 						</p>
-						<div class="mt-4 card-actions justify-end gap-2">
-							<Button variant="warning" onclick={() => (showTransferModal = true)}
-								>{t('workspaces.transferOwnership', $language)}</Button
-							>
-							<Button variant="danger" onclick={() => (showDeleteModal = true)}
-								>{t('workspaces.deleteWorkspace', $language)}</Button
-							>
+						<div class="flex flex-col gap-3">
+							<Button variant="warning" class="w-full justify-start bg-warning/10 hover:bg-warning/20 border-warning/20 text-warning-content" onclick={() => (showTransferModal = true)}>
+								<Icon name="user" class="w-4 h-4 mr-2" />
+								{t('workspaces.transferOwnership', language.current)}
+							</Button>
+							<Button variant="danger" class="w-full justify-start shadow-lg shadow-error/10" onclick={() => (showDeleteModal = true)}>
+								<Icon name="trash" class="w-4 h-4 mr-2" />
+								{t('workspaces.deleteWorkspace', language.current)}
+							</Button>
 						</div>
-					</Card>
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -371,7 +455,7 @@
 
 	<Modal
 		isOpen={showInviteModal}
-		title={t('workspaces.inviteNewMember', $language)}
+		title={t('workspaces.inviteNewMember', language.current)}
 		onClose={() => (showInviteModal = false)}
 	>
 		<form onsubmit={handleInvite} class="space-y-4">
@@ -379,29 +463,29 @@
 					<span>{errors.invite}</span>
 				</div>{/if}
 			<Input
-				label={t('auth.login.email', $language)}
+				label={t('auth.login.email', language.current)}
 				type="email"
 				bind:value={inviteForm.email}
 				required
 				placeholder="member@example.com"
 			/>
 			<Select
-				label={t('common.role', $language)}
+				label={t('common.role', language.current)}
 				bind:value={inviteForm.role}
 				options={[
-					{ value: 'Viewer', label: t('workspaces.roles.viewer', $language) },
-					{ value: 'Editor', label: t('workspaces.roles.editor', $language) },
-					...(currentUserMember?.role === 'Owner' ? [
-						{ value: 'Admin', label: t('workspaces.roles.admin', $language) }
-					] : [])
+					{ value: 'Viewer', label: t('workspaces.roles.viewer', language.current) },
+					{ value: 'Editor', label: t('workspaces.roles.editor', language.current) },
+					...(currentUserMember?.role === 'Owner'
+						? [{ value: 'Admin', label: t('workspaces.roles.admin', language.current) }]
+						: [])
 				]}
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showInviteModal = false)}
-					>{t('common.cancel', $language)}</Button
+					>{t('common.cancel', language.current)}</Button
 				>
 				<Button type="submit" loading={isProcessing} variant="primary"
-					>{t('workspaces.sendInvitation', $language)}</Button
+					>{t('workspaces.sendInvitation', language.current)}</Button
 				>
 			</div>
 		</form>
@@ -409,16 +493,16 @@
 
 	<Modal
 		isOpen={showDeleteModal}
-		title={t('workspaces.deleteWorkspace', $language)}
+		title={t('workspaces.deleteWorkspace', language.current)}
 		onClose={() => (showDeleteModal = false)}
 	>
 		<form onsubmit={handleDelete} class="space-y-4">
 			<p>
-				{t('workspaces.irreversibleAction', $language)}
-				{t('workspaces.lossOfDataWarning', $language)}
+				{t('workspaces.irreversibleAction', language.current)}
+				{t('workspaces.lossOfDataWarning', language.current)}
 			</p>
 			<p>
-				{t('workspaces.confirmDelete', $language)}
+				{t('workspaces.confirmDelete', language.current)}
 				<strong class="text-error">{workspace?.name}</strong>
 			</p>
 			{#if errors.delete}<div role="alert" class="alert alert-error text-sm">
@@ -426,18 +510,18 @@
 				</div>{/if}
 			<Input
 				bind:value={confirmDeleteName}
-				placeholder={t('workspaces.workspaceName', $language)}
+				placeholder={t('workspaces.workspaceName', language.current)}
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}
-					>{t('common.cancel', $language)}</Button
+					>{t('common.cancel', language.current)}</Button
 				>
 				<Button
 					type="submit"
 					variant="danger"
 					loading={isProcessing}
 					disabled={confirmDeleteName !== workspace?.name}
-					>{t('workspaces.deleteWorkspace', $language)}</Button
+					>{t('workspaces.deleteWorkspace', language.current)}</Button
 				>
 			</div>
 		</form>
@@ -445,16 +529,16 @@
 
 	<Modal
 		isOpen={showTransferModal}
-		title={t('workspaces.transferOwnership', $language)}
+		title={t('workspaces.transferOwnership', language.current)}
 		onClose={() => (showTransferModal = false)}
 	>
 		<form onsubmit={handleTransferOwnership} class="space-y-4">
-			<p>{t('workspaces.transferWarning', $language)}</p>
+			<p>{t('workspaces.transferWarning', language.current)}</p>
 			{#if errors.transfer}<div role="alert" class="alert alert-error text-sm">
 					<span>{errors.transfer}</span>
 				</div>{/if}
 			<Input
-				label={t('workspaces.newOwnerEmail', $language)}
+				label={t('workspaces.newOwnerEmail', language.current)}
 				type="email"
 				bind:value={transferForm.newOwnerEmail}
 				required
@@ -462,10 +546,10 @@
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showTransferModal = false)}
-					>{t('common.cancel', $language)}</Button
+					>{t('common.cancel', language.current)}</Button
 				>
 				<Button type="submit" variant="warning" loading={isProcessing}
-					>{t('workspaces.transfer', $language)}</Button
+					>{t('workspaces.transfer', language.current)}</Button
 				>
 			</div>
 		</form>
@@ -473,14 +557,14 @@
 
 	<Modal
 		isOpen={showRemoveMemberModal}
-		title={t('workspaces.removeMemberTitle', $language)}
+		title={t('workspaces.removeMemberTitle', language.current)}
 		onClose={() => {
 			showRemoveMemberModal = false;
 			memberToRemove = null;
 		}}
 	>
 		<p>
-			{t('workspaces.removeMemberWarning', $language, {
+			{t('workspaces.removeMemberWarning', language.current, {
 				memberName: memberToRemove?.user.fullName
 			})}
 		</p>
@@ -494,10 +578,10 @@
 				onclick={() => {
 					showRemoveMemberModal = false;
 					memberToRemove = null;
-				}}>{t('common.cancel', $language)}</Button
+				}}>{t('common.cancel', language.current)}</Button
 			>
 			<Button variant="danger" loading={isProcessing} onclick={handleRemoveMember}
-				>{t('workspaces.remove', $language)}</Button
+				>{t('workspaces.remove', language.current)}</Button
 			>
 		</div>
 	</Modal>

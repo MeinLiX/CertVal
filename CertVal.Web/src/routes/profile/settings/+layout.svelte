@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { t } from '$lib/i18n';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { IconName } from '$lib/icons';
 	import { onMount, onDestroy, tick } from 'svelte';
 
 	const tabs: { href: string; label: string; icon: IconName }[] = [
 		{ href: '/profile/settings/personal', label: 'profile.personalInfo', icon: 'profile' },
-		{ href: '/profile/settings/security', label: 'profile.security', icon: 'security' },
 		{ href: '/profile/settings/api-tokens', label: 'nav.apiTokens', icon: 'key' },
 		{ href: '/profile/settings/docs', label: 'nav.documentation', icon: 'document' }
 	];
@@ -33,19 +32,16 @@
 		}
 
 		const tabEls = Array.from(container.querySelectorAll<HTMLElement>('a[role="tab"]'));
-		const activeIndex = tabs.findIndex(t => currentPath.startsWith(t.href));
+		const activeIndex = tabs.findIndex((t) => currentPath.startsWith(t.href));
 		const el = tabEls[activeIndex];
 
 		if (el) {
 			const rect = el.getBoundingClientRect();
 			const parentRect = container.getBoundingClientRect();
-			const inset = Math.min(16, Math.round(rect.width * 0.12));
-			underlineLeft = rect.left - parentRect.left + container.scrollLeft + Math.round(inset / 2);
-			underlineWidth = Math.max(0, rect.width - inset);
-			isUnderlineVisible = underlineWidth > 0;
+			underlineLeft = rect.left - parentRect.left + container.scrollLeft;
+			underlineWidth = rect.width;
+			isUnderlineVisible = true;
 		} else {
-			underlineLeft = 0;
-			underlineWidth = 0;
 			isUnderlineVisible = false;
 		}
 	}
@@ -70,34 +66,47 @@
 	});
 </script>
 
-<div class="space-y-6">
-	<div>
-		<h1 class="text-3xl font-bold">{t('nav.settings', $language)}</h1>
-		<p class="mt-1 text-base-content/70">{t('profile.subtitle', $language)}</p>
-	</div>
-
-	<div bind:this={tabsContainer} role="tablist" aria-label="Settings sections" class="relative flex overflow-x-auto gap-0 border-b border-base-300">
-		{#each tabs as tab, i}
-			<a
-				href={tab.href}
-				role="tab"
-				aria-selected={currentPath.startsWith(tab.href)}
-				tabindex={currentPath.startsWith(tab.href) ? 0 : -1}
-				class="px-4 py-3 flex items-center gap-2 whitespace-nowrap transition-all duration-100 focus:outline-none focus:ring-2 focus:ring-primary/30 {currentPath.startsWith(tab.href) ? 'text-primary font-medium' : 'text-base-content/70'}"
-			>
-				<Icon name={tab.icon} class="h-4 w-4 shrink-0" />
-				<span>{t(tab.label, $language)}</span>
-			</a>
-		{/each}
-
+<div class="space-y-8">
+	<div class="relative">
 		<div
-			class="absolute bottom-0 h-2 bg-primary rounded-full transition-all duration-300 pointer-events-none"
-			style="transform: translateX({underlineLeft}px); width: {underlineWidth}px; opacity: {isUnderlineVisible ? 1 : 0};"
-			aria-hidden="true"
-		></div>
+			bind:this={tabsContainer}
+			role="tablist"
+			aria-label="Settings sections"
+			class="border-base-content/10 relative flex gap-8 overflow-x-auto border-b pb-px"
+		>
+			{#each tabs as tab}
+				<a
+					href={tab.href}
+					role="tab"
+					aria-selected={currentPath.startsWith(tab.href)}
+					class="hover:text-primary group relative flex items-center gap-2 whitespace-nowrap py-4 text-sm font-medium transition-colors focus:outline-none {currentPath.startsWith(
+						tab.href
+					)
+						? 'text-primary'
+						: 'text-base-content/60'}"
+				>
+					<Icon
+						name={tab.icon}
+						class="group-hover:text-primary h-4 w-4 shrink-0 transition-colors {currentPath.startsWith(
+							tab.href
+						)
+							? 'text-primary'
+							: 'text-base-content/40'}"
+					/>
+					<span>{t(tab.label, language.current)}</span>
+				</a>
+			{/each}
+
+			<div
+				class="bg-primary absolute bottom-0 h-0.5 transition-all duration-300 ease-out"
+				style="left: {underlineLeft}px; width: {underlineWidth}px; opacity: {isUnderlineVisible
+					? 1
+					: 0};"
+			></div>
+		</div>
 	</div>
 
-	<div>
+	<div class="min-h-[400px]">
 		{@render children?.()}
 	</div>
 </div>

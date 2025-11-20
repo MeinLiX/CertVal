@@ -2,11 +2,11 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Input from '$lib/components/ui/Input.svelte';
+	import FloatingInput from '$lib/components/ui/FloatingInput.svelte';
 
 	let password = $state('');
 	let confirmPassword = $state('');
@@ -26,21 +26,21 @@
 		errors = {};
 		isLoading = true;
 		if (password !== confirmPassword) {
-			errors.confirmPassword = t('errors.passwordsNotMatch', $language);
+			errors.confirmPassword = t('errors.passwordsNotMatch', language.current);
 			isLoading = false;
 			return;
 		}
 
 		try {
-			const response = await api.post('/v1/auth/reset-password', { token, newPassword: password });
+			const response = await api.post('/auth/reset-password', { token, newPassword: password });
 			if (response.data) {
-				successMessage = t('success.passwordChanged', $language);
+				successMessage = t('success.passwordChanged', language.current);
 				setTimeout(() => goto('/auth/login'), 2000);
 			} else {
-				errors.general = response.message || t('errors.general', $language);
+				errors.general = response.message || t('errors.general', language.current);
 			}
 		} catch (error) {
-			errors.general = t('errors.network', $language);
+			errors.general = t('errors.network', language.current);
 		} finally {
 			isLoading = false;
 		}
@@ -48,50 +48,53 @@
 </script>
 
 <svelte:head>
-	<title>{t('auth.reset.title', $language)} - CertVal</title>
+	<title>{t('auth.reset.title', language.current)} - CertVal</title>
 </svelte:head>
 
-<div class="hero min-h-full">
-	<div
-		class="card w-full max-w-sm shrink-0 glass shadow-2xl"
-		style="background-color: oklch(from var(--color-base-100) l c h / 0.2);"
-	>
-		<form class="card-body p-8" onsubmit={handleSubmit}>
-			<h2 class="mb-4 card-title justify-center text-2xl font-bold">
-				{t('auth.reset.title', $language)}
+<div
+	class="card bg-base-100/20 w-full max-w-md shrink-0 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
+>
+	<form class="card-body gap-6 p-8" onsubmit={handleSubmit}>
+		<div class="mb-2 text-center">
+			<h2
+				class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent"
+			>
+				{t('auth.reset.title', language.current)}
 			</h2>
+		</div>
 
-			{#if successMessage}
-				<div role="alert" class="alert alert-success text-sm">
-					<span>{successMessage}</span>
-				</div>
-			{/if}
-
-			{#if errors.general}
-				<div role="alert" class="alert alert-error text-sm">
-					<span>{errors.general}</span>
-				</div>
-			{/if}
-
-			<Input
-				label={t('auth.reset.newPassword', $language)}
-				type="password"
-				bind:value={password}
-				required
-			/>
-			<Input
-				label={t('auth.reset.confirmPassword', $language)}
-				type="password"
-				bind:value={confirmPassword}
-				required
-				error={errors.confirmPassword}
-			/>
-
-			<div class="form-control mt-6">
-				<Button type="submit" variant="primary" loading={isLoading}>
-					{t('auth.reset.submit', $language)}
-				</Button>
+		{#if successMessage}
+			<div role="alert" class="alert alert-success text-sm">
+				<span>{successMessage}</span>
 			</div>
-		</form>
-	</div>
+		{/if}
+
+		{#if errors.general}
+			<div role="alert" class="alert alert-error text-sm">
+				<span>{errors.general}</span>
+			</div>
+		{/if}
+
+		<FloatingInput
+			id="password"
+			label={t('auth.reset.newPassword', language.current)}
+			type="password"
+			bind:value={password}
+			required
+		/>
+		<FloatingInput
+			id="confirmPassword"
+			label={t('auth.reset.confirmPassword', language.current)}
+			type="password"
+			bind:value={confirmPassword}
+			required
+			error={errors.confirmPassword}
+		/>
+
+		<div class="form-control mt-2">
+			<Button type="submit" variant="primary" loading={isLoading} class="w-full">
+				{t('auth.reset.submit', language.current)}
+			</Button>
+		</div>
+	</form>
 </div>

@@ -1,10 +1,10 @@
 import { auth } from '$lib/stores/auth';
-import { language } from '$lib/stores/language';
+import { language } from '$lib/stores/language.svelte';
 import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
 import type { ApiResponse, ErrorResponseDto, ProblemDetails } from '$lib/types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
@@ -48,7 +48,7 @@ class ApiClient {
     }
 
     private handleError(errorData: unknown, fallbackKey: string): string {
-        const currentLang = get(language);
+        const currentLang = language.current;
 
         if (isRecord(errorData)) {
             const bag = errorData['errors'];
@@ -101,12 +101,12 @@ class ApiClient {
                 throw new Error(errorMessage);
             }
 
-            const currentLang = get(language);
+            const currentLang = language.current;
             throw new Error(t('errors.api.requestFailed', currentLang));
 
         } catch (error) {
             console.error('API Error:', error);
-            const currentLang = get(language);
+            const currentLang = language.current;
             return {
                 message: error instanceof Error ? error.message : t('errors.api.unknownError', currentLang)
             };
@@ -165,12 +165,12 @@ class ApiClient {
                 throw new Error(errorMessage);
             }
 
-            const currentLang = get(language);
+            const currentLang = language.current;
             throw new Error(t('errors.api.uploadFailed', currentLang));
 
         } catch (error) {
             console.error('Upload Error:', error);
-            const currentLang = get(language);
+            const currentLang = language.current;
             return {
                 message: error instanceof Error ? error.message : t('errors.api.uploadFailed', currentLang)
             };
@@ -202,12 +202,12 @@ class ApiClient {
                 throw new Error(errorMessage);
             }
 
-            const currentLang = get(language);
+            const currentLang = language.current;
             throw new Error(t('errors.api.downloadFailed', currentLang));
 
         } catch (error) {
             console.error('API Download Error:', error);
-            const currentLang = get(language);
+            const currentLang = language.current;
             return {
                 message: error instanceof Error ? error.message : t('errors.api.downloadFailed', currentLang)
             };
@@ -276,12 +276,12 @@ class ApiClient {
                 throw new Error(errorMessage);
             }
 
-            const currentLang = get(language);
+            const currentLang = language.current;
             throw new Error(t('errors.api.downloadFailed', currentLang));
 
         } catch (error) {
             console.error('API Download Error:', error);
-            const currentLang = get(language);
+            const currentLang = language.current;
             return { message: error instanceof Error ? error.message : t('errors.api.downloadFailed', currentLang) };
         }
     }
@@ -305,7 +305,7 @@ class ApiClient {
             formData.append('description', description);
         }
 
-        return this.upload<T>('/v1/certificates/upload', formData);
+        return this.upload<T>('/certificates/upload', formData);
     }
 
     async uploadMultipleCertificates<T>(workspaceId: string, files: FileList | File[], description?: string) {
@@ -327,7 +327,7 @@ class ApiClient {
             console.log(key, value instanceof File ? `File: ${value.name}` : value);
         }
 
-        return this.upload<T>('/v1/certificates/upload/multiple', formData);
+        return this.upload<T>('/certificates/upload/multiple', formData);
     }
 
     async inviteMember<T>(workspaceId: string, email: string, role: string) {
@@ -340,7 +340,7 @@ class ApiClient {
 
         console.log('Trying nested request structure:', requestData);
 
-        let response = await this.post<T>(`/v1/workspaces/${workspaceId}/members/invite`, requestData);
+        let response = await this.post<T>(`/workspaces/${workspaceId}/members/invite`, requestData);
 
         if (response.message && response.message.includes('validation')) {
             console.log('Nested structure failed, trying flat structure');
@@ -349,7 +349,7 @@ class ApiClient {
                 role: role
             } as any;
 
-            response = await this.post<T>(`/v1/workspaces/${workspaceId}/members/invite`, requestData);
+            response = await this.post<T>(`/workspaces/${workspaceId}/members/invite`, requestData);
         }
 
         return response;
@@ -376,7 +376,7 @@ class ApiClient {
         if (params.pageSize) searchParams.set('pageSize', params.pageSize.toString());
         if (params.pageNumber) searchParams.set('pageNumber', params.pageNumber.toString());
 
-        return this.request<T>(`/v1/search/certificates?${searchParams.toString()}`);
+        return this.request<T>(`/search/certificates?${searchParams.toString()}`);
     }
 }
 
