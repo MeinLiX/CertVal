@@ -1,206 +1,166 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
-	import { auth } from '$lib/stores/auth';
-	import { language } from '$lib/stores/language';
-	import { api } from '$lib/utils/api';
-	import { t } from '$lib/i18n';
+	import { authUiState } from '$lib/stores/authUiState.svelte';
+	import { AuthService } from '$lib/services/AuthService';
+	import FloatingInput from '$lib/components/ui/FloatingInput.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Input from '$lib/components/ui/Input.svelte';
-	import type { LoginRequest } from '$lib/types';
+	import GoogleSignInButton from '$lib/components/auth/GoogleSignInButton.svelte';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
+	import { goto } from '$app/navigation';
+	import { language } from '$lib/stores/language.svelte';
+	import { t } from '$lib/i18n';
 
-	let formData = $state<LoginRequest>({ email: '', password: '' });
-	let errors = $state<Record<string, string>>({});
-	let isLoading = $state(false);
-	let googleReady = $state(false);
-
-	const isRegistered = $derived(page.url.searchParams.get('registered') === 'true');
-	const redirectUrl = $derived(page.url.searchParams.get('redirect') || '/dashboard');
+	let email = $state('');
+	let password = $state('');
+	let loading = $state(false);
+	let googleLoaded = $state(false);
+	let error = $state<string | null>(null);
 
 	onMount(() => {
-		if ($auth.isAuthenticated) {
-			goto('/dashboard');
+		if (window.google) {
+			googleLoaded = true;
 		}
-		loadGoogleScript($language);
 	});
 
 	$effect(() => {
-		loadGoogleScript($language);
+		authUiState.isTyping = email.length > 0 || password.length > 0;
+		authUiState.isValid = email.includes('@') && password.length >= 6;
 	});
 
-	function loadGoogleScript(currentLang: 'uk' | 'en') {
-		const scriptId = 'google-identity-script';
-		const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
-		const desiredSrc = `https://accounts.google.com/gsi/client?hl=${currentLang}`;
-
-		if (existing && existing.src === desiredSrc) {
-			googleReady = true;
-			initGoogleButton();
-			return;
-		}
-
-		if (existing) {
-			existing.remove();
-			const container = document.getElementById('googleSignInDiv');
-			if (container) container.innerHTML = '';
-		}
-
-		const s = document.createElement('script');
-		s.src = desiredSrc;
-		s.async = true;
-		s.defer = true;
-		s.id = scriptId;
-		s.onload = () => {
-			googleReady = true;
-			initGoogleButton();
-		};
-		document.head.appendChild(s);
+	function handleGoogleLoad() {
+		googleLoaded = true;
 	}
 
-	async function handleSubmit(event: Event) {
-		event.preventDefault();
-		errors = {};
-		isLoading = true;
-
+	async function handleGoogleSuccess(token: string) {
+		loading = true;
+		error = null;
 		try {
-			const response = await api.post<any>('/v1/auth/login', formData);
-			if (response.data) {
-				auth.login(response.data.token, response.data.user);
-				goto(redirectUrl);
-			} else {
-				errors.general = response.message || 'Invalid credentials.';
-			}
-		} catch (error) {
-			errors.general = t('errors.network', $language);
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	function initGoogleButton() {
-		errors = {};
-		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-		if (!clientId) {
-			errors.general = t('errors.googleClientIdMissing', $language);
-			return;
-		}
-		if (!window.google?.accounts?.id) return;
-
-		window.google.accounts.id.initialize({
-			client_id: clientId,
-			auto_select: false,
-			ux_mode: 'popup',
-			callback: onGoogleCredential
-		});
-
-		const btn = document.getElementById('googleSignInDiv');
-		if (btn) {
-			window.google.accounts.id.renderButton(btn, {
-				type: 'standard',
-				theme: 'outline',
-				size: 'large',
-				shape: 'rectangular',
-				text: 'signin_with',
-				logo_alignment: 'left',
-				width: 320
-			});
-		}
-
-		window.google.accounts.id.prompt();
-	}
-
-	async function onGoogleCredential(resp: any) {
-		try {
-			const idToken = resp?.credential as string | undefined;
-			if (!idToken) {
-				errors.general = t('errors.googleLoginFailed', $language);
-				return;
-			}
-			const result = await api.post<any>('/v1/auth/login/google', { idToken });
+			const result = await AuthService.googleLogin(token);
 			if (result.data) {
-				auth.login(result.data.token, result.data.user);
-				goto(redirectUrl);
+				goto('/dashboard');
 			} else {
-				errors.general = result.message || t('errors.googleLoginFailed', $language);
+				error = result.error || t('errors.googleLoginFailed', language.current);
 			}
-		} catch {
-			errors.general = t('errors.network', $language);
+		} catch (err) {
+			error = t('errors.network', language.current);
+		} finally {
+			loading = false;
+		}
+	}
+
+	function handleGoogleError(msg: string) {
+		error = msg;
+	}
+
+	async function handleLogin(e: Event) {
+		e.preventDefault();
+		loading = true;
+		error = null;
+
+		try {
+			const result = await AuthService.login({ email, password });
+			if (result.data) {
+				goto('/dashboard');
+			} else {
+				error = result.error || 'Login failed';
+			}
+		} catch (err) {
+			error = 'An unexpected error occurred';
+		} finally {
+			loading = false;
 		}
 	}
 </script>
 
-<svelte:head>
-	<title>{t('auth.login.title', $language)} - CertVal</title>
-</svelte:head>
+{#if !googleLoaded}
+	<GlobalLoader />
+{/if}
 
-<div class="hero min-h-full">
-	<div class="hero-content w-full max-w-4xl flex-col lg:flex-row-reverse">
-		<div class="text-center lg:pl-10 lg:text-left">
-			<h1 class="text-5xl font-bold">{t('auth.login.welcome', $language)}</h1>
-			<p class="py-6 text-lg opacity-80">{t('auth.login.tagline', $language)}</p>
-		</div>
-		<div
-			class="card glass w-full max-w-sm shrink-0 shadow-2xl"
-			style="background-color: oklch(from var(--color-base-100) l c h / 0.2);"
-		>
-			<form class="card-body p-8" onsubmit={handleSubmit}>
-				<h2 class="card-title mb-4 justify-center text-2xl font-bold">
-					{t('auth.login.title', $language)}
-				</h2>
+<div class="w-full max-w-md" class:invisible={!googleLoaded}>
+	<div
+		class="card bg-base-100/20 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
+	>
+		<div class="card-body gap-6 p-8">
+			<div class="mb-2 text-center">
+				<h1
+					class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent"
+				>
+					{t('auth.login.welcome', language.current)}
+				</h1>
+				<p class="text-base-content/60 mt-2">{t('auth.login.title', language.current)}</p>
+			</div>
 
-				{#if isRegistered}
-					<div role="alert" class="alert alert-success text-sm">
-						<span>{t('auth.login.registrationSuccess', $language)}</span>
-					</div>
-				{/if}
-				{#if errors.general}
-					<div role="alert" class="alert alert-error text-sm">
-						<span>{errors.general}</span>
-					</div>
-				{/if}
-
-				<Input
-					label={t('auth.login.email', $language)}
+			<form onsubmit={handleLogin} class="flex flex-col gap-4">
+				<FloatingInput
+					id="email"
+					label={t('auth.login.email', language.current)}
 					type="email"
-					bind:value={formData.email}
+					bind:value={email}
 					required
-					placeholder="your@email.com"
+					data-test-id="login-email"
 				/>
-				<Input
-					label={t('auth.login.password', $language)}
+
+				<FloatingInput
+					id="password"
+					label={t('auth.login.password', language.current)}
 					type="password"
-					bind:value={formData.password}
+					bind:value={password}
 					required
-					placeholder={t('auth.login.password', $language)}
+					data-test-id="login-password"
 				/>
-				<div class="mt-2 flex items-center justify-between text-sm">
-					<label class="label cursor-pointer gap-2 p-0">
-						<input type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-						<span class="label-text">{t('auth.login.rememberMe', $language)}</span>
+
+				{#if error}
+					<div class="alert alert-error rounded-lg py-2 text-sm">
+						<span>{error}</span>
+					</div>
+				{/if}
+
+				<div class="flex items-center justify-between text-sm">
+					<label class="label cursor-pointer gap-2">
+						<input type="checkbox" class="checkbox checkbox-primary checkbox-sm" />
+						<span class="label-text">{t('auth.login.rememberMe', language.current)}</span>
 					</label>
-					<a href="/auth/forgot-password" class="link link-hover text-sm">
-						{t('auth.login.forgot', $language)}
-					</a>
+					<button
+						type="button"
+						onclick={() => goto('/auth/forgot-password')}
+						class="link link-primary no-underline hover:underline"
+					>
+						{t('auth.login.forgot', language.current)}
+					</button>
 				</div>
-				<div class="form-control mt-6">
-					<Button type="submit" variant="primary" loading={isLoading}>
-						{t('auth.login.submit', $language)}
-					</Button>
-				</div>
-				<div class="mt-3 flex items-center justify-center">
-					<div id="googleSignInDiv" aria-label="Sign in with Google"></div>
-				</div>
-				<div class="divider text-xs"></div>
-				<div class="text-center text-sm">
-					<p>
-						{t('auth.login.noAccount', $language)}
-						<a href="/auth/register" class="link link-primary font-semibold"
-							>{t('auth.login.registerLink', $language)}</a
-						>
-					</p>
-				</div>
+
+				<Button
+					type="submit"
+					variant="primary"
+					class="mt-2 w-full"
+					{loading}
+					disabled={!authUiState.isValid}
+					data-testid="login-submit"
+				>
+					{t('auth.login.submit', language.current)}
+				</Button>
 			</form>
+
+			<div class="divider text-base-content/40 text-xs">
+				{t('auth.login.orContinueWith', language.current)}
+			</div>
+
+			<GoogleSignInButton
+				onSuccess={handleGoogleSuccess}
+				onError={handleGoogleError}
+				onLoad={handleGoogleLoad}
+			/>
+
+			<div class="mt-4 text-center text-sm">
+				<span class="text-base-content/60">{t('auth.login.noAccount', language.current)}</span>
+				<button
+					type="button"
+					onclick={() => goto('/auth/register')}
+					class="link link-primary ml-1 font-medium no-underline hover:underline"
+				>
+					{t('auth.login.signup', language.current)}
+				</button>
+			</div>
 		</div>
 	</div>
 </div>

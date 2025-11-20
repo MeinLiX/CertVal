@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/stores/auth';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -55,19 +55,19 @@
 		successMessage = '';
 		try {
 			if (profileForm.language) {
-				language.setLanguage(profileForm.language as Language);
+				language.set(profileForm.language as Language);
 			}
 
-			const response = await api.put<User>('/v1/users/me', profileForm);
+			const response = await api.put<User>('/users/me', profileForm);
 			if (response.data) {
 				auth.login($auth.token!, response.data);
 				user = response.data;
-				successMessage = t('success.profileUpdated', $language);
+				successMessage = t('success.profileUpdated', language.current);
 			} else {
-				errors.profile = response.message || t('errors.general', $language);
+				errors.profile = response.message || t('errors.general', language.current);
 			}
 		} catch (err) {
-			errors.profile = t('errors.network', $language);
+			errors.profile = t('errors.network', language.current);
 		} finally {
 			isSavingProfile = false;
 		}
@@ -86,12 +86,12 @@
 		{/if}
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<Input
-				label={t('auth.register.firstName', $language)}
+				label={t('auth.register.firstName', language.current)}
 				bind:value={profileForm.firstName}
 				required
 			/>
 			<Input
-				label={t('auth.register.lastName', $language)}
+				label={t('auth.register.lastName', language.current)}
 				bind:value={profileForm.lastName}
 				required
 			/>
@@ -99,12 +99,12 @@
 
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<Select
-				label={t('profile.language', $language)}
+				label={t('profile.language', language.current)}
 				bind:value={profileForm.language}
 				options={languages}
 			/>
 			<Select
-				label={t('profile.timezone', $language)}
+				label={t('profile.timezone', language.current)}
 				bind:value={profileForm.timeZone}
 				options={timezones}
 			/>
@@ -112,7 +112,7 @@
 
 		<div class="form-control">
 			<label class="label cursor-pointer">
-				<span class="label-text">{t('profile.emailNotifications', $language)}</span>
+				<span class="label-text">{t('profile.emailNotifications', language.current)}</span>
 				<input
 					type="checkbox"
 					class="toggle toggle-primary"
@@ -122,7 +122,7 @@
 		</div>
 		<div class="card-actions justify-end">
 			<Button type="submit" variant="primary" loading={isSavingProfile}>
-				{t('profile.saveChanges', $language)}
+				{t('profile.saveChanges', language.current)}
 			</Button>
 		</div>
 	</form>

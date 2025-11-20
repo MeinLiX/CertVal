@@ -3,10 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { api } from '$lib/utils/api';
+	import { withMinDelay } from '$lib/utils/loading';
 	import { t } from '$lib/i18n';
 	import { formatDateTime } from '$lib/utils/date';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -66,7 +68,7 @@
 	async function loadWorkspaces(defaultId: string | null) {
 		isLoading = true;
 		try {
-			const response = await api.get<PagedResult<Workspace>>('/v1/workspaces');
+			const response = await withMinDelay(api.get<PagedResult<Workspace>>('/workspaces'));
 			if (response.data) {
 				workspaces = response.data.items;
 				if (workspaces.length > 0) {
@@ -89,7 +91,7 @@
 		if (!selectedWorkspaceId) return;
 		try {
 			const response = await api.get<WorkspaceMember[]>(
-				`/v1/workspaces/${selectedWorkspaceId}/members`
+				`/workspaces/${selectedWorkspaceId}/members`
 			);
 			if (response.data) {
 				const owner = workspaces.find((w) => w.id === selectedWorkspaceId)?.owner;
@@ -119,8 +121,8 @@
 		rules = [];
 		await loadWorkspaceMembers();
 		try {
-			const response = await api.get<NotificationRule[]>(
-				`/v1/workspaces/${selectedWorkspaceId}/notifications/rules`
+			const response = await withMinDelay(
+				api.get<NotificationRule[]>(`/workspaces/${selectedWorkspaceId}/notifications/rules`)
 			);
 			if (response.data) {
 				rules = response.data;
@@ -138,7 +140,7 @@
 		history = [];
 		try {
 			const response = await api.get<NotificationHistory[]>(
-				`/v1/workspaces/${selectedWorkspaceId}/notifications/history`
+				`/workspaces/${selectedWorkspaceId}/notifications/history`
 			);
 			if (response.data) {
 				history = response.data;
@@ -187,7 +189,7 @@
 				new URL(webhookUrl);
 				payload.channelConfig = JSON.stringify({ url: webhookUrl });
 			} catch (_) {
-				errors.general = t('errors.invalidUrl', $language);
+				errors.general = t('errors.invalidUrl', language.current);
 				isProcessing = false;
 				return;
 			}
@@ -195,7 +197,7 @@
 
 		try {
 			const response = await api.post<NotificationRule>(
-				`/v1/workspaces/${selectedWorkspaceId}/notifications/rules`,
+				`/workspaces/${selectedWorkspaceId}/notifications/rules`,
 				payload
 			);
 			if (response.data) {
@@ -221,7 +223,7 @@
 		if (!pendingDeleteRuleId) return;
 		try {
 			await api.delete(
-				`/v1/workspaces/${selectedWorkspaceId}/notifications/rules/${pendingDeleteRuleId}`
+				`/workspaces/${selectedWorkspaceId}/notifications/rules/${pendingDeleteRuleId}`
 			);
 			rules = rules.filter((r) => r.id !== pendingDeleteRuleId);
 		} catch (err) {
@@ -268,14 +270,14 @@
 </script>
 
 <svelte:head>
-	<title>{t('notifications.title', $language)}</title>
+	<title>{t('notifications.title', language.current)}</title>
 </svelte:head>
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold">{t('notifications.title', $language)}</h1>
-			<p class="text-base-content/70 mt-1">{t('notifications.subtitle', $language)}</p>
+			<h1 class="text-3xl font-bold">{t('notifications.title', language.current)}</h1>
+			<p class="text-base-content/70 mt-1">{t('notifications.subtitle', language.current)}</p>
 		</div>
 		<div>
 			<Button
@@ -287,223 +289,237 @@
 				class="mr-2"
 				disabled={workspaces.length === 0}
 			>
-				{t('notifications.viewHistory', $language)}
+				{t('notifications.viewHistory', language.current)}
 			</Button>
 			<Button onclick={openCreateModal} disabled={!selectedWorkspaceId}>
-				{t('notifications.createRule', $language)}
+				{t('notifications.createRule', language.current)}
 			</Button>
 		</div>
 	</div>
 
-	{#if isLoading}
-		<div class="flex justify-center py-16">
-			<span class="loading loading-lg loading-spinner"></span>
-		</div>
-	{:else if workspaces.length === 0}
-		<div class="py-16 text-center">
-			<div
-				class="bg-base-100 text-base-content/50 mx-auto flex h-24 w-24 items-center justify-center rounded-full shadow-inner"
-			>
-				<Icon name="workspaces" class="h-12 w-12" />
-			</div>
-			<h3 class="mt-4 text-xl font-semibold">{t('notifications.noWorkspaces', $language)}</h3>
-			<p class="text-base-content/60 mt-2">{t('notifications.createFirstWorkspace', $language)}</p>
-			<div class="mt-6 flex justify-center">
-				<Button onclick={() => goto('/workspaces')}>
-					{t('workspaces.create', $language)}
-				</Button>
-			</div>
-		</div>
-	{:else}
-		<Card>
-			<Select
-				label={t('common.workspace', $language)}
-				bind:value={selectedWorkspaceId}
-				onchange={loadRulesForWorkspace}
-				options={workspaces.map((w) => ({ value: w.id, label: w.name }))}
-			/>
-		</Card>
-
-		<div class="space-y-4">
-			{#if rules.length === 0}
-				<div class="py-16 text-center">
-					<h3 class="text-xl font-semibold">{t('notifications.noRules', $language)}</h3>
-					<p class="text-base-content/60 mt-2">{t('notifications.createFirstRule', $language)}</p>
-					<div class="mt-6 flex justify-center">
-						<Button onclick={openCreateModal}>
-							{t('notifications.createRule', $language)}
-						</Button>
-					</div>
+	<div class="relative min-h-[400px]">
+		{#if isLoading}
+			<GlobalLoader variant="overlay" class="bg-transparent backdrop-blur-none" />
+		{:else if workspaces.length === 0}
+			<div class="py-16 text-center">
+				<div
+					class="bg-base-100 text-base-content/50 mx-auto flex h-24 w-24 items-center justify-center rounded-full shadow-inner"
+				>
+					<Icon name="workspaces" class="h-12 w-12" />
 				</div>
-			{:else}
-				{#each rules as rule (rule.id)}
-					{@const isDisabled = isRuleDisabledForCurrentUser(rule)}
-					{@const recipients = getRecipientsForRule(rule)}
-					{@const isOpen = openRuleId === rule.id}
-					<div
-						class="border-base-content/10 bg-base-100 rounded-xl border shadow-sm transition-colors"
-					>
-						<div
-							role="button"
-							class="focus-visible:ring-primary/40 group flex w-full items-start gap-4 px-5 py-4 text-left focus:outline-none focus-visible:ring"
-							aria-expanded={isOpen}
-							tabindex="0"
-							onclick={() => toggleRule(rule.id)}
-							onkeydown={(e) => {
-								if (e.key === 'Enter' || e.key === ' ') {
-									e.preventDefault();
-									toggleRule(rule.id);
-								}
-							}}
-						>
-							<div class="flex-grow space-y-1">
-								<div class="flex items-start justify-between gap-4">
-									<p class="font-semibold leading-tight">{rule.name}</p>
-									<div class="flex items-center gap-3">
-										<div class="flex items-center gap-2">
-											<span
-												class="badge badge-xs {rule.isEnabled ? 'badge-success' : 'badge-ghost'}"
-											>
-												{rule.isEnabled
-													? t('notifications.enabled', $language)
-													: t('notifications.disabled', $language)}
-											</span>
-											<button
-												type="button"
-												class="hover:bg-base-200 focus-visible:ring-primary/40 inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 focus:outline-none focus-visible:ring"
-												onclick={(e) => e.stopPropagation()}
-												onkeydown={(e) => {
-													if (e.key === 'Enter' || e.key === ' ') {
-														e.preventDefault();
-														e.stopPropagation();
-													}
-												}}
-												aria-label={rule.isEnabled
-													? t('notifications.enabled', $language)
-													: t('notifications.disabled', $language)}
-											>
-												<input
-													type="checkbox"
-													class="toggle toggle-success toggle-xs"
-													checked={rule.isEnabled}
-													disabled={isDisabled}
-													tabindex="-1"
-												/>
-											</button>
-											<Button
-												size="sm"
-												variant="ghost"
-												onclick={(e) => {
-													e.stopPropagation();
-													handleDeleteRule(rule.id);
-												}}
-											>
-												{t('common.delete', $language)}
-											</Button>
-										</div>
-									</div>
-								</div>
-								<p class="text-xs opacity-70 sm:text-sm">
-									{t('notifications.triggers', $language)} <strong>{rule.daysBeforeExpiry}</strong>
-									{t('notifications.daysBeforeExpirySuffix', $language)}.
-									{t('notifications.channel', $language)} <strong>{rule.channelType}</strong>.
-									{t('notifications.frequency', $language)}: <strong>{rule.frequency}</strong>.
-									{#if rule.channelType === 'Email'}
-										<span class="ml-1">
-											{#if rule.recipientAggregationMode === 'SingleEmailToAll'}
-												<strong>[{t('notifications.aggregatedBadge', $language)}]</strong>
-											{:else}
-												<strong>[{t('notifications.individualBadge', $language)}]</strong>
-											{/if}
-										</span>
-									{/if}
-								</p>
-								{#if isDisabled}
-									<div role="alert" class="alert alert-warning mt-2 p-2 text-xs">
-										<span>{t('notifications.disabledInProfileWarning', $language)}</span>
-									</div>
-								{/if}
-							</div>
-							<div
-								class="mt-1 shrink-0 self-center transition-transform group-aria-expanded:rotate-180"
-								aria-hidden="true"
-							>
-								<svg
-									class="text-base-content/60 h-4 w-4 transition-transform"
-									viewBox="0 0 20 20"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M6 8l4 4 4-4" />
-								</svg>
-							</div>
+				<h3 class="mt-4 text-xl font-semibold">
+					{t('notifications.noWorkspaces', language.current)}
+				</h3>
+				<p class="text-base-content/60 mt-2">
+					{t('notifications.createFirstWorkspace', language.current)}
+				</p>
+				<div class="mt-6 flex justify-center">
+					<Button onclick={() => goto('/workspaces')}>
+						{t('workspaces.create', language.current)}
+					</Button>
+				</div>
+			</div>
+		{:else}
+			<Card>
+				<Select
+					label={t('common.workspace', language.current)}
+					bind:value={selectedWorkspaceId}
+					onchange={loadRulesForWorkspace}
+					options={workspaces.map((w) => ({ value: w.id, label: w.name }))}
+				/>
+			</Card>
+
+			<div class="space-y-4">
+				{#if rules.length === 0}
+					<div class="py-16 text-center">
+						<h3 class="text-xl font-semibold">{t('notifications.noRules', language.current)}</h3>
+						<p class="text-base-content/60 mt-2">
+							{t('notifications.createFirstRule', language.current)}
+						</p>
+						<div class="mt-6 flex justify-center">
+							<Button onclick={openCreateModal}>
+								{t('notifications.createRule', language.current)}
+							</Button>
 						</div>
-						{#if isOpen && rule.channelType === 'Email' && recipients.length > 0}
-							<div class="border-base-content/10 border-t px-5 py-3">
-								<p class="mb-2 text-sm font-medium">
-									{t('notifications.recipients', $language)} ({recipients.length})
-								</p>
-								<div class="max-h-48 space-y-2 overflow-y-auto pr-1">
-									{#each recipients as member (member.userId)}
-										<div class="bg-base-200/60 flex items-center gap-3 rounded-lg p-2">
-											<UserAvatar
-												firstName={member.user.firstName}
-												lastName={member.user.lastName}
-												size="w-8"
-												textSize="text-sm"
-											/>
-											<div class="flex flex-col">
-												<span class="label-text">{member.user.fullName}</span>
-												{#if selectedWorkspace && member.userId === selectedWorkspace.ownerId}
-													<span class="badge badge-xs badge-primary mt-1"
-														>{t('common.owner', $language)}</span
-													>
-												{/if}
+					</div>
+				{:else}
+					{#each rules as rule (rule.id)}
+						{@const isDisabled = isRuleDisabledForCurrentUser(rule)}
+						{@const recipients = getRecipientsForRule(rule)}
+						{@const isOpen = openRuleId === rule.id}
+						<div
+							class="border-base-content/10 bg-base-100 rounded-xl border shadow-sm transition-colors"
+						>
+							<div
+								role="button"
+								class="focus-visible:ring-primary/40 group flex w-full items-start gap-4 px-5 py-4 text-left focus:outline-none focus-visible:ring"
+								aria-expanded={isOpen}
+								tabindex="0"
+								onclick={() => toggleRule(rule.id)}
+								onkeydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										toggleRule(rule.id);
+									}
+								}}
+							>
+								<div class="flex-grow space-y-1">
+									<div class="flex items-start justify-between gap-4">
+										<p class="font-semibold leading-tight">{rule.name}</p>
+										<div class="flex items-center gap-3">
+											<div class="flex items-center gap-2">
+												<span
+													class="badge badge-xs {rule.isEnabled ? 'badge-success' : 'badge-ghost'}"
+												>
+													{rule.isEnabled
+														? t('notifications.enabled', language.current)
+														: t('notifications.disabled', language.current)}
+												</span>
+												<button
+													type="button"
+													class="hover:bg-base-200 focus-visible:ring-primary/40 inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 focus:outline-none focus-visible:ring"
+													onclick={(e) => e.stopPropagation()}
+													onkeydown={(e) => {
+														if (e.key === 'Enter' || e.key === ' ') {
+															e.preventDefault();
+															e.stopPropagation();
+														}
+													}}
+													aria-label={rule.isEnabled
+														? t('notifications.enabled', language.current)
+														: t('notifications.disabled', language.current)}
+												>
+													<input
+														type="checkbox"
+														class="toggle toggle-success toggle-xs"
+														checked={rule.isEnabled}
+														disabled={isDisabled}
+														tabindex="-1"
+													/>
+												</button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onclick={(e) => {
+														e.stopPropagation();
+														handleDeleteRule(rule.id);
+													}}
+												>
+													{t('common.delete', language.current)}
+												</Button>
 											</div>
 										</div>
-									{/each}
+									</div>
+									<p class="text-xs opacity-70 sm:text-sm">
+										{t('notifications.triggers', language.current)}
+										<strong>{rule.daysBeforeExpiry}</strong>
+										{t('notifications.daysBeforeExpirySuffix', language.current)}.
+										{t('notifications.channel', language.current)}
+										<strong>{rule.channelType}</strong>.
+										{t('notifications.frequency', language.current)}:
+										<strong>{rule.frequency}</strong>.
+										{#if rule.channelType === 'Email'}
+											<span class="ml-1">
+												{#if rule.recipientAggregationMode === 'SingleEmailToAll'}
+													<strong>[{t('notifications.aggregatedBadge', language.current)}]</strong>
+												{:else}
+													<strong>[{t('notifications.individualBadge', language.current)}]</strong>
+												{/if}
+											</span>
+										{/if}
+									</p>
+									{#if isDisabled}
+										<div role="alert" class="alert alert-warning mt-2 p-2 text-xs">
+											<span>{t('notifications.disabledInProfileWarning', language.current)}</span>
+										</div>
+									{/if}
+								</div>
+								<div
+									class="mt-1 shrink-0 self-center transition-transform group-aria-expanded:rotate-180"
+									aria-hidden="true"
+								>
+									<svg
+										class="text-base-content/60 h-4 w-4 transition-transform"
+										viewBox="0 0 20 20"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									>
+										<path d="M6 8l4 4 4-4" />
+									</svg>
 								</div>
 							</div>
-						{/if}
-					</div>
-				{/each}
-			{/if}
-		</div>
-	{/if}
+							{#if isOpen && rule.channelType === 'Email' && recipients.length > 0}
+								<div class="border-base-content/10 border-t px-5 py-3">
+									<p class="mb-2 text-sm font-medium">
+										{t('notifications.recipients', language.current)} ({recipients.length})
+									</p>
+									<div class="max-h-48 space-y-2 overflow-y-auto pr-1">
+										{#each recipients as member (member.userId)}
+											<div class="bg-base-200/60 flex items-center gap-3 rounded-lg p-2">
+												<UserAvatar
+													firstName={member.user.firstName}
+													lastName={member.user.lastName}
+													size="w-8"
+													textSize="text-sm"
+												/>
+												<div class="flex flex-col">
+													<span class="label-text">{member.user.fullName}</span>
+													{#if selectedWorkspace && member.userId === selectedWorkspace.ownerId}
+														<span class="badge badge-xs badge-primary mt-1"
+															>{t('common.owner', language.current)}</span
+														>
+													{/if}
+												</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						</div>
+					{/each}
+				{/if}
+			</div>
+		{/if}
+	</div>
 </div>
 
 <Modal
 	isOpen={showCreateModal}
-	title={t('notifications.createRule', $language)}
+	title={t('notifications.createRule', language.current)}
 	onClose={() => (showCreateModal = false)}
 >
 	<form onsubmit={handleCreateRule} class="space-y-4">
 		{#if errors.general}
 			<div role="alert" class="alert alert-error text-sm"><span>{errors.general}</span></div>
 		{/if}
-		<Input label={t('notifications.ruleName', $language)} bind:value={createForm.name} required />
 		<Input
-			label={t('notifications.daysBeforeExpiry', $language)}
+			label={t('notifications.ruleName', language.current)}
+			bind:value={createForm.name}
+			required
+		/>
+		<Input
+			label={t('notifications.daysBeforeExpiry', language.current)}
 			type="number"
 			bind:value={createForm.daysBeforeExpiry}
 			required
 		/>
 		<Select
-			label={t('notifications.channel', $language)}
+			label={t('notifications.channel', language.current)}
 			bind:value={createForm.channelType}
 			options={[
-				{ value: 'Email', label: t('notifications.email', $language) },
-				{ value: 'Webhook', label: t('notifications.webhook', $language) }
+				{ value: 'Email', label: t('notifications.email', language.current) },
+				{ value: 'Webhook', label: t('notifications.webhook', language.current) }
 			]}
 		/>
 
 		{#if createForm.channelType === 'Email'}
 			<fieldset class="form-control">
 				<label class="label" for="recipient-aggregation-mode">
-					<span class="label-text">{t('notifications.recipientAggregation', $language)}</span>
+					<span class="label-text">{t('notifications.recipientAggregation', language.current)}</span
+					>
 				</label>
 				<div
 					id="recipient-aggregation-mode"
@@ -522,7 +538,7 @@
 									<span class="label-text">{member.user.fullName}</span>
 									{#if selectedWorkspace && member.userId === selectedWorkspace.ownerId}
 										<span class="badge badge-xs badge-primary mt-1"
-											>{t('common.owner', $language)}</span
+											>{t('common.owner', language.current)}</span
 										>
 									{/if}
 								</div>
@@ -540,7 +556,9 @@
 				{#if createForm.recipientUserIds.length > 1}
 					<div class="mt-3">
 						<label class="label" for="recipient-aggregation-select">
-							<span class="label-text">{t('notifications.recipientAggregation', $language)}</span>
+							<span class="label-text"
+								>{t('notifications.recipientAggregation', language.current)}</span
+							>
 						</label>
 						<select
 							id="recipient-aggregation-select"
@@ -548,21 +566,21 @@
 							class="select select-bordered w-full"
 						>
 							<option value="SingleEmailToAll">
-								{t('notifications.aggregationAllOption', $language)}
+								{t('notifications.aggregationAllOption', language.current)}
 							</option>
 							<option value="Individual">
-								{t('notifications.aggregationIndividualOption', $language)}
+								{t('notifications.aggregationIndividualOption', language.current)}
 							</option>
 						</select>
 						<p class="mt-1 text-xs opacity-70">
-							{t('notifications.recipientAggregationHelp', $language)}
+							{t('notifications.recipientAggregationHelp', language.current)}
 						</p>
 					</div>
 				{/if}
 			</fieldset>
 		{:else if createForm.channelType === 'Webhook'}
 			<Input
-				label={t('notifications.webhookUrl', $language)}
+				label={t('notifications.webhookUrl', language.current)}
 				type="url"
 				bind:value={webhookUrl}
 				required
@@ -571,21 +589,21 @@
 		{/if}
 
 		<Select
-			label={t('notifications.frequency', $language)}
+			label={t('notifications.frequency', language.current)}
 			bind:value={createForm.frequency}
 			options={[
-				{ value: 'Once', label: t('notifications.once', $language) },
-				{ value: 'Daily', label: t('notifications.daily', $language) },
-				{ value: 'Weekly', label: t('notifications.weekly', $language) },
-				{ value: 'Monthly', label: t('notifications.monthly', $language) }
+				{ value: 'Once', label: t('notifications.once', language.current) },
+				{ value: 'Daily', label: t('notifications.daily', language.current) },
+				{ value: 'Weekly', label: t('notifications.weekly', language.current) },
+				{ value: 'Monthly', label: t('notifications.monthly', language.current) }
 			]}
 		/>
 		<div class="modal-action">
 			<Button type="button" variant="ghost" onclick={() => (showCreateModal = false)}
-				>{t('common.cancel', $language)}</Button
+				>{t('common.cancel', language.current)}</Button
 			>
 			<Button type="submit" loading={isProcessing} variant="primary"
-				>{t('common.create', $language)}</Button
+				>{t('common.create', language.current)}</Button
 			>
 		</div>
 	</form>
@@ -603,14 +621,14 @@
 
 <Modal
 	isOpen={showHistoryModal}
-	title={t('notifications.history', $language)}
+	title={t('notifications.history', language.current)}
 	onClose={() => (showHistoryModal = false)}
 >
 	<div class="max-h-96 space-y-2 overflow-y-auto">
 		{#if isProcessing}
 			<div class="flex justify-center p-8"><span class="loading loading-spinner"></span></div>
 		{:else if history.length === 0}
-			<p class="py-8 text-center">{t('notifications.noHistory', $language)}</p>
+			<p class="py-8 text-center">{t('notifications.noHistory', language.current)}</p>
 		{:else}
 			{#each history as item}
 				<div class="border-base-content/10 rounded-lg border p-2 text-sm">
@@ -622,7 +640,7 @@
 					</div>
 					<p class="text-xs opacity-60">
 						{formatDateTime(item.createdAt)}
-						{t('common.to', $language)}
+						{t('common.to', language.current)}
 						{item.recipient}
 					</p>
 				</div>
@@ -630,6 +648,7 @@
 		{/if}
 	</div>
 	<div class="modal-action">
-		<Button onclick={() => (showHistoryModal = false)}>{t('common.close', $language)}</Button>
+		<Button onclick={() => (showHistoryModal = false)}>{t('common.close', language.current)}</Button
+		>
 	</div>
 </Modal>

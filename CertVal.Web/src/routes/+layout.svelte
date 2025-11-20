@@ -1,52 +1,68 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/state';
-	import { auth } from '$lib/stores/auth';
-	import { language } from '$lib/stores/language';
-	import { theme } from '$lib/stores/theme';
+	import { userSession } from '$lib/stores/userSession.svelte';
+	import { language } from '$lib/stores/language.svelte';
+	import { theme } from '$lib/stores/theme.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
+	import { onMount } from 'svelte';
+
 	let { children, data } = $props();
+	let isAppLoading = $state(true);
 
-	language.set(data.language);
-	theme.set(data.theme);
-
+	// Initialize stores
 	$effect(() => {
-		auth.initialize();
+		if (data.language) language.set(data.language);
+		if (data.theme) theme.set(data.theme);
+	});
+
+	onMount(() => {
+		// Simulate initial loading to hide layout shifts
+		setTimeout(() => {
+			isAppLoading = false;
+		}, 1000);
 	});
 
 	const isAuthPage = $derived(page.url.pathname.startsWith('/auth'));
-	const isAuthenticated = $derived($auth.isAuthenticated);
+	const isAuthenticated = $derived(!!userSession.token);
 </script>
 
-<div class="relative min-h-screen overflow-hidden bg-base-200 text-base-content">
-	<div class="aurora-background z-[-1]" class:subtle={isAuthenticated}>
-		<div class="aurora-dot"></div>
-		<div class="aurora-dot"></div>
-		<div class="aurora-dot"></div>
-		<div class="aurora-dot"></div>
-	</div>
+<div
+	class="bg-base-200 text-base-content selection:bg-primary selection:text-primary-content min-h-screen font-sans antialiased"
+>
+	{#if isAppLoading}
+		<GlobalLoader />
+	{/if}
 
+	<Navbar />
 	{#if isAuthPage}
-		<div class="relative flex min-h-screen flex-col">
-			<Navbar />
-			<main class="relative z-10 flex grow flex-col items-center justify-center p-4">
-				{@render children?.()}
-			</main>
-		</div>
-	{:else}
+		<main class="relative min-h-screen w-full overflow-hidden">
+			{@render children?.()}
+		</main>
+	{:else if isAuthenticated}
 		<div class="drawer lg:drawer-open">
 			<input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
-			<div class="drawer-content flex h-screen flex-col overflow-y-auto">
-				<Navbar />
-				<main class="relative flex-1 p-4 sm:p-6 lg:p-8">
-					<div class="mx-auto max-w-7xl">
+			<div
+				class="drawer-content bg-base-100/50 flex h-screen flex-col overflow-hidden backdrop-blur-3xl"
+			>
+				<main
+					class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-base-300 hover:scrollbar-thumb-base-content/20 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"
+				>
+					<div
+						class="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-7xl pt-16 duration-500"
+					>
 						{@render children?.()}
 					</div>
 				</main>
 			</div>
 			<Sidebar />
 		</div>
+	{:else}
+		<main class="relative min-h-screen w-full overflow-hidden">
+			{@render children?.()}
+		</main>
 	{/if}
 </div>
 
@@ -100,20 +116,6 @@
 
 	.drawer-content {
 		position: relative;
-	}
-
-	main .absolute.inset-0 {
-		background:
-			radial-gradient(
-				circle at 20% 80%,
-				oklch(from var(--color-primary) l c h / 0.1) 0%,
-				transparent 50%
-			),
-			radial-gradient(
-				circle at 80% 20%,
-				oklch(from var(--color-secondary) l c h / 0.1) 0%,
-				transparent 50%
-			);
 	}
 
 	@media (max-width: 768px) {

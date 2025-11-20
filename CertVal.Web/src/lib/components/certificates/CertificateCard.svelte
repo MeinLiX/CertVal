@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { formatDate, getCertificateStatus } from '$lib/utils/date';
 	import type { Certificate } from '$lib/types';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -15,19 +15,19 @@
 		switch (status) {
 			case 'expired':
 				return {
-					text: t('certificates.expired', $language),
+					text: t('certificates.expired', language.current),
 					textColor: 'text-error',
 					barColor: 'bg-error'
 				};
 			case 'expiring':
 				return {
-					text: t('certificates.expiring', $language),
+					text: t('certificates.expiring', language.current),
 					textColor: 'text-warning',
 					barColor: 'bg-warning'
 				};
 			default:
 				return {
-					text: t('certificates.valid', $language),
+					text: t('certificates.valid', language.current),
 					textColor: 'text-success',
 					barColor: 'bg-success'
 				};
@@ -67,14 +67,18 @@
 
 		<div class="border-base-content/10 mt-auto flex items-end justify-between border-t pt-4">
 			<div>
-				<div class="text-base-content/60 text-xs">{t('certificates.expires', $language)}</div>
+				<div class="text-base-content/60 text-xs">
+					{t('certificates.expires', language.current)}
+				</div>
 				<div class="font-semibold">{formatDate(certificate.notAfter)}</div>
 			</div>
 			<div class="text-right">
 				<div class="text-2xl font-bold {statusInfo().textColor}">
 					{certificate.daysUntilExpiry}
 				</div>
-				<div class="text-base-content/60 -mt-1 text-xs">{t('certificates.days', $language)}</div>
+				<div class="text-base-content/60 -mt-1 text-xs">
+					{t('certificates.days', language.current)}
+				</div>
 			</div>
 		</div>
 	</div>

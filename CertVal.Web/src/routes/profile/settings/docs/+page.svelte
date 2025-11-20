@@ -1,14 +1,14 @@
 <script lang="ts">
 	import FloatingActionButton from '$lib/components/ui/FloatingActionButton.svelte';
 	import { t } from '$lib/i18n';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 
 	const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 	const scalarUrl = VITE_API_BASE_URL.replace('/api', '') + '/scalar/';
 </script>
 
 <svelte:head>
-	<title>{t('nav.documentation', $language)}</title>
+	<title>{t('nav.documentation', language.current)}</title>
 </svelte:head>
 
 <div class="relative">
@@ -18,7 +18,7 @@
 		href={scalarUrl}
 		target="_blank"
 		rel="noopener noreferrer"
-		tooltip={t('common.openDocsInNewTab', $language)}
+		tooltip={t('common.openDocsInNewTab', language.current)}
 		tooltipPosition="left"
 	/>
 

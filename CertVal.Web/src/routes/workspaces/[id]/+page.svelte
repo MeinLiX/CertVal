@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import { formatDate, getCertificateStatus } from '$lib/utils/date';
@@ -40,8 +40,10 @@
 	let isProcessing = $state(false);
 
 	const workspaceId = $derived(page.params.id);
-	const currentUserMember = $derived(members.find(m => m.user.id === $auth.user?.id));
-	const canManage = $derived(currentUserMember?.role === 'Owner' || currentUserMember?.role === 'Admin');
+	const currentUserMember = $derived(members.find((m) => m.user.id === $auth.user?.id));
+	const canManage = $derived(
+		currentUserMember?.role === 'Owner' || currentUserMember?.role === 'Admin'
+	);
 
 	onMount(async () => {
 		if (!$auth.isAuthenticated) {
@@ -55,11 +57,11 @@
 		isLoading = true;
 		try {
 			const [wsRes, certsRes, membersRes] = await Promise.all([
-				api.get<Workspace>(`/v1/workspaces/${workspaceId}`),
+				api.get<Workspace>(`/workspaces/${workspaceId}`),
 				api.get<PagedResult<Certificate>>(
-					`/v1/certificates?workspaceId=${workspaceId}&pageSize=5&statusFilter=Expiring`
+					`/certificates?workspaceId=${workspaceId}&pageSize=5&statusFilter=Expiring`
 				),
-				api.get<WorkspaceMember[]>(`/v1/workspaces/${workspaceId}/members`)
+				api.get<WorkspaceMember[]>(`/workspaces/${workspaceId}/members`)
 			]);
 
 			if (wsRes.data) workspace = wsRes.data;
@@ -67,7 +69,7 @@
 			if (membersRes.data) members = membersRes.data;
 		} catch (err) {
 			console.error('Failed to load workspace data:', err);
-			errors.load = t('workspaces.loadError', $language);
+			errors.load = t('workspaces.loadError', language.current);
 		} finally {
 			isLoading = false;
 		}
@@ -79,7 +81,7 @@
 		isProcessing = true;
 		try {
 			const response = await api.post<WorkspaceMember>(
-				`/v1/workspaces/${workspaceId}/members/invite`,
+				`/workspaces/${workspaceId}/members/invite`,
 				inviteForm
 			);
 			if (response.data) {
@@ -87,10 +89,10 @@
 				showInviteModal = false;
 				inviteForm = { email: '', role: 'Viewer' };
 			} else {
-				errors.invite = response.message || t('errors.general', $language);
+				errors.invite = response.message || t('errors.general', language.current);
 			}
 		} catch (err) {
-			errors.invite = t('errors.network', $language);
+			errors.invite = t('errors.network', language.current);
 		} finally {
 			isProcessing = false;
 		}
@@ -102,7 +104,7 @@
 		isProcessing = true;
 		try {
 			const response = await api.delete(
-				`/v1/workspaces/${workspaceId}/members/${memberToRemove.userId}`
+				`/workspaces/${workspaceId}/members/${memberToRemove.userId}`
 			);
 			if (response.message) {
 				errors.removeMember = response.message;
@@ -112,7 +114,7 @@
 				memberToRemove = null;
 			}
 		} catch (err) {
-			errors.removeMember = t('errors.general', $language);
+			errors.removeMember = t('errors.general', language.current);
 		} finally {
 			isProcessing = false;
 		}
@@ -124,7 +126,7 @@
 		isProcessing = true;
 		try {
 			const response = await api.post<Workspace>(
-				`/v1/workspaces/${workspaceId}/members/transfer-ownership`,
+				`/workspaces/${workspaceId}/members/transfer-ownership`,
 				transferForm
 			);
 			if (response.data) {
@@ -133,10 +135,10 @@
 				transferForm.newOwnerEmail = '';
 				await loadData();
 			} else {
-				errors.transfer = response.message || t('errors.general', $language);
+				errors.transfer = response.message || t('errors.general', language.current);
 			}
 		} catch (err) {
-			errors.transfer = err instanceof Error ? err.message : t('errors.general', $language);
+			errors.transfer = err instanceof Error ? err.message : t('errors.general', language.current);
 		} finally {
 			isProcessing = false;
 		}
@@ -148,10 +150,10 @@
 		errors = {};
 		isProcessing = true;
 		try {
-			await api.delete(`/v1/workspaces/${workspaceId}`);
+			await api.delete(`/workspaces/${workspaceId}`);
 			goto('/workspaces');
 		} catch (err) {
-			errors.delete = t('errors.general', $language);
+			errors.delete = t('errors.general', language.current);
 		} finally {
 			isProcessing = false;
 			showDeleteModal = false;
@@ -187,8 +189,8 @@
 <svelte:head>
 	<title
 		>{workspace
-			? `${workspace.name} ${t('common.details', $language)}`
-			: t('common.workspace', $language)}</title
+			? `${workspace.name} ${t('common.details', language.current)}`
+			: t('common.workspace', language.current)}</title
 	>
 </svelte:head>
 
@@ -200,12 +202,12 @@
 	{:else if !workspace}
 		<Card>
 			<div class="py-12 text-center">
-				<h3 class="text-xl font-semibold">{t('workspaces.notFound', $language)}</h3>
-				<p class="mt-2 text-base-content/60">
-					{errors.load || t('workspaces.loadError', $language)}
+				<h3 class="text-xl font-semibold">{t('workspaces.notFound', language.current)}</h3>
+				<p class="text-base-content/60 mt-2">
+					{errors.load || t('workspaces.loadError', language.current)}
 				</p>
 				<Button class="mt-6" onclick={() => goto('/workspaces')}
-					>{t('workspaces.back', $language)}</Button
+					>{t('workspaces.back', language.current)}</Button
 				>
 			</div>
 		</Card>
@@ -216,21 +218,21 @@
 					<ul>
 						<li>
 							<a href="/workspaces" class="link hover:link-primary"
-								>{t('nav.workspaces', $language)}</a
+								>{t('nav.workspaces', language.current)}</a
 							>
 						</li>
 						<li><span class="font-semibold">{workspace.name}</span></li>
 					</ul>
 				</div>
 				<h1 class="mt-2 text-3xl font-bold">{workspace.name}</h1>
-				<p class="mt-1 text-base-content/70">{workspace.description}</p>
+				<p class="text-base-content/70 mt-1">{workspace.description}</p>
 			</div>
 			<div class="flex gap-2">
 				<Button variant="ghost" onclick={() => goto(`/certificates?workspace=${workspaceId}`)}
-					>{t('workspaces.viewCertificates', $language)}</Button
+					>{t('workspaces.viewCertificates', language.current)}</Button
 				>
 				<Button onclick={() => goto(`/notifications?workspace=${workspaceId}`)}
-					>{t('workspaces.manageNotifications', $language)}</Button
+					>{t('workspaces.manageNotifications', language.current)}</Button
 				>
 			</div>
 		</div>
@@ -238,25 +240,27 @@
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
 			<Card
 				><div class="stat">
-					<div class="stat-title">{t('nav.certificates', $language)}</div>
+					<div class="stat-title">{t('nav.certificates', language.current)}</div>
 					<div class="stat-value">{workspace.certificateCount} / {workspace.maxCertificates}</div>
 				</div></Card
 			>
 			<Card
 				><div class="stat">
-					<div class="stat-title">{t('common.members', $language)}</div>
+					<div class="stat-title">{t('common.members', language.current)}</div>
 					<div class="stat-value">{workspace.memberCount}</div>
 				</div></Card
 			>
 			<Card
 				><div class="stat">
-					<div class="stat-title">{t('common.owner', $language)}</div>
-					<div class="stat-value truncate text-lg">{members.find(m => m.role === 'Owner')?.user.fullName || 'N/A'}</div>
+					<div class="stat-title">{t('common.owner', language.current)}</div>
+					<div class="stat-value truncate text-lg">
+						{members.find((m) => m.role === 'Owner')?.user.fullName || 'N/A'}
+					</div>
 				</div></Card
 			>
 			<Card
 				><div class="stat">
-					<div class="stat-title">{t('common.created', $language)}</div>
+					<div class="stat-title">{t('common.created', language.current)}</div>
 					<div class="stat-value text-lg">{formatDate(workspace.createdAt)}</div>
 				</div></Card
 			>
@@ -264,29 +268,29 @@
 
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<div class="space-y-6 lg:col-span-2">
-				<Card title={t('workspaces.expiringSoon', $language)}>
+				<Card title={t('workspaces.expiringSoon', language.current)}>
 					{#if certificates.length > 0}
 						<div class="overflow-x-auto">
-							<table class="table table-sm">
+							<table class="table-sm table">
 								<tbody>
 									{#each certificates as cert}
 										<tr>
 											<td
 												><a
 													href="/certificates/{cert.id}"
-													class="block max-w-md link truncate font-semibold link-hover"
+													class="link link-hover block max-w-md truncate font-semibold"
 													>{cert.subject}</a
 												></td
 											>
 											<td
 												>{formatDate(cert.notAfter)} ({cert.daysUntilExpiry}
-												{t('certificates.days', $language)})</td
+												{t('certificates.days', language.current)})</td
 											>
 											<td
 												><span class="badge badge-sm badge-warning"
 													>{t(
 														`certificates.${getCertificateStatus(cert.notAfter)}`,
-														$language
+														language.current
 													)}</span
 												></td
 											>
@@ -296,15 +300,15 @@
 							</table>
 						</div>
 					{:else}
-						<p class="py-4 text-center text-sm text-base-content/70">
-							{t('workspaces.noExpiringCertificates', $language)}
+						<p class="text-base-content/70 py-4 text-center text-sm">
+							{t('workspaces.noExpiringCertificates', language.current)}
 						</p>
 					{/if}
 				</Card>
 			</div>
 
 			<div class="space-y-6">
-				<Card title={t('common.members', $language)}>
+				<Card title={t('common.members', language.current)}>
 					<div class="space-y-2">
 						{#each members as member}
 							{@const statusInfo = getStatusBadge(member.status)}
@@ -324,7 +328,7 @@
 								<div class="flex items-center gap-2">
 									<span class="badge {statusInfo.class} badge-sm">{statusInfo.text}</span>
 									<span class="badge {getRoleBadgeClass(member.role)} badge-sm">
-										{t(`workspaces.roles.${member.role.toLowerCase()}`, $language)}
+										{t(`workspaces.roles.${member.role.toLowerCase()}`, language.current)}
 									</span>
 									{#if canManage && member.role !== 'Owner'}
 										<Button
@@ -341,9 +345,9 @@
 						{/each}
 					</div>
 					{#if canManage && workspace.allowMemberInvites}
-						<div class="mt-4 card-actions">
+						<div class="card-actions mt-4">
 							<Button class="w-full" variant="ghost" onclick={() => (showInviteModal = true)}
-								>{t('workspaces.inviteMember', $language)}</Button
+								>{t('workspaces.inviteMember', language.current)}</Button
 							>
 						</div>
 					{/if}
@@ -351,16 +355,16 @@
 
 				{#if currentUserMember?.role === 'Owner'}
 					<Card class="border-error">
-						<h3 class="card-title text-error">{t('workspaces.dangerZone', $language)}</h3>
-						<p class="text-sm text-base-content/70">
-							{t('workspaces.dangerZoneWarning', $language)}
+						<h3 class="card-title text-error">{t('workspaces.dangerZone', language.current)}</h3>
+						<p class="text-base-content/70 text-sm">
+							{t('workspaces.dangerZoneWarning', language.current)}
 						</p>
-						<div class="mt-4 card-actions justify-end gap-2">
+						<div class="card-actions mt-4 justify-end gap-2">
 							<Button variant="warning" onclick={() => (showTransferModal = true)}
-								>{t('workspaces.transferOwnership', $language)}</Button
+								>{t('workspaces.transferOwnership', language.current)}</Button
 							>
 							<Button variant="danger" onclick={() => (showDeleteModal = true)}
-								>{t('workspaces.deleteWorkspace', $language)}</Button
+								>{t('workspaces.deleteWorkspace', language.current)}</Button
 							>
 						</div>
 					</Card>
@@ -371,7 +375,7 @@
 
 	<Modal
 		isOpen={showInviteModal}
-		title={t('workspaces.inviteNewMember', $language)}
+		title={t('workspaces.inviteNewMember', language.current)}
 		onClose={() => (showInviteModal = false)}
 	>
 		<form onsubmit={handleInvite} class="space-y-4">
@@ -379,29 +383,29 @@
 					<span>{errors.invite}</span>
 				</div>{/if}
 			<Input
-				label={t('auth.login.email', $language)}
+				label={t('auth.login.email', language.current)}
 				type="email"
 				bind:value={inviteForm.email}
 				required
 				placeholder="member@example.com"
 			/>
 			<Select
-				label={t('common.role', $language)}
+				label={t('common.role', language.current)}
 				bind:value={inviteForm.role}
 				options={[
-					{ value: 'Viewer', label: t('workspaces.roles.viewer', $language) },
-					{ value: 'Editor', label: t('workspaces.roles.editor', $language) },
-					...(currentUserMember?.role === 'Owner' ? [
-						{ value: 'Admin', label: t('workspaces.roles.admin', $language) }
-					] : [])
+					{ value: 'Viewer', label: t('workspaces.roles.viewer', language.current) },
+					{ value: 'Editor', label: t('workspaces.roles.editor', language.current) },
+					...(currentUserMember?.role === 'Owner'
+						? [{ value: 'Admin', label: t('workspaces.roles.admin', language.current) }]
+						: [])
 				]}
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showInviteModal = false)}
-					>{t('common.cancel', $language)}</Button
+					>{t('common.cancel', language.current)}</Button
 				>
 				<Button type="submit" loading={isProcessing} variant="primary"
-					>{t('workspaces.sendInvitation', $language)}</Button
+					>{t('workspaces.sendInvitation', language.current)}</Button
 				>
 			</div>
 		</form>
@@ -409,16 +413,16 @@
 
 	<Modal
 		isOpen={showDeleteModal}
-		title={t('workspaces.deleteWorkspace', $language)}
+		title={t('workspaces.deleteWorkspace', language.current)}
 		onClose={() => (showDeleteModal = false)}
 	>
 		<form onsubmit={handleDelete} class="space-y-4">
 			<p>
-				{t('workspaces.irreversibleAction', $language)}
-				{t('workspaces.lossOfDataWarning', $language)}
+				{t('workspaces.irreversibleAction', language.current)}
+				{t('workspaces.lossOfDataWarning', language.current)}
 			</p>
 			<p>
-				{t('workspaces.confirmDelete', $language)}
+				{t('workspaces.confirmDelete', language.current)}
 				<strong class="text-error">{workspace?.name}</strong>
 			</p>
 			{#if errors.delete}<div role="alert" class="alert alert-error text-sm">
@@ -426,18 +430,18 @@
 				</div>{/if}
 			<Input
 				bind:value={confirmDeleteName}
-				placeholder={t('workspaces.workspaceName', $language)}
+				placeholder={t('workspaces.workspaceName', language.current)}
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}
-					>{t('common.cancel', $language)}</Button
+					>{t('common.cancel', language.current)}</Button
 				>
 				<Button
 					type="submit"
 					variant="danger"
 					loading={isProcessing}
 					disabled={confirmDeleteName !== workspace?.name}
-					>{t('workspaces.deleteWorkspace', $language)}</Button
+					>{t('workspaces.deleteWorkspace', language.current)}</Button
 				>
 			</div>
 		</form>
@@ -445,16 +449,16 @@
 
 	<Modal
 		isOpen={showTransferModal}
-		title={t('workspaces.transferOwnership', $language)}
+		title={t('workspaces.transferOwnership', language.current)}
 		onClose={() => (showTransferModal = false)}
 	>
 		<form onsubmit={handleTransferOwnership} class="space-y-4">
-			<p>{t('workspaces.transferWarning', $language)}</p>
+			<p>{t('workspaces.transferWarning', language.current)}</p>
 			{#if errors.transfer}<div role="alert" class="alert alert-error text-sm">
 					<span>{errors.transfer}</span>
 				</div>{/if}
 			<Input
-				label={t('workspaces.newOwnerEmail', $language)}
+				label={t('workspaces.newOwnerEmail', language.current)}
 				type="email"
 				bind:value={transferForm.newOwnerEmail}
 				required
@@ -462,10 +466,10 @@
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showTransferModal = false)}
-					>{t('common.cancel', $language)}</Button
+					>{t('common.cancel', language.current)}</Button
 				>
 				<Button type="submit" variant="warning" loading={isProcessing}
-					>{t('workspaces.transfer', $language)}</Button
+					>{t('workspaces.transfer', language.current)}</Button
 				>
 			</div>
 		</form>
@@ -473,14 +477,14 @@
 
 	<Modal
 		isOpen={showRemoveMemberModal}
-		title={t('workspaces.removeMemberTitle', $language)}
+		title={t('workspaces.removeMemberTitle', language.current)}
 		onClose={() => {
 			showRemoveMemberModal = false;
 			memberToRemove = null;
 		}}
 	>
 		<p>
-			{t('workspaces.removeMemberWarning', $language, {
+			{t('workspaces.removeMemberWarning', language.current, {
 				memberName: memberToRemove?.user.fullName
 			})}
 		</p>
@@ -494,10 +498,10 @@
 				onclick={() => {
 					showRemoveMemberModal = false;
 					memberToRemove = null;
-				}}>{t('common.cancel', $language)}</Button
+				}}>{t('common.cancel', language.current)}</Button
 			>
 			<Button variant="danger" loading={isProcessing} onclick={handleRemoveMember}
-				>{t('workspaces.remove', $language)}</Button
+				>{t('workspaces.remove', language.current)}</Button
 			>
 		</div>
 	</Modal>

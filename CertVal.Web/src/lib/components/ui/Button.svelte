@@ -61,21 +61,26 @@
 		formtarget
 	}: ButtonProps = $props();
 
-	const baseClasses = 'btn transition-all duration-200 ease-in-out';
+	const baseClasses =
+		'btn relative overflow-hidden transition-all duration-300 ease-spring active:scale-95 hover:shadow-lg hover:-translate-y-0.5';
 
 	const variantClasses = $derived(() => {
 		const classes = {
-			primary: 'btn-primary',
-			secondary: 'btn-secondary',
-			accent: 'btn-accent',
-			success: 'btn-success',
-			warning: 'btn-warning',
-			error: 'btn-error',
-			danger: 'btn-error',
-			info: 'btn-info',
-			ghost: 'btn-ghost',
-			link: 'btn-link',
-			outline: 'btn-outline'
+			primary:
+				'btn-primary bg-gradient-to-r from-primary to-primary/80 border-none text-primary-content hover:brightness-110',
+			secondary:
+				'btn-secondary bg-gradient-to-r from-secondary to-secondary/80 border-none text-secondary-content hover:brightness-110',
+			accent:
+				'btn-accent bg-gradient-to-r from-accent to-accent/80 border-none text-accent-content hover:brightness-110',
+			success: 'btn-success text-success-content',
+			warning: 'btn-warning text-warning-content',
+			error: 'btn-error text-error-content',
+			danger: 'btn-error text-error-content',
+			info: 'btn-info text-info-content',
+			ghost: 'btn-ghost hover:bg-base-content/10',
+			link: 'btn-link no-underline hover:underline',
+			outline:
+				'btn-outline border-2 hover:bg-base-content hover:text-base-100 hover:border-base-content'
 		};
 		return classes[variant];
 	});
@@ -203,12 +208,15 @@
 		pointer-events: none;
 	}
 
+	.btn:active {
+		transform: scale(0.98);
+		animation: none;
+	}
+
 	.btn:active::after {
-		width: 200px;
-		height: 200px;
-		transition:
-			width 0.1s ease,
-			height 0.1s ease;
+		width: 0;
+		height: 0;
+		display: none;
 	}
 
 	.btn.loading {
