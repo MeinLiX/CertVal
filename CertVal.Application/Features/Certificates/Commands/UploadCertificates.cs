@@ -76,6 +76,10 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
         if (!await _unitOfWork.Workspaces.CanUserAccessAsync(request.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
             return Result.Failure<BulkUploadResultDto>("Access denied to this workspace");
 
+        var workspace = await _unitOfWork.Workspaces.GetByIdAsync(request.WorkspaceId, cancellationToken);
+        if (workspace == null)
+            return Result.Failure<BulkUploadResultDto>("Workspace not found");
+
         if (request.Files == null || !request.Files.Any())
             return Result.Failure<BulkUploadResultDto>("No files provided");
 
@@ -88,6 +92,7 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
 
         var existingCertificates = await _unitOfWork.Certificates.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken);
         var existingThumbprints = existingCertificates.Select(c => c.Thumbprint).ToHashSet();
+        var currentCertificateCount = existingCertificates.Count();
 
         foreach (var file in request.Files)
         {
@@ -120,6 +125,20 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                 if (!newCertificates.Any())
                 {
                     results.Add(new BulkUploadItemResult { FileName = file.FileName, Success = false, ErrorMessage = "All certificates in this file already exist in the workspace", IsSkipped = true });
+                    skippedCount++;
+                    continue;
+                }
+
+                var countToAdd = parsedCertificates.Count > 1 ? 1 + newCertificates.Count : 1;
+                if (currentCertificateCount + countToAdd > workspace.MaxCertificates)
+                {
+                    results.Add(new BulkUploadItemResult
+                    {
+                        FileName = file.FileName,
+                        Success = false,
+                        ErrorMessage = $"Workspace certificate limit reached (Max: {workspace.MaxCertificates})",
+                        IsSkipped = true
+                    });
                     skippedCount++;
                     continue;
                 }
@@ -205,6 +224,7 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
 
                 results.Add(new BulkUploadItemResult { FileName = file.FileName, Success = true, CertificateId = parentCertificate.Id, Subject = parentCertificate.Subject, IsSkipped = false });
                 successCount++;
+                currentCertificateCount += countToAdd;
             }
             catch (Exception ex)
             {

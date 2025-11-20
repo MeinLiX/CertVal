@@ -272,6 +272,15 @@
 			placeholder={t('workspaces.descriptionPlaceholder', language.current)}
 		/>
 
+		<Input
+			label={t('workspaces.maxCertificates', language.current)}
+			type="number"
+			bind:value={createForm.maxCertificates}
+			error={errors.maxCertificates}
+			min="1"
+			max="10000"
+		/>
+
 		<div class="form-control">
 			<label class="label cursor-pointer justify-start gap-4">
 				<input
