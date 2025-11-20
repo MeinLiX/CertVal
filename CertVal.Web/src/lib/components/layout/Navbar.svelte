@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { language } from '$lib/stores/language';
-	import { theme } from '$lib/stores/theme';
-	import { auth } from '$lib/stores/auth';
+	import { language } from '$lib/stores/language.svelte';
+	import { theme } from '$lib/stores/theme.svelte';
+	import { userSession } from '$lib/stores/userSession.svelte';
 	import type { Language, Theme } from '$lib/types';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import { fade } from 'svelte/transition';
 
 	const languages: { code: Language; label: string; flag: string }[] = [
 		{ code: 'uk', label: 'Українська', flag: '🇺🇦' },
@@ -14,52 +15,66 @@
 		{ value: 'dark', label: 'Dark', icon: '🌙' }
 	];
 	function switchLanguage(lang: Language) {
-		language.setLanguage(lang);
+		language.set(lang);
 	}
 
 	function switchTheme(newTheme: Theme) {
-		theme.setTheme(newTheme);
+		theme.set(newTheme);
 	}
 
-	const currentLanguageData = $derived(languages.find((l) => l.code === $language) ?? languages[0]);
-	const currentThemeData = $derived(themes.find((t) => t.value === $theme.theme) ?? themes[0]);
-
-	const isAuthenticated = $derived($auth.isAuthenticated);
-
-	const navbarClass = $derived(
-		isAuthenticated
-			? 'sticky top-0 z-30 navbar border-b border-base-content/10 bg-base-100'
-			: 'sticky top-0 z-30 navbar border-b border-base-100/50 bg-base-100/60 backdrop-blur-lg'
+	const currentLanguageData = $derived(
+		languages.find((l) => l.code === language.current) ?? languages[0]
 	);
+	const currentThemeData = $derived(themes.find((t) => t.value === theme.current) ?? themes[0]);
+
+	const isAuthenticated = $derived(userSession.isAuthenticated);
 </script>
 
-<div class={navbarClass}>
-	<div class="navbar-start">
+<div
+	class="pointer-events-none fixed left-0 right-0 top-0 z-50 flex items-start justify-between p-4"
+>
+	<div class="pointer-events-auto">
 		{#if isAuthenticated}
-			<label for="drawer-toggle" class="btn btn-circle btn-ghost lg:hidden">
+			<label
+				for="drawer-toggle"
+				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 text-base-content border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110 lg:hidden"
+				transition:fade
+			>
 				<Icon name="menu" />
 			</label>
 		{/if}
 	</div>
-	<div class="navbar-center"></div>
-	<div class="navbar-end gap-2">
+
+	<div class="pointer-events-auto flex gap-3">
 		<div class="dropdown dropdown-end">
-			<div tabindex="0" role="button" class="btn btn-circle btn-ghost">
-				<span class="indicator text-lg">
+			<div
+				tabindex="0"
+				role="button"
+				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110"
+			>
+				<span class="indicator text-xl drop-shadow-md filter">
 					{currentThemeData.icon}
 				</span>
 			</div>
 			<ul
-				class="dropdown-content menu w-40 rounded-box border border-base-content/10 bg-base-100 p-2 shadow-lg"
+				class="dropdown-content menu bg-base-100/80 mt-4 w-48 rounded-2xl border border-white/10 p-2 shadow-xl backdrop-blur-xl"
 			>
 				{#each themes as themeOption}
 					<li>
 						<button
-							class:active={$theme.theme === themeOption.value}
+							class="flex gap-3 rounded-xl py-3 font-medium transition-all hover:bg-white/10 {theme.current ===
+							themeOption.value
+								? 'bg-primary/10 text-primary'
+								: ''}"
 							onclick={() => switchTheme(themeOption.value)}
 						>
-							{themeOption.icon}
+							<span class="text-lg">{themeOption.icon}</span>
 							{themeOption.label}
+							{#if theme.current === themeOption.value}
+								<div
+									class="bg-primary ml-auto h-2 w-2 rounded-full shadow-[0_0_8px_rgba(var(--p))]"
+								></div>
+							{/if}
 						</button>
 					</li>
 				{/each}
@@ -67,22 +82,34 @@
 		</div>
 
 		<div class="dropdown dropdown-end">
-			<div tabindex="0" role="button" class="btn btn-circle btn-ghost">
-				<span class="indicator text-lg">
+			<div
+				tabindex="0"
+				role="button"
+				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110"
+			>
+				<span class="indicator text-xl drop-shadow-md filter">
 					{currentLanguageData.flag}
 				</span>
 			</div>
 			<ul
-				class="dropdown-content menu w-40 rounded-box border border-base-content/10 bg-base-100 p-2 shadow-lg"
+				class="dropdown-content menu bg-base-100/80 mt-4 w-48 rounded-2xl border border-white/10 p-2 shadow-xl backdrop-blur-xl"
 			>
 				{#each languages as lang}
 					<li>
 						<button
-							class:active={$language === lang.code}
+							class="flex gap-3 rounded-xl py-3 font-medium transition-all hover:bg-white/10 {language.current ===
+							lang.code
+								? 'bg-primary/10 text-primary'
+								: ''}"
 							onclick={() => switchLanguage(lang.code)}
 						>
-							{lang.flag}
+							<span class="text-lg">{lang.flag}</span>
 							{lang.label}
+							{#if language.current === lang.code}
+								<div
+									class="bg-primary ml-auto h-2 w-2 rounded-full shadow-[0_0_8px_rgba(var(--p))]"
+								></div>
+							{/if}
 						</button>
 					</li>
 				{/each}

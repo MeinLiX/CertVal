@@ -3,12 +3,14 @@
 		firstName,
 		lastName,
 		size = 'w-24',
-		textSize = 'text-3xl'
+		textSize = 'text-3xl',
+		class: className = ''
 	}: {
 		firstName: string | undefined;
 		lastName: string | undefined;
 		size?: string;
 		textSize?: string;
+		class?: string;
 	} = $props();
 
 	const initials = $derived(
@@ -16,8 +18,10 @@
 	);
 </script>
 
-<div class="avatar avatar-placeholder">
-	<div class="bg-neutral text-neutral-content {size} rounded-full">
+<div class="avatar avatar-placeholder {className}">
+	<div
+		class="from-neutral to-neutral/80 text-neutral-content ring-base-100 bg-gradient-to-br shadow-lg ring-2 {size} rounded-full"
+	>
 		<span class={textSize}>{initials}</span>
 	</div>
 </div>

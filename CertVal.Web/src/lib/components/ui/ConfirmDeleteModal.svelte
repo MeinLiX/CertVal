@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
+	import Button from './Button.svelte';
 	import { t } from '$lib/i18n';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	let {
 		isOpen = false,
 		itemName = '',
@@ -30,21 +31,18 @@
 	}
 </script>
 
-<Modal {isOpen} title={t('common.confirmDelete', $language)} {onClose}>
+<Modal {isOpen} title={t('common.confirmDelete', language.current)} {onClose}>
 	<div class="space-y-4">
 		<p class="text-base-content/80">
-			{t('common.confirmDeleteMessage', $language, { name: itemName })}
+			{t('common.confirmDeleteMessage', language.current, { name: itemName })}
 		</p>
 		<div class="flex justify-end gap-2">
-			<button class="btn btn-ghost" onclick={onClose} disabled={isProcessing}
-				>{t('common.cancel')}</button
-			>
-			<button class="btn btn-error" onclick={handleConfirm} disabled={isProcessing}>
-				{#if isProcessing}
-					<span class="loading mr-2 loading-sm loading-spinner"></span>
-				{/if}
+			<Button variant="ghost" onclick={onClose} disabled={isProcessing}>
+				{t('common.cancel')}
+			</Button>
+			<Button variant="error" onclick={handleConfirm} loading={isProcessing}>
 				{t('common.delete')}
-			</button>
+			</Button>
 		</div>
 	</div>
 </Modal>

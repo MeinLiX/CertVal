@@ -117,12 +117,21 @@ public class SmtpEmailService : IEmailService, IDisposable
         mimeMessage.To.Add(to);
 
         if (message.IsAggregated && message.Recipients is { Count: > 0 })
+        {
             foreach (var rcpt in message.Recipients)
+            {
+                if (string.Equals(rcpt, message.ToEmail, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 if (MailboxAddress.TryParse(rcpt, out var mb))
+                {
                     if (_config.AggregatedUseBcc)
                         mimeMessage.Bcc.Add(mb);
                     else
                         mimeMessage.To.Add(mb);
+                }
+            }
+        }
 
 
         var bodyBuilder = new BodyBuilder

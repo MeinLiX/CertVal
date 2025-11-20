@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { formatDate, getCertificateStatus } from '$lib/utils/date';
 	import type { Certificate } from '$lib/types';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -15,19 +15,19 @@
 		switch (status) {
 			case 'expired':
 				return {
-					text: t('certificates.expired', $language),
+					text: t('certificates.expired', language.current),
 					textColor: 'text-error',
 					barColor: 'bg-error'
 				};
 			case 'expiring':
 				return {
-					text: t('certificates.expiring', $language),
+					text: t('certificates.expiring', language.current),
 					textColor: 'text-warning',
 					barColor: 'bg-warning'
 				};
 			default:
 				return {
-					text: t('certificates.valid', $language),
+					text: t('certificates.valid', language.current),
 					textColor: 'text-success',
 					barColor: 'bg-success'
 				};
@@ -36,46 +36,58 @@
 </script>
 
 <Card
-	class="group/card relative h-full !p-0 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+	class="group/card certificate-card relative h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
 	clickable={true}
 	onclick={() => goto(`/certificates/${certificate.id}`)}
 >
 	<div
-		class="absolute left-0 top-0 h-full w-1.5 {statusInfo()
-			.barColor} transition-all duration-300 group-hover/card:w-2"
+		class="absolute left-0 top-0 h-full w-1 {statusInfo()
+			.barColor} transition-all duration-300 group-hover/card:w-1.5"
 	></div>
 
-	<div class="flex h-full flex-col p-5 pl-6">
-		<div class="flex items-start justify-between">
-			<div class="text-base-content/60 flex items-center gap-2 text-xs">
-				<Icon name="workspaces" class="h-4 w-4" />
-				<span class="truncate" title={workspaceName}>{workspaceName || '...'}</span>
+	<div class="flex h-full flex-col gap-2 p-3 pl-4">
+		<div class="flex items-center justify-between text-xs">
+			<div class="text-base-content/60 flex max-w-[70%] items-center gap-1.5 truncate">
+				<Icon name="workspaces" class="h-3.5 w-3.5 flex-shrink-0" />
+				<span class="truncate font-medium" title={workspaceName}>{workspaceName || '...'}</span>
 			</div>
-			<span class="text-xs font-bold uppercase {statusInfo().textColor}">
+			<span class="text-[10px] font-bold uppercase tracking-wider {statusInfo().textColor}">
 				{statusInfo().text}
 			</span>
 		</div>
 
-		<div class="my-4 flex-grow">
-			<h3 class="line-clamp-3 text-lg font-semibold leading-tight" title={certificate.subject}>
+		<div class="flex min-h-0 flex-grow flex-col justify-center py-0.5">
+			<h3 class="line-clamp-2 text-sm font-bold leading-snug" title={certificate.subject}>
 				{certificate.subject}
 			</h3>
-			<p class="text-base-content/60 mt-1 truncate text-sm" title={certificate.issuer}>
-				{certificate.issuer}
-			</p>
+			{#if certificate.issuer}
+				<p class="text-base-content/50 mt-0.5 truncate text-xs" title={certificate.issuer}>
+					{certificate.issuer}
+				</p>
+			{/if}
 		</div>
 
-		<div class="border-base-content/10 mt-auto flex items-end justify-between border-t pt-4">
+		<div class="border-base-content/5 mt-1 flex items-end justify-between border-t pt-2">
 			<div>
-				<div class="text-base-content/60 text-xs">{t('certificates.expires', $language)}</div>
-				<div class="font-semibold">{formatDate(certificate.notAfter)}</div>
+				<div class="text-base-content/50 text-[10px] uppercase tracking-wide">
+					{t('certificates.expires', language.current)}
+				</div>
+				<div class="font-mono text-xs font-medium">{formatDate(certificate.notAfter)}</div>
 			</div>
 			<div class="text-right">
-				<div class="text-2xl font-bold {statusInfo().textColor}">
+				<div class="text-lg font-bold leading-none {statusInfo().textColor}">
 					{certificate.daysUntilExpiry}
 				</div>
-				<div class="text-base-content/60 -mt-1 text-xs">{t('certificates.days', $language)}</div>
+				<div class="text-base-content/50 text-[10px]">
+					{t('certificates.days', language.current)}
+				</div>
 			</div>
 		</div>
 	</div>
 </Card>
+
+<style>
+	:global(.certificate-card .card-body) {
+		padding: var(--card-p, 0.2rem) !important;
+	}
+</style>

@@ -26,6 +26,7 @@ export const translations = {
             create: 'Створити',
             update: 'Оновити',
             view: 'Переглянути',
+            viewAll: 'Переглянути всі',
             details: 'Деталі',
             settings: 'Налаштування',
             public: 'Публічний',
@@ -48,6 +49,9 @@ export const translations = {
             to: 'до',
             actions: 'Дії',
             created: 'Створено',
+            days: 'днів',
+            success: 'Успіх',
+            failed: 'Помилка',
             clickToUpload: 'Натисніть, щоб завантажити',
             orDragAndDrop: 'або перетягніть файли',
             selectedFiles: 'Обрані файли:',
@@ -56,7 +60,12 @@ export const translations = {
             noTokens: 'У вас ще немає API токенів.',
             name: 'Назва',
             prefix: 'Префікс',
-            scope: 'Scope',
+            scope: 'Область доступу',
+            scopes: {
+                readOnly: 'Тільки читання',
+                readWrite: 'Читання та запис',
+                fullAccess: 'Повний доступ'
+            },
             lastUsed: 'Останнє використання',
             active: 'Активний',
             revoked: 'Відкликаний',
@@ -70,7 +79,10 @@ export const translations = {
             copied: 'Скопійовано!',
             revokeTokenTitle: 'Відкликати API токен',
             revokeTokenWarning: 'Ви впевнені, що хочете відкликати токен "{tokenName}"? Ця дія не може бути скасована.',
-            openDocsInNewTab: 'Відкрити документацію в новій вкладці'
+            openDocsInNewTab: 'Відкрити документацію в новій вкладці',
+            noDescription: 'Опис відсутній',
+            allStatus: 'Всі статуси',
+            select: 'Оберіть'
         },
         nav: {
             dashboard: 'Панель керування',
@@ -92,10 +104,13 @@ export const translations = {
                 password: 'Пароль',
                 submit: 'Увійти',
                 forgot: 'Забули пароль?',
+                forgotPassword: 'Забули пароль?',
                 noAccount: 'Немає акаунту?',
+                signup: 'Зареєструватися',
                 registerLink: 'Зареєструватися',
                 rememberMe: "Запам'ятати мене",
                 welcome: 'З поверненням!',
+                orContinueWith: 'АБО ПРОДОВЖИТИ З',
                 tagline:
                     'Безпечне та просте управління сертифікатами. З легкістю відстежуйте свої SSL/TLS сертифікати та ніколи більше не пропускайте термін їх дії.',
                 registrationSuccess: 'Реєстрація успішна! Будь ласка, увійдіть.'
@@ -108,6 +123,7 @@ export const translations = {
                 password: 'Пароль',
                 confirmPassword: 'Підтвердження пароля',
                 submit: 'Зареєструватися',
+                haveAccount: 'Вже є акаунт?',
                 hasAccount: 'Вже є акаунт?',
                 loginLink: 'Увійти',
                 terms: 'Умови використання',
@@ -147,21 +163,29 @@ export const translations = {
                 totalWorkspaces: 'Всього робочих просторів',
                 totalCertificates: 'Всього сертифікатів',
                 expiredCertificates: 'Прострочені сертифікати',
-                expiringIn7Days: 'Закінчуються за 7 днів',
-                expiringIn30Days: 'Закінчуються за 30 днів',
-                validCertificates: 'Дійсні сертифікати'
+                expiringIn7Days: 'Закінчуються через 7 днів',
+                expiringIn30Days: 'Закінчуються через 30 днів',
+                validCertificates: 'Дійсні сертифікати',
+                activeCertificates: 'Активні сертифікати',
+                expiringSoonCertificates: 'Закінчуються незабаром',
+                expiringSoon: 'Закінчуються незабаром'
             },
             recentCertificates: 'Нещодавні сертифікати',
             expiringCertificates: 'Сертифікати, що закінчуються',
+            expiringSoon: 'Закінчуються незабаром',
             quickActions: 'Швидкі дії',
-            viewAll: 'Переглянути все'
+            viewAll: 'Переглянути всі',
+            noExpiring: 'Немає сертифікатів, що закінчуються',
+            allGood: 'Все добре!'
         },
         workspaces: {
             title: 'Робочі простори',
             subtitle: 'Керуйте вашими робочими просторами для сертифікатів',
             create: 'Створити робочий простір',
             name: 'Назва',
+            namePlaceholder: 'напр. Production Certificates',
             description: 'Опис',
+            descriptionPlaceholder: 'Необов’язковий опис...',
             owner: 'Власник',
             certificates: 'сертифікатів',
             members: 'учасників',
@@ -175,6 +199,7 @@ export const translations = {
             updated: 'Оновлено',
             details: 'Деталі робочого простору',
             invitesAllowed: 'Запрошення дозволені',
+            invitesDisabled: 'Запрошення вимкнені',
             inviteMember: 'Запросити учасника',
             editWorkspace: 'Редагувати робочий простір',
             deleteWorkspace: 'Видалити робочий простір',
@@ -249,7 +274,10 @@ export const translations = {
             expiring: 'Закінчується',
             valid: 'Дійсний',
             days: 'днів',
-            empty: 'Немає сертифікатів',
+            empty: {
+                title: 'Немає сертифікатів',
+                description: 'Завантажте ваш перший сертифікат, щоб почати моніторинг.'
+            },
             uploadFirst: 'Завантажте ваш перший сертифікат',
             fileFormat: 'Формат файлу',
             fileSize: 'Розмір файлу',
@@ -326,7 +354,13 @@ export const translations = {
             metadata: 'Метадані',
             uploadedAt: 'Завантажено о',
             confirmDeleteMessage:
-                'Ви впевнені, що хочете назавжди видалити цей сертифікат? Цю дію неможливо скасувати.'
+                'Ви впевнені, що хочете назавжди видалити цей сертифікат? Цю дію неможливо скасувати.',
+            searchPlaceholder: 'Пошук сертифікатів...',
+            searchByFileName: 'Пошук по назві файлу',
+            issuerPlaceholder: 'Пошук за видавцем...',
+            selectFiles: 'Оберіть файли',
+            skipped: 'Пропущено',
+            errors: 'Помилки'
         },
         notifications: {
             title: 'Сповіщення',
@@ -337,6 +371,7 @@ export const translations = {
             editRule: 'Редагувати правило',
             deleteRule: 'Видалити правило',
             ruleName: 'Назва правила',
+            daysBefore: 'Днів до',
             daysBeforeExpiry: 'Днів до закінчення',
             frequency: 'Частота',
             channelType: 'Тип каналу',
@@ -372,15 +407,24 @@ export const translations = {
             aggregatedBadge: 'Агреговано',
             individualBadge: 'Індивідуально',
             aggregationIndividualOption: 'Окремий лист кожному',
-            aggregationAllOption: 'Один лист для всіх'
+            aggregationAllOption: 'Один лист для всіх',
+            create: 'Створити сповіщення',
+            empty: {
+                title: 'Немає сповіщень',
+                description: 'У вас немає нових сповіщень.'
+            }
         },
         profile: {
             title: 'Профіль користувача',
             subtitle: 'Керуйте налаштуваннями свого облікового запису.',
             personalInfo: 'Особиста інформація',
+            personalInfoSubtitle: 'Керуйте своєю особистою інформацією та налаштуваннями',
             accountSettings: 'Налаштування акаунту',
             preferences: 'Налаштування',
             security: 'Безпека',
+            securitySubtitle: 'Керуйте паролем та налаштуваннями безпеки',
+            apiTokensSubtitle: 'Керуйте своїми токенами доступу до API',
+            documentationSubtitle: 'Досліджуйте довідник API та посібники',
             changePassword: 'Змінити пароль',
             currentPassword: 'Поточний пароль',
             newPassword: 'Новий пароль',
@@ -393,6 +437,9 @@ export const translations = {
             joinedOn: 'Приєднався',
             saveChanges: 'Зберегти зміни',
             editProfile: 'Редагувати профіль',
+            status: 'Статус',
+            emailCannotBeChanged: 'Електронну пошту не можна змінити',
+            basicInformation: 'Основна інформація'
         },
         errors: {
             general: 'Виникла помилка. Спробуйте знову.',
@@ -454,6 +501,7 @@ export const translations = {
             create: 'Create',
             update: 'Update',
             view: 'View',
+            viewAll: 'View All',
             details: 'Details',
             settings: 'Settings',
             public: 'Public',
@@ -476,6 +524,9 @@ export const translations = {
             to: 'to',
             actions: 'Actions',
             created: 'Created',
+            days: 'days',
+            success: 'Success',
+            failed: 'Failed',
             clickToUpload: 'Click to upload',
             orDragAndDrop: 'or drag and drop',
             selectedFiles: 'Selected files:',
@@ -498,7 +549,10 @@ export const translations = {
             copied: 'Copied!',
             revokeTokenTitle: 'Revoke API Token',
             revokeTokenWarning: 'Are you sure you want to revoke the token "{tokenName}"? This action cannot be undone.',
-            openDocsInNewTab: 'Open documentation in a new tab'
+            openDocsInNewTab: 'Open documentation in a new tab',
+            noDescription: 'No description',
+            allStatus: 'All Statuses',
+            select: 'Select'
         },
         nav: {
             dashboard: 'Dashboard',
@@ -521,9 +575,11 @@ export const translations = {
                 submit: 'Sign In',
                 forgot: 'Forgot password?',
                 noAccount: "Don't have an account?",
+                signup: 'Sign up',
                 registerLink: 'Sign up',
                 rememberMe: 'Remember me',
                 welcome: 'Welcome Back!',
+                orContinueWith: 'OR CONTINUE WITH',
                 tagline:
                     'Secure certificate management made simple. Monitor your SSL/TLS certificates with ease and never miss an expiration again.',
                 registrationSuccess: 'Registration successful! Please sign in.'
@@ -577,19 +633,27 @@ export const translations = {
                 expiredCertificates: 'Expired Certificates',
                 expiringIn7Days: 'Expiring in 7 days',
                 expiringIn30Days: 'Expiring in 30 days',
-                validCertificates: 'Valid Certificates'
+                validCertificates: 'Valid Certificates',
+                activeCertificates: 'Active Certificates',
+                expiringSoonCertificates: 'Expiring Soon',
+                expiringSoon: 'Expiring Soon'
             },
             recentCertificates: 'Recent Certificates',
             expiringCertificates: 'Expiring Certificates',
+            expiringSoon: 'Expiring Soon',
             quickActions: 'Quick Actions',
-            viewAll: 'View All'
+            viewAll: 'View All',
+            noExpiring: 'No expiring certificates',
+            allGood: 'All good!'
         },
         workspaces: {
             title: 'Workspaces',
             subtitle: 'Manage your certificate workspaces',
             create: 'Create Workspace',
             name: 'Name',
+            namePlaceholder: 'e.g. Production Certificates',
             description: 'Description',
+            descriptionPlaceholder: 'Optional description...',
             owner: 'Owner',
             certificates: 'certificates',
             members: 'members',
@@ -603,6 +667,7 @@ export const translations = {
             updated: 'Updated',
             details: 'Workspace Details',
             invitesAllowed: 'Invites Allowed',
+            invitesDisabled: 'Invites Disabled',
             inviteMember: 'Invite Member',
             editWorkspace: 'Edit Workspace',
             deleteWorkspace: 'Delete Workspace',
@@ -677,7 +742,10 @@ export const translations = {
             expiring: 'Expiring Soon',
             valid: 'Valid',
             days: 'days',
-            empty: 'No certificates',
+            empty: {
+                title: 'No certificates',
+                description: 'Upload your first certificate to start monitoring.'
+            },
             uploadFirst: 'Upload your first certificate',
             fileFormat: 'File Format',
             fileSize: 'File Size',
@@ -754,7 +822,13 @@ export const translations = {
             metadata: 'Metadata',
             uploadedAt: 'Uploaded At',
             confirmDeleteMessage:
-                'Are you sure you want to permanently delete this certificate? This action cannot be undone.'
+                'Are you sure you want to permanently delete this certificate? This action cannot be undone.',
+            searchPlaceholder: 'Search certificates...',
+            searchByFileName: 'Search by file name',
+            issuerPlaceholder: 'Search by issuer...',
+            selectFiles: 'Select files',
+            skipped: 'Skipped',
+            errors: 'Errors'
         },
         notifications: {
             title: 'Notifications',
@@ -765,6 +839,7 @@ export const translations = {
             editRule: 'Edit Rule',
             deleteRule: 'Delete Rule',
             ruleName: 'Rule Name',
+            daysBefore: 'Days before',
             daysBeforeExpiry: 'Days Before Expiry',
             frequency: 'Frequency',
             channelType: 'Channel Type',
@@ -800,15 +875,24 @@ export const translations = {
             aggregatedBadge: 'Aggregated',
             individualBadge: 'Individual',
             aggregationIndividualOption: 'Separate email to each',
-            aggregationAllOption: 'One email to all recipients'
+            aggregationAllOption: 'One email to all recipients',
+            create: 'Create Notification',
+            empty: {
+                title: 'No notifications',
+                description: 'You have no new notifications.'
+            }
         },
         profile: {
             title: 'User Profile',
             subtitle: 'Manage your account settings.',
             personalInfo: 'Personal Information',
+            personalInfoSubtitle: 'Update your personal details and preferences',
             accountSettings: 'Account Settings',
             preferences: 'Preferences',
             security: 'Security',
+            securitySubtitle: 'Manage your password and security settings',
+            apiTokensSubtitle: 'Manage your API access tokens',
+            documentationSubtitle: 'Explore the API reference and guides',
             changePassword: 'Change Password',
             currentPassword: 'Current Password',
             newPassword: 'New Password',
@@ -820,7 +904,10 @@ export const translations = {
             lastLogin: 'Last Login',
             joinedOn: 'Joined on',
             saveChanges: 'Save Changes',
-            editProfile: 'Edit Profile'
+            editProfile: 'Edit Profile',
+            status: 'Status',
+            emailCannotBeChanged: 'Email cannot be changed',
+            basicInformation: 'Basic Information'
         },
         errors: {
             general: 'An error occurred. Please try again.',

@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable } from 'svelte/store';
 import type { User } from '$lib/types';
 import { browser } from '$app/environment';
 
@@ -17,12 +17,32 @@ function createAuthStore() {
         isLoading: false
     });
 
+    if (browser) {
+        const token = localStorage.getItem('auth_token');
+        const userStr = localStorage.getItem('auth_user');
+
+        if (token && userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                set({
+                    user,
+                    token,
+                    isAuthenticated: true,
+                    isLoading: false
+                });
+            } catch {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_user');
+            }
+        }
+    }
+
     return {
         subscribe,
         login: (token: string, user: User) => {
             if (browser) {
                 localStorage.setItem('auth_token', token);
-                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('auth_user', JSON.stringify(user));
             }
             set({
                 user,
@@ -34,7 +54,7 @@ function createAuthStore() {
         logout: () => {
             if (browser) {
                 localStorage.removeItem('auth_token');
-                localStorage.removeItem('user');
+                localStorage.removeItem('auth_user');
             }
             set({
                 user: null,
@@ -46,26 +66,17 @@ function createAuthStore() {
         setLoading: (loading: boolean) => {
             update(state => ({ ...state, isLoading: loading }));
         },
-        initialize: () => {
-            if (!browser) return;
-
-            const token = localStorage.getItem('auth_token');
-            const userStr = localStorage.getItem('user');
-
-            if (token && userStr) {
-                try {
-                    const user = JSON.parse(userStr);
-                    set({
-                        user,
-                        token,
-                        isAuthenticated: true,
-                        isLoading: false
-                    });
-                } catch {
-                    localStorage.removeItem('auth_token');
-                    localStorage.removeItem('user');
-                }
+        setToken: (token: string) => {
+            if (browser) {
+                localStorage.setItem('auth_token', token);
             }
+            update(state => ({ ...state, token, isAuthenticated: !!token }));
+        },
+        setUser: (user: User) => {
+            if (browser) {
+                localStorage.setItem('auth_user', JSON.stringify(user));
+            }
+            update(state => ({ ...state, user }));
         }
     };
 }

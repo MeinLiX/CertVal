@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { icons, type IconName } from '$lib/icons';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { t } from '$lib/i18n';
 
 	type InputType =
@@ -101,31 +101,33 @@
 	const errorId = $derived(`${inputId}-error`);
 	const hintId = $derived(`${inputId}-hint`);
 
-	const baseClasses = 'input w-full transition-all duration-200';
+	const baseClasses = 'input w-full transition-all duration-300 ease-out';
 
 	const variantClasses = $derived(() => {
 		const classes = {
-			default: '',
-			bordered: 'input-bordered',
-			ghost: 'input-ghost'
+			default:
+				'bg-base-100 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20',
+			bordered:
+				'input-bordered border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20',
+			ghost: 'input-ghost hover:bg-base-200/50 focus:bg-base-100'
 		};
 		return classes[variant];
 	});
 
 	const sizeClasses = $derived(() => {
 		const classes = {
-			xs: 'input-xs',
-			sm: 'input-sm',
-			md: 'input-md',
-			lg: 'input-lg',
-			xl: 'input-xl'
+			xs: 'input-xs text-xs h-8',
+			sm: 'input-sm text-sm h-10',
+			md: 'input-md text-base h-12',
+			lg: 'input-lg text-lg h-14',
+			xl: 'input-xl text-xl h-16'
 		};
 		return classes[size];
 	});
 
 	const stateClasses = $derived(() => {
-		if (error) return 'input-error focus:input-error';
-		return 'focus:input-primary focus:border-primary';
+		if (error) return 'input-error focus:ring-error/20';
+		return '';
 	});
 
 	const iconPaddingClasses = $derived(() => {
@@ -231,7 +233,7 @@
 			<span class="label-text font-medium">
 				{label}
 				{#if required}
-					<span class="ml-1 text-error" aria-label="Обов'язкове поле">*</span>
+					<span class="text-error ml-1" aria-label="Обов'язкове поле">*</span>
 				{/if}
 			</span>
 		</label>
@@ -249,15 +251,15 @@
 						: 'border-base-content/20 bg-base-200/50'}
 				{disabled
 					? 'cursor-not-allowed opacity-50'
-					: 'cursor-pointer hover:border-primary hover:bg-primary/5'}"
+					: 'hover:border-primary hover:bg-primary/5 cursor-pointer'}"
 				ondragover={handleDragOver}
 				ondragleave={handleDragLeave}
 				ondrop={handleDrop}
 			>
-				<div class="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+				<div class="flex flex-col items-center justify-center pb-6 pt-5 text-center">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="mb-4 h-8 w-8 text-base-content/60"
+						class="text-base-content/60 mb-4 h-8 w-8"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
@@ -266,13 +268,13 @@
 						<path stroke-linecap="round" stroke-linejoin="round" d={icons.upload} />
 					</svg>
 
-					<p class="mb-2 text-sm text-base-content/70">
-						<span class="font-semibold">{t('common.clickToUpload', $language)}</span>
-						{t('common.orDragAndDrop', $language)}
+					<p class="text-base-content/70 mb-2 text-sm">
+						<span class="font-semibold">{t('common.clickToUpload', language.current)}</span>
+						{t('common.orDragAndDrop', language.current)}
 					</p>
 
 					{#if supportedFormats()}
-						<p class="text-xs text-base-content/50">{supportedFormats()}</p>
+						<p class="text-base-content/50 text-xs">{supportedFormats()}</p>
 					{/if}
 				</div>
 
@@ -299,10 +301,10 @@
 
 		{#if selectedFiles.length > 0}
 			<div class="mt-4">
-				<p class="mb-2 text-sm font-semibold">{t('common.selectedFiles', $language)}</p>
-				<ul class="space-y-1 text-sm text-base-content/80">
+				<p class="mb-2 text-sm font-semibold">{t('common.selectedFiles', language.current)}</p>
+				<ul class="text-base-content/80 space-y-1 text-sm">
 					{#each selectedFiles as file}
-						<li class="flex items-center justify-between rounded bg-base-200 px-3 py-2">
+						<li class="bg-base-200 flex items-center justify-between rounded px-3 py-2">
 							<span class="truncate">{file.name}</span>
 							<span class="ml-2 text-xs opacity-60">
 								{(file.size / 1024).toFixed(2)} KB
@@ -317,7 +319,7 @@
 			{#if icon && iconPosition === 'left'}
 				<span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-3">
 					<svg
-						class="h-5 w-5 text-base-content/50"
+						class="text-base-content/50 h-5 w-5"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
@@ -357,7 +359,7 @@
 			{#if icon && iconPosition === 'right'}
 				<span class="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-3">
 					<svg
-						class="h-5 w-5 text-base-content/50"
+						class="text-base-content/50 h-5 w-5"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
@@ -384,7 +386,7 @@
 
 	{#if error}
 		<label class="label" for={inputId}>
-			<span id={errorId} class="label-text-alt flex items-center gap-1 text-error">
+			<span id={errorId} class="label-text-alt text-error flex items-center gap-1">
 				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={icons.error} />
 				</svg>

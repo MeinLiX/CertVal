@@ -44,13 +44,18 @@
 
 {#if href}
 	<a {href} {target} {rel} class={combinedClass} data-tip={tooltip} role="button">
-		<Button {variant} shape="circle" class="shadow-lg">
+		<Button {variant} shape="circle" class="shadow-lg transition-all duration-300 hover:shadow-xl">
 			<Icon name={iconName} class="h-6 w-6" />
 		</Button>
 	</a>
 {:else}
 	<div class={combinedClass} data-tip={tooltip} role="button">
-		<Button {variant} shape="circle" class="shadow-lg" {onclick}>
+		<Button
+			{variant}
+			shape="circle"
+			class="shadow-lg transition-all duration-300 hover:shadow-xl"
+			{onclick}
+		>
 			<Icon name={iconName} class="h-6 w-6" />
 		</Button>
 	</div>
@@ -58,10 +63,10 @@
 
 <style>
 	.fab {
-		transition: transform 0.2s ease-in-out;
+		transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
 	.fab:hover {
-		transform: scale(1.05);
+		transform: scale(1.1);
 	}
 </style>
