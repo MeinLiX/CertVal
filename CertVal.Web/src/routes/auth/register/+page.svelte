@@ -1,121 +1,144 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { language } from '$lib/stores/language';
-	import { api } from '$lib/utils/api';
-	import { t } from '$lib/i18n';
+	import { authUiState } from '$lib/stores/authUiState.svelte';
+	import { AuthService } from '$lib/services/AuthService';
+	import FloatingInput from '$lib/components/ui/FloatingInput.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Input from '$lib/components/ui/Input.svelte';
-	import type { CreateUserRequest } from '$lib/types';
+	import { goto } from '$app/navigation';
+	import { language } from '$lib/stores/language.svelte';
+	import { t } from '$lib/i18n';
 
-	let formData = $state<CreateUserRequest & { confirmPassword: string }>({
-		firstName: '',
-		lastName: '',
-		email: '',
-		password: '',
-		confirmPassword: '',
-		language: $language,
-		timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+	let firstName = $state('');
+	let lastName = $state('');
+	let email = $state('');
+	let password = $state('');
+	let confirmPassword = $state('');
+	let loading = $state(false);
+	let error = $state<string | null>(null);
+
+	$effect(() => {
+		authUiState.isTyping =
+			firstName.length > 0 || lastName.length > 0 || email.length > 0 || password.length > 0;
+		authUiState.isValid =
+			email.includes('@') &&
+			password.length >= 6 &&
+			password === confirmPassword &&
+			firstName.length > 0 &&
+			lastName.length > 0;
 	});
-	let errors = $state<Record<string, string>>({});
-	let isLoading = $state(false);
 
-	async function handleSubmit(event: Event) {
-		event.preventDefault();
-		errors = {};
-		if (formData.password !== formData.confirmPassword) {
-			errors.confirmPassword = t('errors.passwordsNotMatch', $language);
+	async function handleRegister(e: Event) {
+		e.preventDefault();
+		loading = true;
+		error = null;
+
+		if (password !== confirmPassword) {
+			error = 'Passwords do not match';
+			loading = false;
 			return;
 		}
 
-		isLoading = true;
 		try {
-			const { confirmPassword, ...userData } = formData;
-			const response = await api.post<any>('/v1/auth/register', userData);
-			if (response.data) {
+			const result = await AuthService.register({ email, firstName, lastName, password });
+			if (result.data) {
 				goto('/auth/login?registered=true');
 			} else {
-				errors.general = response.message || t('errors.general', $language);
+				error = result.error || 'Registration failed';
 			}
-		} catch (error) {
-			errors.general = t('errors.network', $language);
+		} catch (err) {
+			error = 'An unexpected error occurred';
 		} finally {
-			isLoading = false;
+			loading = false;
 		}
 	}
 </script>
 
-<svelte:head>
-	<title>{t('auth.register.title', $language)} - CertVal</title>
-</svelte:head>
+<div class="w-full max-w-lg">
+	<div
+		class="card bg-base-100/20 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
+	>
+		<div class="card-body gap-6 p-8">
+			<div class="mb-2 text-center">
+				<h1
+					class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent"
+				>
+					{t('auth.register.title', language.current)}
+				</h1>
+				<p class="text-base-content/60 mt-2">{t('auth.register.tagline', language.current)}</p>
+			</div>
 
-<div class="hero min-h-full">
-	<div class="hero-content w-full max-w-4xl flex-col lg:flex-row-reverse">
-		<div class="text-center lg:pl-10 lg:text-left">
-			<h1 class="text-5xl font-bold">{t('auth.register.welcome', $language)}</h1>
-			<p class="py-6 text-lg opacity-80">{t('auth.register.tagline', $language)}</p>
-		</div>
-		<div
-			class="card w-full max-w-sm shrink-0 glass shadow-2xl"
-			style="background-color: oklch(from var(--color-base-100) l c h / 0.2);"
-		>
-			<form class="card-body p-8" onsubmit={handleSubmit}>
-				<h2 class="mb-4 card-title justify-center text-2xl font-bold">
-					{t('auth.register.title', $language)}
-				</h2>
+			<form onsubmit={handleRegister} class="flex flex-col gap-4">
+				<div class="grid grid-cols-2 gap-4">
+					<FloatingInput
+						id="firstName"
+						label={t('auth.register.firstName', language.current)}
+						bind:value={firstName}
+						required
+						data-test-id="register-firstname"
+					/>
+					<FloatingInput
+						id="lastName"
+						label={t('auth.register.lastName', language.current)}
+						bind:value={lastName}
+						required
+						data-test-id="register-lastname"
+					/>
+				</div>
 
-				{#if errors.general}
-					<div role="alert" class="alert alert-error text-sm">
-						<span>{errors.general}</span>
+				<FloatingInput
+					id="email"
+					label={t('auth.register.email', language.current)}
+					type="email"
+					bind:value={email}
+					required
+					data-test-id="register-email"
+				/>
+
+				<FloatingInput
+					id="password"
+					label={t('auth.register.password', language.current)}
+					type="password"
+					bind:value={password}
+					required
+					data-test-id="register-password"
+				/>
+
+				<FloatingInput
+					id="confirmPassword"
+					label={t('auth.register.confirmPassword', language.current)}
+					type="password"
+					bind:value={confirmPassword}
+					required
+					data-test-id="register-confirm-password"
+				/>
+
+				{#if error}
+					<div class="alert alert-error rounded-lg py-2 text-sm">
+						<span>{error}</span>
 					</div>
 				{/if}
 
-				<div class="grid grid-cols-2 gap-4">
-					<Input
-						label={t('auth.register.firstName', $language)}
-						bind:value={formData.firstName}
-						required
-					/>
-					<Input
-						label={t('auth.register.lastName', $language)}
-						bind:value={formData.lastName}
-						required
-					/>
-				</div>
-				<Input
-					label={t('auth.register.email', $language)}
-					type="email"
-					bind:value={formData.email}
-					required
-				/>
-				<Input
-					label={t('auth.register.password', $language)}
-					type="password"
-					bind:value={formData.password}
-					required
-				/>
-				<Input
-					label={t('auth.register.confirmPassword', $language)}
-					type="password"
-					bind:value={formData.confirmPassword}
-					required
-					error={errors.confirmPassword}
-				/>
-
-				<div class="form-control mt-6">
-					<Button type="submit" variant="primary" loading={isLoading}>
-						{t('auth.register.submit', $language)}
-					</Button>
-				</div>
-				<div class="divider text-xs"></div>
-				<div class="text-center text-sm">
-					<p>
-						{t('auth.register.hasAccount', $language)}
-						<a href="/auth/login" class="link font-semibold link-primary"
-							>{t('auth.register.loginLink', $language)}</a
-						>
-					</p>
-				</div>
+				<Button
+					type="submit"
+					variant="primary"
+					class="mt-2 w-full"
+					{loading}
+					disabled={!authUiState.isValid}
+					data-testid="register-submit"
+				>
+					{t('auth.register.submit', language.current)}
+				</Button>
 			</form>
+
+			<div class="mt-4 text-center text-sm">
+				<span class="text-base-content/60">{t('auth.register.haveAccount', language.current)}</span>
+				<button
+					type="button"
+					onclick={() => goto('/auth/login')}
+					class="link link-primary ml-1 font-medium no-underline hover:underline"
+				>
+					{t('auth.register.loginLink', language.current)}
+				</button>
+			</div>
 		</div>
 	</div>
 </div>

@@ -4,8 +4,9 @@
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth';
 	import { workspaces as workspacesStore } from '$lib/stores/workspaces';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { api } from '$lib/utils/api';
+	import { withMinDelay } from '$lib/utils/loading';
 	import { t } from '$lib/i18n';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -43,7 +44,7 @@
 
 	const totalPages = $derived(Math.ceil(totalCount / filters.pageSize) || 1);
 	const workspaceOptions = $derived([
-		{ value: '', label: t('certificates.allWorkspaces', $language) },
+		{ value: '', label: t('certificates.allWorkspaces', language.current) },
 		...workspaceList.map((w) => ({ value: w.id, label: w.name }))
 	]);
 
@@ -64,7 +65,7 @@
 
 	async function loadWorkspaces() {
 		try {
-			const response = await api.get<PagedResult<Workspace>>('/v1/workspaces');
+			const response = await api.get<PagedResult<Workspace>>('/workspaces');
 			if (response.data) {
 				workspaceList = response.data.items;
 				workspacesStore.set(workspaceList);
@@ -88,8 +89,8 @@
 			if (filters.issuerTerm) params.set('issuer', filters.issuerTerm);
 			if (filters.status !== 'All') params.set('statusFilter', filters.status);
 
-			const response = await api.get<PagedResult<Certificate>>(
-				`/v1/certificates?${params.toString()}`
+			const response = await withMinDelay(
+				api.get<PagedResult<Certificate>>(`/certificates?${params.toString()}`)
 			);
 			if (response.data) {
 				certificates = response.data.items;
@@ -133,17 +134,17 @@
 		isUploading = true;
 		errors = {};
 		try {
-			const response = await api.upload<BulkUploadResultDto>('/v1/certificates/upload', formData);
+			const response = await api.upload<BulkUploadResultDto>('/certificates/upload', formData);
 			if (response.data) {
 				uploadResults = response.data;
 				showUploadModal = false;
 				showResultsModal = true;
 				await loadCertificates();
 			} else {
-				errors.upload = response.message || t('errors.uploadFailed', $language);
+				errors.upload = response.message || t('errors.uploadFailed', language.current);
 			}
 		} catch (error) {
-			errors.upload = t('errors.network', $language);
+			errors.upload = t('errors.network', language.current);
 		} finally {
 			isUploading = false;
 		}
@@ -151,49 +152,49 @@
 </script>
 
 <svelte:head>
-	<title>{t('certificates.title', $language)}</title>
+	<title>{t('certificates.title', language.current)}</title>
 </svelte:head>
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold">{t('certificates.title', $language)}</h1>
-			<p class="text-base-content/70 mt-1">{t('certificates.subtitle', $language)}</p>
+			<h1 class="text-3xl font-bold">{t('certificates.title', language.current)}</h1>
+			<p class="text-base-content/70 mt-1">{t('certificates.subtitle', language.current)}</p>
 		</div>
 		<Button onclick={openUploadModal}>
 			<Icon name="upload" />
-			{t('certificates.upload', $language)}
+			{t('certificates.upload', language.current)}
 		</Button>
 	</div>
 
 	<Card>
 		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-4">
 			<Input
-				label={t('certificates.subject', $language)}
+				label={t('certificates.subject', language.current)}
 				value={filters.subjectTerm}
 				oninput={(e) => updateUrlParams({ search: (e.target as HTMLInputElement).value })}
-				placeholder={t('certificates.searchSubjectPlaceholder', $language)}
+				placeholder={t('certificates.searchSubjectPlaceholder', language.current)}
 				icon="search"
 			/>
 			<Select
-				label={t('common.workspace', $language)}
+				label={t('common.workspace', language.current)}
 				value={filters.workspaceId}
 				onchange={(e) => updateUrlParams({ workspace: (e.target as HTMLSelectElement).value })}
 				options={workspaceOptions}
 			/>
 			<Select
-				label={t('common.status', $language)}
+				label={t('common.status', language.current)}
 				value={filters.status}
 				onchange={(e) => updateUrlParams({ status: (e.target as HTMLSelectElement).value })}
 				options={[
-					{ value: 'All', label: t('certificates.all', $language) },
-					{ value: 'Valid', label: t('certificates.valid', $language) },
-					{ value: 'Expiring', label: t('certificates.expiring', $language) },
-					{ value: 'Expired', label: t('certificates.expired', $language) }
+					{ value: 'All', label: t('certificates.all', language.current) },
+					{ value: 'Valid', label: t('certificates.valid', language.current) },
+					{ value: 'Expiring', label: t('certificates.expiring', language.current) },
+					{ value: 'Expired', label: t('certificates.expired', language.current) }
 				]}
 			/>
 			<Select
-				label={t('certificates.perPage', $language)}
+				label={t('certificates.perPage', language.current)}
 				value={filters.pageSize}
 				onchange={(e) => updateUrlParams({ pageSize: (e.target as HTMLSelectElement).value })}
 				options={[
@@ -213,8 +214,8 @@
 		</div>
 	{:else if certificates.length === 0}
 		<div class="py-16 text-center">
-			<h3 class="text-xl font-semibold">{t('certificates.empty', $language)}</h3>
-			<p class="text-base-content/60 mt-2">{t('certificates.uploadFirst', $language)}</p>
+			<h3 class="text-xl font-semibold">{t('certificates.empty', language.current)}</h3>
+			<p class="text-base-content/60 mt-2">{t('certificates.uploadFirst', language.current)}</p>
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -229,12 +230,12 @@
 
 	<div class="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
 		<div class="text-sm">
-			{t('certificates.showing', $language)}
+			{t('certificates.showing', language.current)}
 			<strong>{Math.min((filters.page - 1) * filters.pageSize + 1, totalCount)}</strong>
-			{t('common.to', $language)}
+			{t('common.to', language.current)}
 			<strong>{Math.min(filters.page * filters.pageSize, totalCount)}</strong>
-			{t('common.of', $language)} <strong>{totalCount}</strong>
-			{t('certificates.results', $language)}
+			{t('common.of', language.current)} <strong>{totalCount}</strong>
+			{t('certificates.results', language.current)}
 		</div>
 		{#if totalPages > 1}
 			<Pagination
@@ -248,7 +249,7 @@
 
 <Modal
 	isOpen={showUploadModal}
-	title={t('certificates.upload', $language)}
+	title={t('certificates.upload', language.current)}
 	onClose={() => (showUploadModal = false)}
 >
 	<form onsubmit={handleUploadCertificates} class="space-y-4">
@@ -256,14 +257,14 @@
 			<div role="alert" class="alert alert-error text-sm"><span>{errors.upload}</span></div>
 		{/if}
 		<Select
-			label={t('common.workspace', $language)}
+			label={t('common.workspace', language.current)}
 			name="workspaceId"
 			options={workspaceList.map((w) => ({ value: w.id, label: w.name }))}
 			bind:value={uploadForm.workspaceId}
 			required
 		/>
 		<Input
-			label={t('certificates.certificateFiles', $language)}
+			label={t('certificates.certificateFiles', language.current)}
 			name="files"
 			type="file"
 			required
@@ -272,10 +273,10 @@
 		/>
 		<div class="modal-action">
 			<Button type="button" variant="ghost" onclick={() => (showUploadModal = false)}
-				>{t('common.cancel', $language)}</Button
+				>{t('common.cancel', language.current)}</Button
 			>
 			<Button type="submit" loading={isUploading} variant="primary"
-				>{t('common.upload', $language)}</Button
+				>{t('common.upload', language.current)}</Button
 			>
 		</div>
 	</form>
@@ -283,7 +284,7 @@
 
 <Modal
 	isOpen={showResultsModal}
-	title={t('certificates.uploadResults', $language)}
+	title={t('certificates.uploadResults', language.current)}
 	onClose={() => (showResultsModal = false)}
 >
 	{#if uploadResults}
@@ -306,7 +307,9 @@
 				{/each}
 			</div>
 			<div class="modal-action">
-				<Button onclick={() => (showResultsModal = false)}>{t('common.close', $language)}</Button>
+				<Button onclick={() => (showResultsModal = false)}
+					>{t('common.close', language.current)}</Button
+				>
 			</div>
 		</div>
 	{/if}

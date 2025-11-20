@@ -4,12 +4,12 @@
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { auth } from '$lib/stores/auth';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 
-	let message = $state(t('workspaces.join.processing', $language));
+	let message = $state(t('workspaces.join.processing', language.current));
 	let error = $state('');
 	let isLoading = $state(true);
 	let token = $state('');
@@ -20,7 +20,7 @@
 		workspaceId = page.params.id;
 
 		if (!token) {
-			error = t('workspaces.join.invalidToken', $language);
+			error = t('workspaces.join.invalidToken', language.current);
 			isLoading = false;
 			return;
 		}
@@ -33,14 +33,16 @@
 		}
 
 		try {
-			const response = await api.get<any>(`/v1/invitations/${token}`);
+			const response = await api.get<any>(`/invitations/${token}`);
 			if (response.data) {
-				message = t('workspaces.join.inviteDetails', $language, { workspaceName: response.data.workspaceName });
+				message = t('workspaces.join.inviteDetails', language.current, {
+					workspaceName: response.data.workspaceName
+				});
 			} else {
-				error = response.message || t('workspaces.join.invalidToken', $language);
+				error = response.message || t('workspaces.join.invalidToken', language.current);
 			}
 		} catch (e) {
-			error = t('workspaces.join.invalidToken', $language);
+			error = t('workspaces.join.invalidToken', language.current);
 		} finally {
 			isLoading = false;
 		}
@@ -52,18 +54,18 @@
 			goto(`/auth/login?redirect=${page.url.pathname}${page.url.search}`);
 			return;
 		}
-		
+
 		isLoading = true;
 		error = '';
 		try {
-			const response = await api.post(`/v1/invitations/${token}/accept`);
+			const response = await api.post(`/invitations/${token}/accept`);
 			if (!response.message) {
 				goto(`/workspaces/${workspaceId}`);
 			} else {
 				error = response.message;
 			}
 		} catch (e) {
-			error = t('workspaces.join.acceptError', $language);
+			error = t('workspaces.join.acceptError', language.current);
 		} finally {
 			isLoading = false;
 		}
@@ -71,28 +73,28 @@
 </script>
 
 <svelte:head>
-	<title>{t('workspaces.join.title', $language)}</title>
+	<title>{t('workspaces.join.title', language.current)}</title>
 </svelte:head>
 
-<div class="hero min-h-screen bg-base-200">
+<div class="hero bg-base-200 min-h-screen">
 	<Card class="w-full max-w-md">
 		<div class="py-12 text-center">
-			<h3 class="text-xl font-semibold">{t('workspaces.join.title', $language)}</h3>
-			
+			<h3 class="text-xl font-semibold">{t('workspaces.join.title', language.current)}</h3>
+
 			{#if isLoading}
 				<div class="flex justify-center p-8"><span class="loading loading-spinner"></span></div>
 			{:else if error}
-				<p class="mt-4 text-error">{error}</p>
+				<p class="text-error mt-4">{error}</p>
 				<Button class="mt-6" onclick={() => goto('/auth/login')}>
-					{t('auth.login.title', $language)}
+					{t('auth.login.title', language.current)}
 				</Button>
 			{:else}
 				<p class="mt-4">{message}</p>
 				<Button class="mt-6" onclick={handleAccept} loading={isLoading}>
 					{#if $auth.isAuthenticated}
-						{t('workspaces.join.acceptButton', $language)}
+						{t('workspaces.join.acceptButton', language.current)}
 					{:else}
-						{t('workspaces.join.loginToAccept', $language)}
+						{t('workspaces.join.loginToAccept', language.current)}
 					{/if}
 				</Button>
 			{/if}

@@ -92,10 +92,13 @@ export const translations = {
                 password: 'Пароль',
                 submit: 'Увійти',
                 forgot: 'Забули пароль?',
+                forgotPassword: 'Забули пароль?',
                 noAccount: 'Немає акаунту?',
+                signup: 'Зареєструватися',
                 registerLink: 'Зареєструватися',
                 rememberMe: "Запам'ятати мене",
                 welcome: 'З поверненням!',
+                orContinueWith: 'АБО ПРОДОВЖИТИ З',
                 tagline:
                     'Безпечне та просте управління сертифікатами. З легкістю відстежуйте свої SSL/TLS сертифікати та ніколи більше не пропускайте термін їх дії.',
                 registrationSuccess: 'Реєстрація успішна! Будь ласка, увійдіть.'
@@ -108,6 +111,7 @@ export const translations = {
                 password: 'Пароль',
                 confirmPassword: 'Підтвердження пароля',
                 submit: 'Зареєструватися',
+                haveAccount: 'Вже є акаунт?',
                 hasAccount: 'Вже є акаунт?',
                 loginLink: 'Увійти',
                 terms: 'Умови використання',
@@ -521,9 +525,11 @@ export const translations = {
                 submit: 'Sign In',
                 forgot: 'Forgot password?',
                 noAccount: "Don't have an account?",
+                signup: 'Sign up',
                 registerLink: 'Sign up',
                 rememberMe: 'Remember me',
                 welcome: 'Welcome Back!',
+                orContinueWith: 'OR CONTINUE WITH',
                 tagline:
                     'Secure certificate management made simple. Monitor your SSL/TLS certificates with ease and never miss an expiration again.',
                 registrationSuccess: 'Registration successful! Please sign in.'

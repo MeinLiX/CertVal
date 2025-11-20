@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import { formatDateTime } from '$lib/utils/date';
@@ -44,7 +44,7 @@
 	async function loadTokens() {
 		isLoading = true;
 		try {
-			const response = await api.get<ApiToken[]>('/v1/apitokens');
+			const response = await api.get<ApiToken[]>('/apitokens');
 			if (response.data) {
 				tokens = response.data;
 			}
@@ -67,7 +67,7 @@
 		isProcessing = true;
 		errors = {};
 		try {
-			const response = await api.post<CreateApiTokenResponse>('/v1/apitokens', createForm);
+			const response = await api.post<CreateApiTokenResponse>('/apitokens', createForm);
 			if (response.data) {
 				newTokenResponse = response.data;
 				showCreateModal = false;
@@ -101,7 +101,7 @@
 		if (!tokenToRevoke) return;
 		isProcessing = true;
 		try {
-			await api.delete(`/v1/apitokens/${tokenToRevoke.id}`);
+			await api.delete(`/apitokens/${tokenToRevoke.id}`);
 			showRevokeModal = false;
 			await loadTokens();
 		} catch (err) {
@@ -113,7 +113,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('nav.apiTokens', $language)}</title>
+	<title>{t('nav.apiTokens', language.current)}</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -125,19 +125,19 @@
 		</div>
 	{:else if tokens.length === 0}
 		<div class="py-16 text-center">
-			<p>{t('common.noTokens', $language)}</p>
+			<p>{t('common.noTokens', language.current)}</p>
 		</div>
 	{:else}
 		<div class="overflow-x-auto">
 			<table class="table">
 				<thead>
 					<tr>
-						<th>{t('common.name', $language)}</th>
-						<th>{t('common.prefix', $language)}</th>
-						<th>{t('common.scope', $language)}</th>
-						<th>{t('common.status', $language)}</th>
-						<th>{t('common.created', $language)}</th>
-						<th>{t('common.lastUsed', $language)}</th>
+						<th>{t('common.name', language.current)}</th>
+						<th>{t('common.prefix', language.current)}</th>
+						<th>{t('common.scope', language.current)}</th>
+						<th>{t('common.status', language.current)}</th>
+						<th>{t('common.created', language.current)}</th>
+						<th>{t('common.lastUsed', language.current)}</th>
 						<th></th>
 					</tr>
 				</thead>
@@ -149,16 +149,16 @@
 							<td><span class="badge badge-primary">{token.scope}</span></td>
 							<td>
 								{#if token.isActive}
-									<span class="badge badge-success">{t('common.active', $language)}</span>
+									<span class="badge badge-success">{t('common.active', language.current)}</span>
 								{:else}
-									<span class="badge badge-error">{t('common.revoked', $language)}</span>
+									<span class="badge badge-error">{t('common.revoked', language.current)}</span>
 								{/if}
 							</td>
 							<td>{formatDateTime(token.createdAt)}</td>
 							<td
 								>{token.lastUsedAt
 									? formatDateTime(token.lastUsedAt)
-									: t('common.never', $language)}</td
+									: t('common.never', language.current)}</td
 							>
 							<td>
 								<Button
@@ -167,7 +167,7 @@
 									onclick={() => openRevokeModal(token)}
 									disabled={!token.isActive}
 								>
-									{t('common.revoke', $language)}
+									{t('common.revoke', language.current)}
 								</Button>
 							</td>
 						</tr>
@@ -180,14 +180,14 @@
 
 <Modal
 	isOpen={showCreateModal}
-	title={t('common.createTokenTitle', $language)}
+	title={t('common.createTokenTitle', language.current)}
 	onClose={() => (showCreateModal = false)}
 >
 	<form onsubmit={handleCreateToken} class="space-y-4">
 		{#if errors.create}
 			<div role="alert" class="alert alert-error text-sm"><span>{errors.create}</span></div>
 		{/if}
-		<Input label={t('common.tokenName', $language)} bind:value={createForm.name} required />
+		<Input label={t('common.tokenName', language.current)} bind:value={createForm.name} required />
 		<Select
 			label="Scope"
 			bind:value={createForm.scope}
@@ -198,10 +198,10 @@
 		/>
 		<div class="modal-action">
 			<Button type="button" variant="ghost" onclick={() => (showCreateModal = false)}
-				>{t('common.cancel', $language)}</Button
+				>{t('common.cancel', language.current)}</Button
 			>
 			<Button type="submit" variant="primary" loading={isProcessing}
-				>{t('common.create', $language)}</Button
+				>{t('common.create', language.current)}</Button
 			>
 		</div>
 	</form>
@@ -209,12 +209,12 @@
 
 <Modal
 	isOpen={showTokenModal}
-	title={t('common.newTokenTitle', $language)}
+	title={t('common.newTokenTitle', language.current)}
 	onClose={() => (showTokenModal = false)}
 >
 	{#if newTokenResponse}
 		<div class="space-y-4">
-			<p>{t('common.copyTokenWarning', $language)}</p>
+			<p>{t('common.copyTokenWarning', language.current)}</p>
 			<div class="space-y-2">
 				<Input readonly value={newTokenResponse.token} />
 				<Button
@@ -224,11 +224,13 @@
 					disabled={isCopied}
 					onclick={() => copyToClipboard(newTokenResponse?.token ?? '')}
 				>
-					{isCopied ? t('common.copied', $language) : t('common.copy', $language)}
+					{isCopied ? t('common.copied', language.current) : t('common.copy', language.current)}
 				</Button>
 			</div>
 			<div class="modal-action">
-				<Button onclick={() => (showTokenModal = false)}>{t('common.close', $language)}</Button>
+				<Button onclick={() => (showTokenModal = false)}
+					>{t('common.close', language.current)}</Button
+				>
 			</div>
 		</div>
 	{/if}
@@ -236,17 +238,17 @@
 
 <Modal
 	isOpen={showRevokeModal}
-	title={t('common.revokeTokenTitle', $language)}
+	title={t('common.revokeTokenTitle', language.current)}
 	onClose={() => (showRevokeModal = false)}
 >
 	{#if tokenToRevoke}
-		<p>{t('common.revokeTokenWarning', $language, { tokenName: tokenToRevoke.name })}</p>
+		<p>{t('common.revokeTokenWarning', language.current, { tokenName: tokenToRevoke.name })}</p>
 		<div class="modal-action">
 			<Button variant="ghost" onclick={() => (showRevokeModal = false)}
-				>{t('common.cancel', $language)}</Button
+				>{t('common.cancel', language.current)}</Button
 			>
 			<Button variant="danger" loading={isProcessing} onclick={handleRevokeToken}>
-				{t('common.revoke', $language)}
+				{t('common.revoke', language.current)}
 			</Button>
 		</div>
 	{/if}

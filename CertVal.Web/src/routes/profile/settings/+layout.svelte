@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { t } from '$lib/i18n';
-	import { language } from '$lib/stores/language';
+	import { language } from '$lib/stores/language.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import type { IconName } from '$lib/icons';
 	import { onMount, onDestroy, tick } from 'svelte';
@@ -33,7 +33,7 @@
 		}
 
 		const tabEls = Array.from(container.querySelectorAll<HTMLElement>('a[role="tab"]'));
-		const activeIndex = tabs.findIndex(t => currentPath.startsWith(t.href));
+		const activeIndex = tabs.findIndex((t) => currentPath.startsWith(t.href));
 		const el = tabEls[activeIndex];
 
 		if (el) {
@@ -72,27 +72,38 @@
 
 <div class="space-y-6">
 	<div>
-		<h1 class="text-3xl font-bold">{t('nav.settings', $language)}</h1>
-		<p class="mt-1 text-base-content/70">{t('profile.subtitle', $language)}</p>
+		<h1 class="text-3xl font-bold">{t('nav.settings', language.current)}</h1>
+		<p class="text-base-content/70 mt-1">{t('profile.subtitle', language.current)}</p>
 	</div>
 
-	<div bind:this={tabsContainer} role="tablist" aria-label="Settings sections" class="relative flex overflow-x-auto gap-0 border-b border-base-300">
+	<div
+		bind:this={tabsContainer}
+		role="tablist"
+		aria-label="Settings sections"
+		class="border-base-300 relative flex gap-0 overflow-x-auto border-b"
+	>
 		{#each tabs as tab, i}
 			<a
 				href={tab.href}
 				role="tab"
 				aria-selected={currentPath.startsWith(tab.href)}
 				tabindex={currentPath.startsWith(tab.href) ? 0 : -1}
-				class="px-4 py-3 flex items-center gap-2 whitespace-nowrap transition-all duration-100 focus:outline-none focus:ring-2 focus:ring-primary/30 {currentPath.startsWith(tab.href) ? 'text-primary font-medium' : 'text-base-content/70'}"
+				class="focus:ring-primary/30 flex items-center gap-2 whitespace-nowrap px-4 py-3 transition-all duration-100 focus:outline-none focus:ring-2 {currentPath.startsWith(
+					tab.href
+				)
+					? 'text-primary font-medium'
+					: 'text-base-content/70'}"
 			>
 				<Icon name={tab.icon} class="h-4 w-4 shrink-0" />
-				<span>{t(tab.label, $language)}</span>
+				<span>{t(tab.label, language.current)}</span>
 			</a>
 		{/each}
 
 		<div
-			class="absolute bottom-0 h-2 bg-primary rounded-full transition-all duration-300 pointer-events-none"
-			style="transform: translateX({underlineLeft}px); width: {underlineWidth}px; opacity: {isUnderlineVisible ? 1 : 0};"
+			class="bg-primary pointer-events-none absolute bottom-0 h-2 rounded-full transition-all duration-300"
+			style="transform: translateX({underlineLeft}px); width: {underlineWidth}px; opacity: {isUnderlineVisible
+				? 1
+				: 0};"
 			aria-hidden="true"
 		></div>
 	</div>
