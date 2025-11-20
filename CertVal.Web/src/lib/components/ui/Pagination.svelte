@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let {
 		currentPage,
@@ -12,72 +13,79 @@
 	} = $props();
 
 	const pageNumbers = $derived(() => {
-		const pages = [];
-		const maxPagesToShow = 5;
-		const half = Math.floor(maxPagesToShow / 2);
+		const totalNumbers = 5;
+		const siblingCount = 1;
 
-		if (totalPages <= maxPagesToShow + 2) {
-			for (let i = 1; i <= totalPages; i++) {
-				pages.push(i);
-			}
-		} else {
-			pages.push(1);
-			if (currentPage > half + 2) {
-				pages.push(-1);
-			}
-
-			let start = Math.max(2, currentPage - half);
-			let end = Math.min(totalPages - 1, currentPage + half);
-
-			if (currentPage <= half + 1) {
-				end = maxPagesToShow;
-			}
-			if (currentPage >= totalPages - half) {
-				start = totalPages - maxPagesToShow + 1;
-			}
-
-			for (let i = start; i <= end; i++) {
-				pages.push(i);
-			}
-
-			if (currentPage < totalPages - half - 1) {
-				pages.push(-1);
-			}
-			pages.push(totalPages);
+		if (totalPages <= 7) {
+			return Array.from({ length: totalPages }, (_, i) => i + 1);
 		}
-		return pages;
+
+		const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
+		const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
+
+		const shouldShowLeftDots = leftSiblingIndex > 2;
+		const shouldShowRightDots = rightSiblingIndex < totalPages - 1;
+
+		const firstPageIndex = 1;
+		const lastPageIndex = totalPages;
+
+		if (!shouldShowLeftDots && shouldShowRightDots) {
+			let leftItemCount = 3 + 2 * siblingCount;
+			let leftRange = Array.from({ length: leftItemCount }, (_, i) => i + 1);
+			return [...leftRange, -1, totalPages];
+		}
+
+		if (shouldShowLeftDots && !shouldShowRightDots) {
+			let rightItemCount = 3 + 2 * siblingCount;
+			let rightRange = Array.from(
+				{ length: rightItemCount },
+				(_, i) => totalPages - rightItemCount + i + 1
+			);
+			return [firstPageIndex, -1, ...rightRange];
+		}
+
+		if (shouldShowLeftDots && shouldShowRightDots) {
+			let middleRange = Array.from(
+				{ length: rightSiblingIndex - leftSiblingIndex + 1 },
+				(_, i) => leftSiblingIndex + i
+			);
+			return [firstPageIndex, -1, ...middleRange, -1, lastPageIndex];
+		}
+
+		return [];
 	});
 </script>
 
-<div class="join">
-	<button
-		class="btn join-item"
+<div class="join shadow-sm">
+	<Button
+		class="join-item {currentPage <= 1 ? 'btn-disabled opacity-50' : ''}"
 		onclick={() => onPageChange(currentPage - 1)}
 		disabled={currentPage <= 1}
 		aria-label="Previous Page"
 	>
 		<Icon name="leftArrow" class="h-4 w-4" />
-	</button>
+	</Button>
 
 	{#each pageNumbers() as page}
 		{#if page === -1}
-			<button class="btn join-item btn-disabled">...</button>
+			<Button class="join-item btn-disabled opacity-50" disabled>...</Button>
 		{:else}
-			<button
-				class="btn join-item {currentPage === page ? 'btn-primary' : ''}"
+			<Button
+				class="join-item"
+				variant={currentPage === page ? 'primary' : 'ghost'}
 				onclick={() => onPageChange(page)}
 			>
 				{page}
-			</button>
+			</Button>
 		{/if}
 	{/each}
 
-	<button
-		class="btn join-item"
+	<Button
+		class="join-item {currentPage >= totalPages ? 'btn-disabled opacity-50' : ''}"
 		onclick={() => onPageChange(currentPage + 1)}
 		disabled={currentPage >= totalPages}
 		aria-label="Next Page"
 	>
 		<Icon name="rightArrow" class="h-4 w-4" />
-	</button>
+	</Button>
 </div>

@@ -2,21 +2,20 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { auth } from '$lib/stores/auth';
+	import { userSession } from '$lib/stores/userSession.svelte';
 	import { workspaces as workspacesStore } from '$lib/stores/workspaces';
 	import { language } from '$lib/stores/language.svelte';
-	import { api } from '$lib/utils/api';
-	import { withMinDelay } from '$lib/utils/loading';
+	import { CertificateService, type CertificateFilter } from '$lib/services/CertificateService';
+	import { WorkspaceService } from '$lib/services/WorkspaceService';
 	import { t } from '$lib/i18n';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import type { Certificate, Workspace, PagedResult, BulkUploadResultDto } from '$lib/types';
 	import CertificateCard from '$lib/components/certificates/CertificateCard.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
+	import type { Certificate, Workspace, BulkUploadResultDto } from '$lib/types';
 
 	let certificates = $state<Certificate[]>([]);
 	let workspaceList = $state<Workspace[]>([]);
@@ -32,6 +31,10 @@
 	let uploadForm = $state({
 		workspaceId: ''
 	});
+	let uploadFiles = $state<FileList | null>(null);
+
+	let activeResultTab = $state<'success' | 'skipped' | 'failure'>('success');
+	let resultSearchQuery = $state('');
 
 	const filters = $derived({
 		subjectTerm: page.url.searchParams.get('search') || '',
@@ -39,8 +42,28 @@
 		status: page.url.searchParams.get('status') || 'All',
 		workspaceId: page.url.searchParams.get('workspace') || '',
 		page: parseInt(page.url.searchParams.get('page') || '1'),
-		pageSize: parseInt(page.url.searchParams.get('pageSize') || '12')
+		pageSize: parseInt(page.url.searchParams.get('pageSize') || '9')
 	});
+
+	const filteredUploadResults = $derived(
+		!uploadResults?.results
+			? []
+			: uploadResults.results.filter((r) => {
+					if (activeResultTab === 'success' && !r.success) return false;
+					if (activeResultTab === 'skipped' && (!r.isSkipped || r.success)) return false;
+					if (activeResultTab === 'failure' && (r.success || r.isSkipped)) return false;
+
+					if (resultSearchQuery) {
+						const q = resultSearchQuery.toLowerCase();
+						return (
+							r.fileName.toLowerCase().includes(q) ||
+							(r.subject && r.subject.toLowerCase().includes(q)) ||
+							(r.errorMessage && r.errorMessage.toLowerCase().includes(q))
+						);
+					}
+					return true;
+				})
+	);
 
 	const totalPages = $derived(Math.ceil(totalCount / filters.pageSize) || 1);
 	const workspaceOptions = $derived([
@@ -49,7 +72,7 @@
 	]);
 
 	onMount(async () => {
-		if (!$auth.isAuthenticated) {
+		if (!userSession.isAuthenticated) {
 			goto('/auth/login');
 			return;
 		}
@@ -65,7 +88,7 @@
 
 	async function loadWorkspaces() {
 		try {
-			const response = await api.get<PagedResult<Workspace>>('/workspaces');
+			const response = await WorkspaceService.getAll(1, 100);
 			if (response.data) {
 				workspaceList = response.data.items;
 				workspacesStore.set(workspaceList);
@@ -78,20 +101,18 @@
 	async function loadCertificates() {
 		isLoading = true;
 		try {
-			const params = new URLSearchParams({
-				pageNumber: filters.page.toString(),
-				pageSize: filters.pageSize.toString(),
+			const filter: CertificateFilter = {
+				pageNumber: filters.page,
+				pageSize: filters.pageSize,
+				workspaceId: filters.workspaceId || undefined,
+				subject: filters.subjectTerm || undefined,
+				issuer: filters.issuerTerm || undefined,
+				statusFilter: filters.status !== 'All' ? filters.status : undefined,
 				sortBy: 'notAfter',
-				sortDescending: 'false'
-			});
-			if (filters.workspaceId) params.set('workspaceId', filters.workspaceId);
-			if (filters.subjectTerm) params.set('subject', filters.subjectTerm);
-			if (filters.issuerTerm) params.set('issuer', filters.issuerTerm);
-			if (filters.status !== 'All') params.set('statusFilter', filters.status);
+				sortDescending: false
+			};
 
-			const response = await withMinDelay(
-				api.get<PagedResult<Certificate>>(`/certificates?${params.toString()}`)
-			);
+			const response = await CertificateService.getAll(filter);
 			if (response.data) {
 				certificates = response.data.items;
 				totalCount = response.data.totalCount;
@@ -103,148 +124,172 @@
 		}
 	}
 
-	function updateUrlParams(newParams: Record<string, string | number>) {
-		const params = new URLSearchParams(page.url.searchParams);
-		for (const [key, value] of Object.entries(newParams)) {
+	function updateParams(newParams: Record<string, string | number>) {
+		const url = new URL(window.location.href);
+		Object.entries(newParams).forEach(([key, value]) => {
 			if (value) {
-				params.set(key, String(value));
+				url.searchParams.set(key, value.toString());
 			} else {
-				params.delete(key);
+				url.searchParams.delete(key);
 			}
-		}
-		if (!('page' in newParams)) {
-			params.delete('page');
-		}
-
-		goto(`?${params.toString()}`, { keepFocus: true, noScroll: true, replaceState: true });
+		});
+		goto(url.toString(), { keepFocus: true, noScroll: true });
 	}
 
-	function openUploadModal() {
-		const defaultWorkspace =
-			filters.workspaceId || (workspaceList.length > 0 ? workspaceList[0].id : '');
-		uploadForm.workspaceId = defaultWorkspace;
-		errors = {};
-		showUploadModal = true;
-	}
-
-	async function handleUploadCertificates(event: Event) {
+	async function handleUpload(event: Event) {
 		event.preventDefault();
-		const form = event.target as HTMLFormElement;
-		const formData = new FormData(form);
+		if (!uploadForm.workspaceId || !uploadFiles || uploadFiles.length === 0) {
+			errors.general = t('certificates.upload.required', language.current);
+			return;
+		}
+
 		isUploading = true;
 		errors = {};
+
 		try {
-			const response = await api.upload<BulkUploadResultDto>('/certificates/upload', formData);
+			const response = await CertificateService.upload(uploadForm.workspaceId, uploadFiles);
 			if (response.data) {
 				uploadResults = response.data;
 				showUploadModal = false;
 				showResultsModal = true;
-				await loadCertificates();
-			} else {
-				errors.upload = response.message || t('errors.uploadFailed', language.current);
+				activeResultTab = 'success';
+				resultSearchQuery = '';
+				loadCertificates();
+			} else if (response.message) {
+				errors.general = response.message;
 			}
 		} catch (error) {
-			errors.upload = t('errors.network', language.current);
+			errors.general = t('errors.network', language.current);
 		} finally {
 			isUploading = false;
+		}
+	}
+
+	function handleFileChange(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (input.files) {
+			uploadFiles = input.files;
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>{t('certificates.title', language.current)}</title>
+	<title>{t('certificates.title', language.current)} - CertVal</title>
 </svelte:head>
 
-<div class="space-y-6">
-	<div class="flex items-center justify-between">
-		<div>
-			<h1 class="text-3xl font-bold">{t('certificates.title', language.current)}</h1>
-			<p class="text-base-content/70 mt-1">{t('certificates.subtitle', language.current)}</p>
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 flex h-[calc(100vh-8rem)] min-h-[600px] flex-col space-y-2 duration-500"
+>
+	<div class="flex-none">
+		<div class="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+			<div>
+				<h1
+					class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-4xl font-bold tracking-tight text-transparent"
+				>
+					{t('certificates.title', language.current)}
+				</h1>
+				<p class="text-base-content/60 mt-2 text-lg font-light">
+					{t('certificates.subtitle', language.current)}
+				</p>
+			</div>
+			<Button
+				variant="primary"
+				size="md"
+				class="shadow-primary/20 hover:shadow-primary/40 whitespace-nowrap shadow-lg transition-all"
+				onclick={() => (showUploadModal = true)}
+			>
+				<Icon name="upload" class="mr-2 h-5 w-5" />
+				{t('certificates.upload', language.current)}
+			</Button>
 		</div>
-		<Button onclick={openUploadModal}>
-			<Icon name="upload" />
-			{t('certificates.upload', language.current)}
-		</Button>
+
+		<div
+			class="bg-base-100/50 border-base-content/5 rounded-2xl border p-4 shadow-sm backdrop-blur-sm"
+		>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+				<Input
+					placeholder={t('certificates.searchPlaceholder', language.current)}
+					value={filters.subjectTerm}
+					oninput={(e) => updateParams({ search: (e.target as HTMLInputElement).value, page: 1 })}
+					icon="search"
+					class="bg-base-100"
+				/>
+				<Input
+					placeholder={t('certificates.issuerPlaceholder', language.current)}
+					value={filters.issuerTerm}
+					oninput={(e) => updateParams({ issuer: (e.target as HTMLInputElement).value, page: 1 })}
+					class="bg-base-100"
+				/>
+				<Select
+					options={workspaceOptions}
+					value={filters.workspaceId}
+					onchange={(e) =>
+						updateParams({ workspace: (e.target as HTMLSelectElement).value, page: 1 })}
+					class="bg-base-100"
+					icon="workspaces"
+				/>
+				<Select
+					options={[
+						{ value: 'All', label: t('common.allStatus', language.current) },
+						{ value: 'Valid', label: t('certificates.valid', language.current) },
+						{ value: 'Expiring', label: t('certificates.expiring', language.current) },
+						{ value: 'Expired', label: t('certificates.expired', language.current) }
+					]}
+					value={filters.status}
+					onchange={(e) => updateParams({ status: (e.target as HTMLSelectElement).value, page: 1 })}
+					class="bg-base-100"
+					icon="filter"
+				/>
+			</div>
+		</div>
 	</div>
 
-	<Card>
-		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-4">
-			<Input
-				label={t('certificates.subject', language.current)}
-				value={filters.subjectTerm}
-				oninput={(e) => updateUrlParams({ search: (e.target as HTMLInputElement).value })}
-				placeholder={t('certificates.searchSubjectPlaceholder', language.current)}
-				icon="search"
-			/>
-			<Select
-				label={t('common.workspace', language.current)}
-				value={filters.workspaceId}
-				onchange={(e) => updateUrlParams({ workspace: (e.target as HTMLSelectElement).value })}
-				options={workspaceOptions}
-			/>
-			<Select
-				label={t('common.status', language.current)}
-				value={filters.status}
-				onchange={(e) => updateUrlParams({ status: (e.target as HTMLSelectElement).value })}
-				options={[
-					{ value: 'All', label: t('certificates.all', language.current) },
-					{ value: 'Valid', label: t('certificates.valid', language.current) },
-					{ value: 'Expiring', label: t('certificates.expiring', language.current) },
-					{ value: 'Expired', label: t('certificates.expired', language.current) }
-				]}
-			/>
-			<Select
-				label={t('certificates.perPage', language.current)}
-				value={filters.pageSize}
-				onchange={(e) => updateUrlParams({ pageSize: (e.target as HTMLSelectElement).value })}
-				options={[
-					{ value: 12, label: '12' },
-					{ value: 24, label: '24' },
-					{ value: 48, label: '48' }
-				]}
-			/>
-		</div>
-	</Card>
-
 	{#if isLoading}
-		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{#each { length: filters.pageSize } as _}
-				<div class="skeleton h-64 w-full"></div>
+		<div class="grid flex-grow grid-cols-1 gap-6 overflow-y-auto p-1 md:grid-cols-2 lg:grid-cols-3">
+			{#each Array(6) as _}
+				<div class="card bg-base-100 h-48 animate-pulse shadow-xl">
+					<div class="card-body">
+						<div class="bg-base-300 mb-4 h-6 w-1/2 rounded"></div>
+						<div class="bg-base-300 h-4 w-3/4 rounded"></div>
+						<div class="bg-base-300 mt-2 h-4 w-1/2 rounded"></div>
+					</div>
+				</div>
 			{/each}
 		</div>
 	{:else if certificates.length === 0}
-		<div class="py-16 text-center">
-			<h3 class="text-xl font-semibold">{t('certificates.empty', language.current)}</h3>
-			<p class="text-base-content/60 mt-2">{t('certificates.uploadFirst', language.current)}</p>
+		<div
+			class="bg-base-100/50 border-base-200 flex flex-grow flex-col items-center justify-center rounded-3xl border py-20 text-center backdrop-blur-sm"
+		>
+			<div class="bg-base-200 mb-6 rounded-full p-6">
+				<Icon name="certificates" class="text-base-content/30 h-12 w-12" />
+			</div>
+			<h3 class="mb-2 text-lg font-bold">{t('certificates.empty.title', language.current)}</h3>
+			<p class="text-base-content/60 mb-8 max-w-md">
+				{t('certificates.empty.description', language.current)}
+			</p>
+			<Button variant="outline" onclick={() => (showUploadModal = true)}>
+				{t('certificates.upload', language.current)}
+			</Button>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{#each certificates as cert (cert.id)}
-				<CertificateCard
-					certificate={cert}
-					workspaceName={workspaceList.find((w) => w.id === cert.workspaceId)?.name}
-				/>
-			{/each}
+		<div class="min-h-0 flex-grow overflow-y-auto p-1 pb-4">
+			<div class="grid grid-cols-1 content-start gap-4 md:grid-cols-2 lg:grid-cols-3">
+				{#each certificates as cert (cert.id)}
+					<CertificateCard
+						certificate={cert}
+						workspaceName={workspaceList.find((w) => w.id === cert.workspaceId)?.name}
+					/>
+				{/each}
+			</div>
 		</div>
-	{/if}
-
-	<div class="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
-		<div class="text-sm">
-			{t('certificates.showing', language.current)}
-			<strong>{Math.min((filters.page - 1) * filters.pageSize + 1, totalCount)}</strong>
-			{t('common.to', language.current)}
-			<strong>{Math.min(filters.page * filters.pageSize, totalCount)}</strong>
-			{t('common.of', language.current)} <strong>{totalCount}</strong>
-			{t('certificates.results', language.current)}
-		</div>
-		{#if totalPages > 1}
+		<div class="flex flex-none justify-center pb-0">
 			<Pagination
 				currentPage={filters.page}
 				{totalPages}
-				onPageChange={(p) => updateUrlParams({ page: p })}
+				onPageChange={(p) => updateParams({ page: p })}
 			/>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>
 
 <Modal
@@ -252,32 +297,72 @@
 	title={t('certificates.upload', language.current)}
 	onClose={() => (showUploadModal = false)}
 >
-	<form onsubmit={handleUploadCertificates} class="space-y-4">
-		{#if errors.upload}
-			<div role="alert" class="alert alert-error text-sm"><span>{errors.upload}</span></div>
+	<form onsubmit={handleUpload} class="space-y-6">
+		<div class="form-control w-full">
+			<label class="label" for="workspace-select">
+				<span class="label-text font-medium"
+					>{t('certificates.selectWorkspace', language.current)}</span
+				>
+			</label>
+			<select
+				id="workspace-select"
+				class="select select-bordered focus:select-primary w-full transition-all"
+				bind:value={uploadForm.workspaceId}
+				required
+			>
+				<option value="" disabled selected>{t('common.select', language.current)}</option>
+				{#each workspaceList as workspace}
+					<option value={workspace.id}>{workspace.name}</option>
+				{/each}
+			</select>
+		</div>
+
+		<div class="form-control w-full">
+			<label class="label" for="file-upload">
+				<span class="label-text font-medium">{t('certificates.selectFiles', language.current)}</span
+				>
+			</label>
+			<input
+				id="file-upload"
+				type="file"
+				class="file-input file-input-bordered file-input-primary bg-base-100/50 w-full transition-all"
+				multiple
+				accept=".cer,.crt,.pem,.pfx,.p12"
+				onchange={handleFileChange}
+				required
+			/>
+			<div class="label">
+				<span class="label-text-alt text-base-content/60"
+					>{t('certificates.supportedFormats', language.current)}: .cer, .crt, .pem, .pfx, .p12</span
+				>
+			</div>
+		</div>
+
+		{#if errors.general}
+			<div class="alert alert-error bg-error/10 border-error/20 text-sm">
+				<Icon name="error" class="text-error h-5 w-5" />
+				<span>{errors.general}</span>
+			</div>
 		{/if}
-		<Select
-			label={t('common.workspace', language.current)}
-			name="workspaceId"
-			options={workspaceList.map((w) => ({ value: w.id, label: w.name }))}
-			bind:value={uploadForm.workspaceId}
-			required
-		/>
-		<Input
-			label={t('certificates.certificateFiles', language.current)}
-			name="files"
-			type="file"
-			required
-			multiple
-			accept=".cer,.crt,.pem,.der,.p7b,.p7c,.pfx,.p12"
-		/>
+
 		<div class="modal-action">
-			<Button type="button" variant="ghost" onclick={() => (showUploadModal = false)}
-				>{t('common.cancel', language.current)}</Button
+			<Button
+				type="button"
+				variant="ghost"
+				onclick={() => (showUploadModal = false)}
+				disabled={isUploading}
 			>
-			<Button type="submit" loading={isUploading} variant="primary"
-				>{t('common.upload', language.current)}</Button
+				{t('common.cancel', language.current)}
+			</Button>
+			<Button
+				type="submit"
+				variant="primary"
+				loading={isUploading}
+				class="shadow-primary/20 shadow-lg"
 			>
+				<Icon name="upload" class="mr-2 h-4 w-4" />
+				{t('common.upload', language.current)}
+			</Button>
 		</div>
 	</form>
 </Modal>
@@ -289,28 +374,124 @@
 >
 	{#if uploadResults}
 		<div class="space-y-4">
-			<p>{uploadResults.summary}</p>
-			<div class="max-h-60 space-y-2 overflow-y-auto">
-				{#each uploadResults.results as result}
-					<div
-						class="rounded-lg p-2 {result.success
-							? 'bg-success/20'
-							: result.isSkipped
-								? 'bg-warning/20'
-								: 'bg-error/20'}"
-					>
-						<p class="text-sm font-semibold">{result.fileName}</p>
-						{#if !result.success}
-							<p class="text-xs opacity-70">{result.errorMessage}</p>
-						{/if}
-					</div>
-				{/each}
-			</div>
-			<div class="modal-action">
-				<Button onclick={() => (showResultsModal = false)}
-					>{t('common.close', language.current)}</Button
+			<div class="tabs tabs-boxed bg-base-200 rounded-xl p-1.5">
+				<button
+					class="tab flex-1 gap-2 rounded-lg transition-all duration-200 {activeResultTab ===
+					'success'
+						? 'tab-active !bg-success !text-success-content shadow-sm'
+						: 'hover:bg-base-300/50'}"
+					onclick={() => (activeResultTab = 'success')}
 				>
+					{t('common.success', language.current)}
+					<div
+						class="badge badge-sm {activeResultTab === 'success' ? 'badge-ghost' : 'badge-success'}"
+					>
+						{uploadResults.successCount}
+					</div>
+				</button>
+				<button
+					class="tab flex-1 gap-2 rounded-lg transition-all duration-200 {activeResultTab ===
+					'skipped'
+						? 'tab-active !bg-warning !text-warning-content shadow-sm'
+						: 'hover:bg-base-300/50'}"
+					onclick={() => (activeResultTab = 'skipped')}
+				>
+					{t('certificates.skipped', language.current)}
+					<div
+						class="badge badge-sm {activeResultTab === 'skipped' ? 'badge-ghost' : 'badge-warning'}"
+					>
+						{uploadResults.skippedCount}
+					</div>
+				</button>
+				<button
+					class="tab flex-1 gap-2 rounded-lg transition-all duration-200 {activeResultTab ===
+					'failure'
+						? 'tab-active !bg-error !text-error-content shadow-sm'
+						: 'hover:bg-base-300/50'}"
+					onclick={() => (activeResultTab = 'failure')}
+				>
+					{t('common.failed', language.current)}
+					<div
+						class="badge badge-sm {activeResultTab === 'failure' ? 'badge-ghost' : 'badge-error'}"
+					>
+						{uploadResults.failureCount}
+					</div>
+				</button>
+			</div>
+
+			<div class="form-control">
+				<Input
+					placeholder={t('certificates.searchByFileName', language.current)}
+					bind:value={resultSearchQuery}
+					icon="search"
+					class="bg-base-100 rounded-lg"
+				/>
+			</div>
+
+			<div class="divider my-2 text-sm font-medium opacity-70">
+				{t('certificates.details', language.current)}
+				{#if activeResultTab === 'success'}
+					<span class="text-success">({t('common.success', language.current)})</span>
+				{:else if activeResultTab === 'skipped'}
+					<span class="text-warning">({t('certificates.skipped', language.current)})</span>
+				{:else}
+					<span class="text-error">({t('common.failed', language.current)})</span>
+				{/if}
+			</div>
+
+			<div class="max-h-60 min-h-[100px] space-y-2 overflow-y-auto pr-1">
+				{#if filteredUploadResults.length === 0}
+					<div
+						class="text-base-content/50 bg-base-200/50 border-base-200 rounded-lg border border-dashed py-8 text-center text-sm"
+					>
+						{t('certificates.noMatches', language.current)}
+					</div>
+				{:else}
+					{#each filteredUploadResults as result}
+						<div
+							class="alert {result.success
+								? 'alert-success/10 border-success/20 text-success-content'
+								: result.isSkipped
+									? 'alert-warning/10 border-warning/20 text-warning-content'
+									: 'alert-error/10 border-error/20 text-error-content'} flex flex-col items-start gap-1 rounded-lg border px-4 py-3 text-xs shadow-sm"
+						>
+							<div class="flex w-full items-center gap-2">
+								<Icon
+									name={result.success ? 'check' : result.isSkipped ? 'warning' : 'error'}
+									class="h-4 w-4 shrink-0 {result.success
+										? 'text-success'
+										: result.isSkipped
+											? 'text-warning'
+											: 'text-error'}"
+								/>
+								<span class="text-base-content truncate font-bold">{result.fileName}</span>
+							</div>
+							{#if result.subject}
+								<div
+									class="text-base-content w-full truncate pl-6 opacity-70"
+									title={result.subject}
+								>
+									{result.subject}
+								</div>
+							{/if}
+							{#if result.errorMessage}
+								<div
+									class="pl-6 font-medium opacity-90 {result.isSkipped
+										? 'text-warning'
+										: 'text-error'}"
+								>
+									{result.errorMessage}
+								</div>
+							{/if}
+						</div>
+					{/each}
+				{/if}
 			</div>
 		</div>
 	{/if}
+	<div class="modal-action">
+		<Button variant="primary" onclick={() => (showResultsModal = false)}>
+			{t('common.close', language.current)}
+		</Button>
+	</div>
 </Modal>

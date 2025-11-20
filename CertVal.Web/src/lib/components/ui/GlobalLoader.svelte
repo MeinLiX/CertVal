@@ -23,7 +23,6 @@
 	transition:fade={{ duration: 500 }}
 >
 	<div class="relative flex flex-col items-center justify-center gap-8">
-		<!-- Shield SVG Animation -->
 		<svg class="h-32 w-32 drop-shadow-[0_0_15px_var(--color-primary)]" viewBox="0 0 100 100">
 			<defs>
 				<linearGradient id="shield-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -32,7 +31,6 @@
 					<stop offset="100%" stop-color="var(--color-primary)" />
 				</linearGradient>
 			</defs>
-			<!-- Background track -->
 			<path
 				d="M50 5 L90 20 V50 C90 75 50 95 50 95 C50 95 10 75 10 50 V20 L50 5 Z"
 				fill="none"
@@ -42,7 +40,6 @@
 				stroke-linejoin="round"
 				class="opacity-30"
 			/>
-			<!-- Animated path -->
 			<path
 				d="M50 5 L90 20 V50 C90 75 50 95 50 95 C50 95 10 75 10 50 V20 L50 5 Z"
 				fill="none"
@@ -54,7 +51,6 @@
 			/>
 		</svg>
 
-		<!-- Loading Text -->
 		<div class="flex flex-col items-center gap-2">
 			<span class="text-primary animate-pulse text-xl font-bold tracking-[0.2em]">
 				{t('common.loading', language.current).replace('...', '').toUpperCase()}

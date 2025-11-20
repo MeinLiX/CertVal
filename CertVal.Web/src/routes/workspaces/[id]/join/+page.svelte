@@ -6,8 +6,8 @@
 	import { t } from '$lib/i18n';
 	import { language } from '$lib/stores/language.svelte';
 	import { auth } from '$lib/stores/auth';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 
 	let message = $state(t('workspaces.join.processing', language.current));
 	let error = $state('');
@@ -76,28 +76,62 @@
 	<title>{t('workspaces.join.title', language.current)}</title>
 </svelte:head>
 
-<div class="hero bg-base-200 min-h-screen">
-	<Card class="w-full max-w-md">
-		<div class="py-12 text-center">
-			<h3 class="text-xl font-semibold">{t('workspaces.join.title', language.current)}</h3>
+<div class="bg-base-200/30 flex min-h-[calc(100vh-10rem)] items-center justify-center p-4">
+	<div class="w-full max-w-md space-y-8">
+		<div
+			class="border-base-content/10 bg-base-100/50 rounded-2xl border p-8 shadow-xl backdrop-blur-sm"
+		>
+			<div class="mb-8 text-center">
+				<h1 class="text-2xl font-bold">{t('workspaces.join.title', language.current)}</h1>
+			</div>
 
 			{#if isLoading}
-				<div class="flex justify-center p-8"><span class="loading loading-spinner"></span></div>
+				<div class="flex flex-col items-center justify-center space-y-4 py-8">
+					<span class="loading loading-spinner loading-lg text-primary"></span>
+					<p class="text-base-content/60 animate-pulse">{message}</p>
+				</div>
 			{:else if error}
-				<p class="text-error mt-4">{error}</p>
-				<Button class="mt-6" onclick={() => goto('/auth/login')}>
-					{t('auth.login.title', language.current)}
-				</Button>
+				<div class="flex flex-col items-center justify-center space-y-4 text-center">
+					<div class="bg-error/10 text-error mb-2 rounded-full p-4">
+						<Icon name="error" class="h-8 w-8" />
+					</div>
+					<p class="text-error font-medium">{error}</p>
+					<Button class="mt-4 w-full" variant="outline" onclick={() => goto('/auth/login')}>
+						<Icon name="leftArrow" class="mr-2 h-4 w-4" />
+						{t('auth.login.title', language.current)}
+					</Button>
+				</div>
 			{:else}
-				<p class="mt-4">{message}</p>
-				<Button class="mt-6" onclick={handleAccept} loading={isLoading}>
-					{#if $auth.isAuthenticated}
-						{t('workspaces.join.acceptButton', language.current)}
-					{:else}
-						{t('workspaces.join.loginToAccept', language.current)}
-					{/if}
-				</Button>
+				<div class="flex flex-col items-center justify-center space-y-6 text-center">
+					<div
+						class="from-primary/10 to-secondary/10 text-primary mb-2 rounded-3xl bg-gradient-to-br p-6"
+					>
+						<Icon name="workspaces" class="h-12 w-12" />
+					</div>
+
+					<p class="text-lg font-medium">
+						{message}
+					</p>
+
+					<div class="w-full pt-4">
+						<Button
+							class="shadow-primary/20 w-full shadow-lg"
+							variant="primary"
+							size="lg"
+							onclick={handleAccept}
+							loading={isLoading}
+						>
+							{#if $auth.isAuthenticated}
+								<Icon name="check" class="mr-2 h-5 w-5" />
+								{t('workspaces.join.acceptButton', language.current)}
+							{:else}
+								<Icon name="user" class="mr-2 h-5 w-5" />
+								{t('workspaces.join.loginToAccept', language.current)}
+							{/if}
+						</Button>
+					</div>
+				</div>
 			{/if}
 		</div>
-	</Card>
+	</div>
 </div>

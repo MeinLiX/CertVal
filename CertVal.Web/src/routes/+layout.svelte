@@ -12,14 +12,12 @@
 	let { children, data } = $props();
 	let isAppLoading = $state(true);
 
-	// Initialize stores
 	$effect(() => {
 		if (data.language) language.set(data.language);
 		if (data.theme) theme.set(data.theme);
 	});
 
 	onMount(() => {
-		// Simulate initial loading to hide layout shifts
 		setTimeout(() => {
 			isAppLoading = false;
 		}, 1000);
