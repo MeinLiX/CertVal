@@ -10,6 +10,8 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
+	import Loader from '$lib/components/ui/Loader.svelte';
 	import type { Certificate } from '$lib/types';
 
 	let certificate = $state<Certificate | null>(null);
@@ -62,7 +64,7 @@
 			await api.delete(`/certificates/${certificateId}`);
 			goto(`/certificates?workspace=${certificate?.workspaceId || ''}`);
 		} catch (err) {
-			// Handle error, e.g., show a toast
+			console.error('Delete failed', err);
 		} finally {
 			isDeleting = false;
 			showDeleteModal = false;
@@ -79,11 +81,10 @@
 				suggestedFileName: certificate.originalFileName
 			});
 			if ('message' in res) {
-				alert(res.message);
+				// alert(res.message);
 			}
 		} catch (err) {
 			console.error('Failed to download certificate:', err);
-			alert('Download failed.');
 		} finally {
 			isDownloading = false;
 			downloadProgress = 0;
@@ -92,112 +93,184 @@
 </script>
 
 <svelte:head>
-	<title>{certificate ? certificate.subject : t('nav.certificates', language.current)}</title>
+	<title
+		>{certificate ? certificate.subject : t('nav.certificates', language.current)} | CertVal</title
+	>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="animate-in fade-in mx-auto max-w-7xl space-y-8 p-6 duration-500">
 	{#if isLoading}
-		<div class="flex h-96 items-center justify-center">
-			<span class="loading loading-lg loading-spinner"></span>
+		<div class="flex h-[60vh] items-center justify-center">
+			<Loader size="lg" variant="glass" />
 		</div>
 	{:else if !certificate}
-		<Card><p class="py-12 text-center">{t('certificates.notFound', language.current)}</p></Card>
-	{:else}
-		<div>
-			<div class="breadcrumbs text-sm">
-				<ul>
-					<li>
-						<a href="/certificates?workspace={certificate.workspaceId}"
-							>{t('nav.certificates', language.current)}</a
-						>
-					</li>
-					<li><span class="max-w-xs truncate">{certificate.subject}</span></li>
-				</ul>
-			</div>
-			<div class="mt-2 flex items-center justify-between">
-				<h1 class="max-w-lg truncate text-2xl font-bold">{certificate.subject}</h1>
-				<div class="flex gap-2">
-					<Button variant="ghost" onclick={handleDownload} loading={isDownloading}>
-						{t('common.download', language.current)}{isDownloading ? ` (${downloadProgress}%)` : ''}
-					</Button>
-					<Button variant="danger" onclick={() => (showDeleteModal = true)}>
-						{t('common.delete', language.current)}
-					</Button>
+		<Card variant="glass" class="border-error/20 bg-error/5">
+			<div class="flex flex-col items-center justify-center py-12 text-center">
+				<div class="bg-error/10 mb-4 rounded-full p-4">
+					<Icon name="security" class="text-error h-12 w-12" />
 				</div>
+				<h2 class="text-error text-xl font-bold">{t('certificates.notFound', language.current)}</h2>
+				<Button variant="ghost" class="mt-4" onclick={() => goto('/certificates')}>
+					<Icon name="leftArrow" class="mr-2 h-4 w-4" />
+					{t('common.back', language.current)}
+				</Button>
+			</div>
+		</Card>
+	{:else}
+		<div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+			<div class="space-y-2">
+				<div class="text-base-content/60 flex items-center gap-2 text-sm">
+					<a
+						href="/certificates?workspace={certificate.workspaceId}"
+						class="hover:text-primary transition-colors"
+					>
+						{t('nav.certificates', language.current)}
+					</a>
+					<span>/</span>
+					<span class="max-w-[200px] truncate">{certificate.subject}</span>
+				</div>
+
+				<div class="flex items-center gap-4">
+					<div>
+						<h1 class="text-3xl font-bold tracking-tight">{certificate.subject}</h1>
+						<p class="text-base-content/60 mt-1 font-mono text-sm">{certificate.thumbprint}</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="flex gap-3">
+				<Button variant="glass" onclick={handleDownload} loading={isDownloading}>
+					<Icon name="download" class="mr-2 h-4 w-4" />
+					{t('common.download', language.current)}
+					{isDownloading ? ` (${downloadProgress}%)` : ''}
+				</Button>
+				<Button
+					variant="danger"
+					class="bg-error/10 hover:bg-error/20 text-error border-error/20"
+					onclick={() => (showDeleteModal = true)}
+				>
+					<Icon name="trash" class="mr-2 h-4 w-4" />
+					{t('common.delete', language.current)}
+				</Button>
 			</div>
 		</div>
 
 		{@const status = getCertificateStatus(certificate.notAfter)}
 		<Card
-			class={`mt-4 ${
+			variant="glass"
+			class={`border-l-4 ${
 				status === 'expired'
-					? 'border-error bg-error/10'
+					? 'border-l-error bg-error/5'
 					: status === 'expiring'
-						? 'border-warning bg-warning/10'
-						: 'border-success bg-success/10'
+						? 'border-l-warning bg-warning/5'
+						: 'border-l-success bg-success/5'
 			}`}
 		>
-			<div class="flex items-center justify-between">
-				<div class="text-lg font-semibold">{t(`certificates.${status}`, language.current)}</div>
-				<div class="text-right">
+			<div class="flex items-center justify-between p-2">
+				<div class="flex items-center gap-4">
+					<div
+						class={`rounded-full p-2 ${
+							status === 'expired'
+								? 'bg-error/10 text-error'
+								: status === 'expiring'
+									? 'bg-warning/10 text-warning'
+									: 'bg-success/10 text-success'
+						}`}
+					>
+						<Icon name="time" class="h-6 w-6" />
+					</div>
 					<div>
-						{t('certificates.expires', language.current)}:
-						<strong>{formatDateTime(certificate.notAfter)}</strong>
+						<div class="text-lg font-semibold">{t(`certificates.${status}`, language.current)}</div>
+						<div class="text-sm opacity-70">
+							{certificate.daysUntilExpiry}
+							{t('certificates.daysRemaining', language.current)}
+						</div>
 					</div>
-					<div class="text-sm opacity-80">
-						{certificate.daysUntilExpiry}
-						{t('certificates.daysRemaining', language.current)}
-					</div>
+				</div>
+				<div class="text-right">
+					<div class="text-sm opacity-60">{t('certificates.expires', language.current)}</div>
+					<div class="font-mono text-lg font-semibold">{formatDateTime(certificate.notAfter)}</div>
 				</div>
 			</div>
 		</Card>
 
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<div class="space-y-6 lg:col-span-2">
-				<Card title={t('certificates.details', language.current)}>
-					<dl class="space-y-4 text-sm">
-						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
-							<dt class="font-semibold opacity-70">{t('certificates.issuer', language.current)}</dt>
-							<dd class="break-all md:col-span-2">{certificate.issuer}</dd>
+				<Card variant="glass" title={t('certificates.details', language.current)}>
+					<div class="grid gap-6 sm:grid-cols-2">
+						<div class="space-y-1">
+							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
+								<Icon name="security" class="h-4 w-4" />
+								{t('certificates.issuer', language.current)}
+							</div>
+							<div class="bg-base-200/30 break-all rounded-lg p-3 text-sm">
+								{certificate.issuer}
+							</div>
 						</div>
-						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
-							<dt class="font-semibold opacity-70">
+
+						<div class="space-y-1">
+							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
+								<Icon name="hash" class="h-4 w-4" />
 								{t('certificates.serialNumber', language.current)}
-							</dt>
-							<dd class="break-all font-mono md:col-span-2">{certificate.serialNumber}</dd>
+							</div>
+							<div class="bg-base-200/30 break-all rounded-lg p-3 font-mono text-sm">
+								{certificate.serialNumber}
+							</div>
 						</div>
-						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
-							<dt class="font-semibold opacity-70">
-								{t('certificates.thumbprint', language.current)} (SHA-1)
-							</dt>
-							<dd class="break-all font-mono md:col-span-2">{certificate.thumbprint}</dd>
+
+						<div class="space-y-1 sm:col-span-2">
+							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
+								<Icon name="key" class="h-4 w-4" />
+								{t('certificates.thumbprint', language.current)}
+							</div>
+							<div class="bg-base-200/30 break-all rounded-lg p-3 font-mono text-sm">
+								{certificate.thumbprint}
+							</div>
 						</div>
-						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
-							<dt class="font-semibold opacity-70">
+
+						<div class="space-y-1">
+							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
+								<Icon name="calendar" class="h-4 w-4" />
 								{t('certificates.validFrom', language.current)}
-							</dt>
-							<dd class="md:col-span-2">{formatDateTime(certificate.notBefore)}</dd>
+							</div>
+							<div class="bg-base-200/30 rounded-lg p-3 text-sm">
+								{formatDateTime(certificate.notBefore)}
+							</div>
 						</div>
-						<div class="grid grid-cols-1 gap-2 md:grid-cols-3">
-							<dt class="font-semibold opacity-70">
+
+						<div class="space-y-1">
+							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
+								<Icon name="calendar" class="h-4 w-4" />
 								{t('certificates.validUntil', language.current)}
-							</dt>
-							<dd class="md:col-span-2">{formatDateTime(certificate.notAfter)}</dd>
+							</div>
+							<div class="bg-base-200/30 rounded-lg p-3 text-sm">
+								{formatDateTime(certificate.notAfter)}
+							</div>
 						</div>
-					</dl>
+					</div>
 				</Card>
 
 				{#if certificate.isBundle && certificate.childCertificates.length > 0}
 					<Card
+						variant="glass"
 						title={`${t('certificates.bundleContents', language.current)} (${certificate.childCertificates.length})`}
 					>
-						<div class="space-y-2">
+						<div class="space-y-3">
 							{#each certificate.childCertificates as child}
-								<div class="border-base-content/10 rounded-lg border p-3">
-									<p class="truncate text-sm font-semibold">{child.subject}</p>
-									<p class="text-xs opacity-60">
-										{t('certificates.expires', language.current)}: {formatDate(child.notAfter)}
-									</p>
+								<div
+									class="border-base-content/5 bg-base-100/30 hover:bg-base-100/50 flex items-center justify-between rounded-xl border p-4 backdrop-blur-sm transition-colors"
+								>
+									<div class="flex items-center gap-3">
+										<div class="bg-primary/10 text-primary rounded-full p-2">
+											<Icon name="document" class="h-4 w-4" />
+										</div>
+										<div>
+											<p class="font-medium">{child.subject}</p>
+											<p class="text-xs opacity-60">
+												{t('certificates.expires', language.current)}: {formatDate(child.notAfter)}
+											</p>
+										</div>
+									</div>
 								</div>
 							{/each}
 						</div>
@@ -206,64 +279,88 @@
 			</div>
 
 			<div class="space-y-6">
-				<Card title={t('certificates.metadata', language.current)}>
-					<dl class="space-y-3 text-sm">
-						<div>
-							<dt class="font-semibold opacity-70">
+				<Card variant="glass" title={t('certificates.metadata', language.current)}>
+					<div class="space-y-4">
+						<div
+							class="border-base-content/5 flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
+						>
+							<div class="flex items-center gap-2 text-sm opacity-70">
+								<Icon name="document" class="h-4 w-4" />
 								{t('certificates.originalFilename', language.current)}
-							</dt>
-							<dd class="break-all">{certificate.originalFileName}</dd>
+							</div>
+							<div
+								class="max-w-[50%] truncate text-sm font-medium"
+								title={certificate.originalFileName}
+							>
+								{certificate.originalFileName}
+							</div>
 						</div>
-						<div>
-							<dt class="font-semibold opacity-70">
+
+						<div
+							class="border-base-content/5 flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
+						>
+							<div class="flex items-center gap-2 text-sm opacity-70">
+								<Icon name="document" class="h-4 w-4" />
 								{t('certificates.fileFormat', language.current)}
-							</dt>
-							<dd>{certificate.fileFormat}</dd>
+							</div>
+							<div class="text-sm font-medium">{certificate.fileFormat}</div>
 						</div>
-						<div>
-							<dt class="font-semibold opacity-70">
+
+						<div
+							class="border-base-content/5 flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
+						>
+							<div class="flex items-center gap-2 text-sm opacity-70">
+								<Icon name="hardDrive" class="h-4 w-4" />
 								{t('certificates.fileSize', language.current)}
-							</dt>
-							<dd>{(certificate.fileSize / 1024).toFixed(2)} KB</dd>
+							</div>
+							<div class="text-sm font-medium">{(certificate.fileSize / 1024).toFixed(2)} KB</div>
 						</div>
-						<div>
-							<dt class="font-semibold opacity-70">
+
+						<div
+							class="border-base-content/5 flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
+						>
+							<div class="flex items-center gap-2 text-sm opacity-70">
+								<Icon name="time" class="h-4 w-4" />
 								{t('certificates.uploadedAt', language.current)}
-							</dt>
-							<dd>{formatDateTime(certificate.createdAt)}</dd>
+							</div>
+							<div class="text-sm font-medium">{formatDateTime(certificate.createdAt)}</div>
 						</div>
-					</dl>
+					</div>
 				</Card>
 
 				{#if certificate.parentCertificateId}
-					<Card title={t('certificates.baseCertificate', language.current)}>
+					<Card variant="glass" title={t('certificates.baseCertificate', language.current)}>
 						{#if parentCertificate}
-							<div class="flex items-center justify-between gap-4 text-sm">
-								<div class="min-w-0">
-									<div class="truncate font-semibold">{parentCertificate.subject}</div>
-									<div class="opacity-70">
-										{t('certificates.expires', language.current)}: {formatDateTime(
-											parentCertificate.notAfter
-										)}
+							<div class="bg-base-100/30 rounded-xl p-4">
+								<div class="mb-3 flex items-start gap-3">
+									<div class="bg-secondary/10 text-secondary rounded-full p-2">
+										<Icon name="security" class="h-4 w-4" />
+									</div>
+									<div class="min-w-0 flex-1">
+										<div class="truncate font-medium">{parentCertificate.subject}</div>
+										<div class="text-xs opacity-70">
+											{t('certificates.expires', language.current)}: {formatDateTime(
+												parentCertificate.notAfter
+											)}
+										</div>
 									</div>
 								</div>
-								<div class="shrink-0">
-									<Button
-										size="sm"
-										onclick={() => {
-											if (parentCertificate?.id) {
-												goto(`/certificates/${parentCertificate.id}`);
-											}
-										}}
-									>
-										{t('common.view', language.current)}
-									</Button>
-								</div>
+								<Button
+									variant="outline"
+									size="sm"
+									class="w-full"
+									onclick={() => {
+										if (parentCertificate?.id) {
+											goto(`/certificates/${parentCertificate.id}`);
+										}
+									}}
+								>
+									{t('common.view', language.current)}
+								</Button>
 							</div>
 						{:else}
-							<div class="flex items-center gap-2 text-sm opacity-70">
-								<span class="loading loading-spinner loading-xs"></span>
-								<span>{t('common.loading', language.current)}</span>
+							<div class="flex items-center justify-center py-8 opacity-50">
+								<Loader size="sm" />
 							</div>
 						{/if}
 					</Card>
@@ -278,8 +375,18 @@
 	title={t('certificates.deleteCertificate', language.current)}
 	onClose={() => (showDeleteModal = false)}
 >
-	<p>{t('certificates.confirmDeleteMessage', language.current)}</p>
-	<div class="modal-action">
+	<div class="space-y-4">
+		<div class="bg-error/10 text-error flex items-center gap-4 rounded-lg p-4">
+			<Icon name="trash" class="h-6 w-6" />
+			<p class="font-medium">{t('certificates.confirmDeleteMessage', language.current)}</p>
+		</div>
+		<p class="text-sm opacity-70">
+			This action cannot be undone. This will permanently delete the certificate
+			<span class="font-mono font-bold">{certificate?.subject}</span> and remove it from our servers.
+		</p>
+	</div>
+
+	<div class="modal-action mt-6">
 		<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}>
 			{t('common.cancel', language.current)}
 		</Button>

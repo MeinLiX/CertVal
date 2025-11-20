@@ -47,15 +47,15 @@
 		'aria-labelledby': ariaLabelledBy,
 		role
 	}: CardProps = $props();
-	const baseClasses = 'card bg-base-100 transition-all duration-300';
+	const baseClasses = 'card bg-base-100 transition-all duration-300 ease-out';
 
 	const variantClasses = $derived(() => {
 		const classes = {
-			default: '',
-			bordered: 'card-bordered border border-base-content/10',
-			glass: 'glass backdrop-blur-sm',
-			compact: 'card-compact',
-			side: 'card-side'
+			default: 'border border-base-200/50',
+			bordered: 'card-bordered border-2 border-base-200',
+			glass: 'glass bg-opacity-60 backdrop-blur-lg border border-white/10 shadow-glass',
+			compact: 'card-compact border border-base-200/50',
+			side: 'card-side border border-base-200/50'
 		};
 		return classes[variant];
 	});
@@ -153,12 +153,12 @@
 			{#if title || subtitle}
 				<div class="card-header-content">
 					{#if title}
-						<h2 id={titleId} class="card-title text-lg font-semibold text-base-content">
+						<h2 id={titleId} class="card-title text-base-content text-lg font-semibold">
 							{title}
 						</h2>
 					{/if}
 					{#if subtitle}
-						<p class="card-subtitle mt-1 text-sm text-base-content/70">
+						<p class="card-subtitle text-base-content/70 mt-1 text-sm">
 							{subtitle}
 						</p>
 					{/if}
@@ -172,7 +172,7 @@
 			{/if}
 
 			{#if actions}
-				<div class="mt-4 card-actions">
+				<div class="card-actions mt-4">
 					{@render actions()}
 				</div>
 			{/if}
@@ -213,12 +213,12 @@
 			{#if title || subtitle}
 				<div class="card-header-content">
 					{#if title}
-						<h2 id={titleId} class="card-title text-lg font-semibold text-base-content">
+						<h2 id={titleId} class="card-title text-base-content text-lg font-semibold">
 							{title}
 						</h2>
 					{/if}
 					{#if subtitle}
-						<p class="card-subtitle mt-1 text-sm text-base-content/70">
+						<p class="card-subtitle text-base-content/70 mt-1 text-sm">
 							{subtitle}
 						</p>
 					{/if}
@@ -232,7 +232,7 @@
 			{/if}
 
 			{#if actions}
-				<div class="mt-4 card-actions">
+				<div class="card-actions mt-4">
 					{@render actions()}
 				</div>
 			{/if}

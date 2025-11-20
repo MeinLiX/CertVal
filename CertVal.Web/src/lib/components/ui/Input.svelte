@@ -101,31 +101,33 @@
 	const errorId = $derived(`${inputId}-error`);
 	const hintId = $derived(`${inputId}-hint`);
 
-	const baseClasses = 'input w-full transition-all duration-200';
+	const baseClasses = 'input w-full transition-all duration-300 ease-out';
 
 	const variantClasses = $derived(() => {
 		const classes = {
-			default: '',
-			bordered: 'input-bordered',
-			ghost: 'input-ghost'
+			default:
+				'bg-base-100 border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20',
+			bordered:
+				'input-bordered border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20',
+			ghost: 'input-ghost hover:bg-base-200/50 focus:bg-base-100'
 		};
 		return classes[variant];
 	});
 
 	const sizeClasses = $derived(() => {
 		const classes = {
-			xs: 'input-xs',
-			sm: 'input-sm',
-			md: 'input-md',
-			lg: 'input-lg',
-			xl: 'input-xl'
+			xs: 'input-xs text-xs h-8',
+			sm: 'input-sm text-sm h-10',
+			md: 'input-md text-base h-12',
+			lg: 'input-lg text-lg h-14',
+			xl: 'input-xl text-xl h-16'
 		};
 		return classes[size];
 	});
 
 	const stateClasses = $derived(() => {
-		if (error) return 'input-error focus:input-error';
-		return 'focus:input-primary focus:border-primary';
+		if (error) return 'input-error focus:ring-error/20';
+		return '';
 	});
 
 	const iconPaddingClasses = $derived(() => {

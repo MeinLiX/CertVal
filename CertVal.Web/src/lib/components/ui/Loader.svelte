@@ -1,6 +1,11 @@
 <script lang="ts">
 	type Size = 'sm' | 'md' | 'lg';
-	let { size = 'md', class: className = '' }: { size?: Size; class?: string } = $props();
+	type Variant = 'default' | 'glass';
+	let {
+		size = 'md',
+		variant = 'default',
+		class: className = ''
+	}: { size?: Size; variant?: Variant; class?: string } = $props();
 
 	const sizeClasses: Record<Size, string> = {
 		sm: 'w-6 h-6',
@@ -16,12 +21,14 @@
 >
 	<!-- Outer Ring -->
 	<div
-		class="border-primary/30 border-t-primary absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full border-2"
+		class="border-primary/30 border-t-primary shadow-primary/10 absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full border-2 shadow-lg"
 	></div>
 	<!-- Middle Ring -->
 	<div
-		class="border-secondary/30 border-b-secondary absolute inset-2 animate-[spin_2s_linear_infinite_reverse] rounded-full border-2"
+		class="border-secondary/30 border-b-secondary shadow-secondary/10 absolute inset-2 animate-[spin_2s_linear_infinite_reverse] rounded-full border-2 shadow-lg"
 	></div>
 	<!-- Inner Core -->
-	<div class="bg-accent/20 absolute inset-4 animate-pulse rounded-full backdrop-blur-sm"></div>
+	<div
+		class="bg-accent/20 shadow-accent/20 absolute inset-4 animate-pulse rounded-full shadow-inner backdrop-blur-sm"
+	></div>
 </div>

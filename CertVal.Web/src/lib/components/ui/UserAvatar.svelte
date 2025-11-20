@@ -19,7 +19,9 @@
 </script>
 
 <div class="avatar avatar-placeholder {className}">
-	<div class="bg-neutral text-neutral-content {size} rounded-full">
+	<div
+		class="from-neutral to-neutral/80 text-neutral-content ring-base-100 bg-gradient-to-br shadow-lg ring-2 {size} rounded-full"
+	>
 		<span class={textSize}>{initials}</span>
 	</div>
 </div>

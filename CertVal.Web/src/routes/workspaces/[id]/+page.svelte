@@ -7,7 +7,6 @@
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import { formatDate, getCertificateStatus } from '$lib/utils/date';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -21,6 +20,7 @@
 		TransferOwnershipRequest
 	} from '$lib/types';
 	import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
+	import Icon from '$lib/components/ui/Icon.svelte';
 
 	let workspace = $state<Workspace | null>(null);
 	let certificates = $state<Certificate[]>([]);
@@ -194,180 +194,260 @@
 	>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 	{#if isLoading}
-		<div class="flex h-96 items-center justify-center">
-			<span class="loading loading-lg loading-spinner"></span>
+		<div class="grid grid-cols-1 gap-4">
+			<div class="skeleton h-32 w-full rounded-xl bg-base-200/50"></div>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+				{#each { length: 4 } as _}
+					<div class="skeleton h-24 w-full rounded-xl bg-base-200/50"></div>
+				{/each}
+			</div>
 		</div>
 	{:else if !workspace}
-		<Card>
-			<div class="py-12 text-center">
-				<h3 class="text-xl font-semibold">{t('workspaces.notFound', language.current)}</h3>
-				<p class="text-base-content/60 mt-2">
-					{errors.load || t('workspaces.loadError', language.current)}
-				</p>
-				<Button class="mt-6" onclick={() => goto('/workspaces')}
-					>{t('workspaces.back', language.current)}</Button
-				>
+		<div class="flex flex-col items-center justify-center py-20 text-center bg-base-100/30 rounded-3xl border border-base-content/5 backdrop-blur-sm">
+			<div class="bg-base-200/50 p-6 rounded-full mb-6">
+				<Icon name="error" class="w-16 h-16 text-base-content/20" />
 			</div>
-		</Card>
+			<h3 class="text-xl font-bold mb-2">{t('workspaces.notFound', language.current)}</h3>
+			<p class="text-base-content/60 max-w-md mb-8">
+				{errors.load || t('workspaces.loadError', language.current)}
+			</p>
+			<Button onclick={() => goto('/workspaces')} variant="outline" class="shadow-sm">
+				<Icon name="leftArrow" class="w-4 h-4 mr-2" />
+				{t('workspaces.back', language.current)}
+			</Button>
+		</div>
 	{:else}
-		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-			<div>
-				<div class="breadcrumbs text-sm">
+		<div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between border-b border-base-content/10 pb-8">
+			<div class="space-y-4">
+				<div class="breadcrumbs text-sm text-base-content/60">
 					<ul>
 						<li>
-							<a href="/workspaces" class="link hover:link-primary"
-								>{t('nav.workspaces', language.current)}</a
-							>
+							<a href="/workspaces" class="hover:text-primary transition-colors flex items-center gap-1">
+								<Icon name="workspaces" class="w-4 h-4" />
+								{t('nav.workspaces', language.current)}
+							</a>
 						</li>
-						<li><span class="font-semibold">{workspace.name}</span></li>
+						<li><span class="font-medium text-base-content">{workspace.name}</span></li>
 					</ul>
 				</div>
-				<h1 class="mt-2 text-3xl font-bold">{workspace.name}</h1>
-				<p class="text-base-content/70 mt-1">{workspace.description}</p>
+				<div>
+					<h1 class="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+						{workspace.name}
+					</h1>
+					<p class="text-lg text-base-content/60 mt-2 font-light max-w-2xl">{workspace.description}</p>
+				</div>
 			</div>
-			<div class="flex gap-2">
-				<Button variant="ghost" onclick={() => goto(`/certificates?workspace=${workspaceId}`)}
-					>{t('workspaces.viewCertificates', language.current)}</Button
-				>
-				<Button onclick={() => goto(`/notifications?workspace=${workspaceId}`)}
-					>{t('workspaces.manageNotifications', language.current)}</Button
-				>
+			<div class="flex flex-wrap gap-3">
+				<Button variant="outline" class="shadow-sm bg-base-100/50 backdrop-blur-sm" onclick={() => goto(`/certificates?workspace=${workspaceId}`)}>
+					<Icon name="certificates" class="w-4 h-4 mr-2" />
+					{t('workspaces.viewCertificates', language.current)}
+				</Button>
+				<Button variant="outline" class="shadow-sm bg-base-100/50 backdrop-blur-sm" onclick={() => goto(`/notifications?workspace=${workspaceId}`)}>
+					<Icon name="notifications" class="w-4 h-4 mr-2" />
+					{t('workspaces.manageNotifications', language.current)}
+				</Button>
 			</div>
 		</div>
 
-		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
-			<Card
-				><div class="stat">
-					<div class="stat-title">{t('nav.certificates', language.current)}</div>
-					<div class="stat-value">{workspace.certificateCount} / {workspace.maxCertificates}</div>
-				</div></Card
-			>
-			<Card
-				><div class="stat">
-					<div class="stat-title">{t('common.members', language.current)}</div>
-					<div class="stat-value">{workspace.memberCount}</div>
-				</div></Card
-			>
-			<Card
-				><div class="stat">
-					<div class="stat-title">{t('common.owner', language.current)}</div>
-					<div class="stat-value truncate text-lg">
-						{members.find((m) => m.role === 'Owner')?.user.fullName || 'N/A'}
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-primary/20">
+				<div class="flex items-center gap-4">
+					<div class="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content transition-colors">
+						<Icon name="certificates" class="w-6 h-6" />
 					</div>
-				</div></Card
-			>
-			<Card
-				><div class="stat">
-					<div class="stat-title">{t('common.created', language.current)}</div>
-					<div class="stat-value text-lg">{formatDate(workspace.createdAt)}</div>
-				</div></Card
-			>
+					<div>
+						<p class="text-sm font-medium text-base-content/60">{t('nav.certificates', language.current)}</p>
+						<p class="text-2xl font-bold mt-1">{workspace.certificateCount} <span class="text-sm text-base-content/40 font-normal">/ {workspace.maxCertificates}</span></p>
+					</div>
+				</div>
+			</div>
+
+			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-secondary/20">
+				<div class="flex items-center gap-4">
+					<div class="p-3 rounded-xl bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-content transition-colors">
+						<Icon name="members" class="w-6 h-6" />
+					</div>
+					<div>
+						<p class="text-sm font-medium text-base-content/60">{t('common.members', language.current)}</p>
+						<p class="text-2xl font-bold mt-1">{workspace.memberCount}</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-accent/20">
+				<div class="flex items-center gap-4">
+					<div class="p-3 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-content transition-colors">
+						<Icon name="user" class="w-6 h-6" />
+					</div>
+					<div>
+						<p class="text-sm font-medium text-base-content/60">{t('common.owner', language.current)}</p>
+						<p class="text-lg font-bold mt-1 truncate max-w-[120px]" title={members.find((m) => m.role === 'Owner')?.user.fullName}>
+							{members.find((m) => m.role === 'Owner')?.user.fullName || 'N/A'}
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-info/20">
+				<div class="flex items-center gap-4">
+					<div class="p-3 rounded-xl bg-info/10 text-info group-hover:bg-info group-hover:text-info-content transition-colors">
+						<Icon name="calendar" class="w-6 h-6" />
+					</div>
+					<div>
+						<p class="text-sm font-medium text-base-content/60">{t('common.created', language.current)}</p>
+						<p class="text-lg font-bold mt-1">{formatDate(workspace.createdAt)}</p>
+					</div>
+				</div>
+			</div>
 		</div>
 
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+		<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 			<div class="space-y-6 lg:col-span-2">
-				<Card title={t('workspaces.expiringSoon', language.current)}>
+				<div class="rounded-2xl border border-base-content/10 bg-base-100/50 p-6 backdrop-blur-sm">
+					<div class="flex items-center justify-between mb-6">
+						<h3 class="text-xl font-bold flex items-center gap-2">
+							<div class="p-2 rounded-lg bg-warning/10 text-warning">
+								<Icon name="time" class="w-5 h-5" />
+							</div>
+							{t('workspaces.expiringSoon', language.current)}
+						</h3>
+						{#if certificates.length > 0}
+							<Button size="sm" variant="ghost" onclick={() => goto(`/certificates?workspace=${workspaceId}&status=Expiring`)}>
+								{t('common.viewAll', language.current)}
+								<Icon name="rightArrow" class="w-4 h-4 ml-1" />
+							</Button>
+						{/if}
+					</div>
+
 					{#if certificates.length > 0}
 						<div class="overflow-x-auto">
-							<table class="table-sm table">
+							<table class="table w-full">
+								<thead>
+									<tr class="border-b border-base-content/10 text-base-content/60">
+										<th class="bg-transparent font-medium">{t('common.name', language.current)}</th>
+										<th class="bg-transparent font-medium">{t('certificates.expiresIn', language.current)}</th>
+										<th class="bg-transparent font-medium">{t('common.status', language.current)}</th>
+									</tr>
+								</thead>
 								<tbody>
 									{#each certificates as cert}
-										<tr>
-											<td
-												><a
-													href="/certificates/{cert.id}"
-													class="link link-hover block max-w-md truncate font-semibold"
-													>{cert.subject}</a
-												></td
-											>
-											<td
-												>{formatDate(cert.notAfter)} ({cert.daysUntilExpiry}
-												{t('certificates.days', language.current)})</td
-											>
-											<td
-												><span class="badge badge-sm badge-warning"
-													>{t(
-														`certificates.${getCertificateStatus(cert.notAfter)}`,
-														language.current
-													)}</span
-												></td
-											>
+										<tr class="border-b border-base-content/5 hover:bg-base-content/5 transition-colors group cursor-pointer" onclick={() => goto(`/certificates/${cert.id}`)}>
+											<td class="font-medium">
+												<div class="flex items-center gap-3">
+													<div class="p-2 rounded-lg bg-base-200 text-base-content/70 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+														<Icon name="document" class="w-4 h-4" />
+													</div>
+													<span class="truncate max-w-[200px]">{cert.subject}</span>
+												</div>
+											</td>
+											<td class="text-base-content/70">
+												{formatDate(cert.notAfter)} 
+												<span class="text-xs opacity-60 ml-1">({cert.daysUntilExpiry} {t('certificates.days', language.current)})</span>
+											</td>
+											<td>
+												<span class="badge badge-sm badge-warning gap-1 shadow-sm">
+													<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+													{t(`certificates.${getCertificateStatus(cert.notAfter)}`, language.current)}
+												</span>
+											</td>
 										</tr>
 									{/each}
 								</tbody>
 							</table>
 						</div>
 					{:else}
-						<p class="text-base-content/70 py-4 text-center text-sm">
-							{t('workspaces.noExpiringCertificates', language.current)}
-						</p>
+						<div class="flex flex-col items-center justify-center py-12 text-center">
+							<div class="bg-base-200/50 p-4 rounded-full mb-4">
+								<Icon name="checkCircle" class="w-8 h-8 text-success" />
+							</div>
+							<p class="text-base-content/70 font-medium">
+								{t('workspaces.noExpiringCertificates', language.current)}
+							</p>
+						</div>
 					{/if}
-				</Card>
+				</div>
 			</div>
 
-			<div class="space-y-6">
-				<Card title={t('common.members', language.current)}>
-					<div class="space-y-2">
+			<div class="space-y-8">
+				<div class="rounded-2xl border border-base-content/10 bg-base-100/50 p-6 backdrop-blur-sm">
+					<div class="flex items-center justify-between mb-6">
+						<h3 class="text-xl font-bold flex items-center gap-2">
+							<div class="p-2 rounded-lg bg-secondary/10 text-secondary">
+								<Icon name="members" class="w-5 h-5" />
+							</div>
+							{t('common.members', language.current)}
+						</h3>
+						<span class="badge badge-ghost">{members.length}</span>
+					</div>
+
+					<div class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
 						{#each members as member}
 							{@const statusInfo = getStatusBadge(member.status)}
-							<div class="flex items-center justify-between">
+							<div class="flex items-center justify-between p-3 rounded-xl bg-base-100/50 border border-base-content/5 hover:border-base-content/20 transition-all">
 								<div class="flex items-center gap-3">
 									<UserAvatar
 										firstName={member.user.firstName}
 										lastName={member.user.lastName}
 										size="w-10"
-										textSize="text-1xl"
+										textSize="text-sm"
 									/>
-									<div>
-										<div class="font-bold">{member.user.fullName}</div>
-										<div class="text-xs opacity-50">{member.user.email}</div>
+									<div class="min-w-0">
+										<div class="font-bold text-sm truncate max-w-[120px]">{member.user.fullName}</div>
+										<div class="text-xs text-base-content/60 truncate max-w-[120px]">{member.user.email}</div>
 									</div>
 								</div>
-								<div class="flex items-center gap-2">
-									<span class="badge {statusInfo.class} badge-sm">{statusInfo.text}</span>
-									<span class="badge {getRoleBadgeClass(member.role)} badge-sm">
+								<div class="flex flex-col items-end gap-1">
+									<span class="badge {getRoleBadgeClass(member.role)} badge-xs font-medium">
 										{t(`workspaces.roles.${member.role.toLowerCase()}`, language.current)}
 									</span>
 									{#if canManage && member.role !== 'Owner'}
-										<Button
-											size="xs"
-											variant="ghost"
+										<button
+											class="text-xs text-error hover:underline flex items-center gap-1 mt-1"
 											onclick={() => {
 												memberToRemove = member;
 												showRemoveMemberModal = true;
-											}}>✕</Button
+											}}
 										>
+											{t('common.delete', language.current)}
+										</button>
 									{/if}
 								</div>
 							</div>
 						{/each}
 					</div>
+					
 					{#if canManage && workspace.allowMemberInvites}
-						<div class="card-actions mt-4">
-							<Button class="w-full" variant="ghost" onclick={() => (showInviteModal = true)}
-								>{t('workspaces.inviteMember', language.current)}</Button
-							>
+						<div class="mt-6 pt-6 border-t border-base-content/10">
+							<Button class="w-full shadow-sm" variant="outline" onclick={() => (showInviteModal = true)}>
+								<Icon name="plus" class="w-4 h-4 mr-2" />
+								{t('workspaces.inviteMember', language.current)}
+							</Button>
 						</div>
 					{/if}
-				</Card>
+				</div>
 
 				{#if currentUserMember?.role === 'Owner'}
-					<Card class="border-error">
-						<h3 class="card-title text-error">{t('workspaces.dangerZone', language.current)}</h3>
-						<p class="text-base-content/70 text-sm">
+					<div class="rounded-2xl border border-error/20 bg-error/5 p-6 backdrop-blur-sm">
+						<h3 class="text-lg font-bold text-error flex items-center gap-2 mb-2">
+							<Icon name="warning" class="w-5 h-5" />
+							{t('workspaces.dangerZone', language.current)}
+						</h3>
+						<p class="text-sm text-base-content/70 mb-6">
 							{t('workspaces.dangerZoneWarning', language.current)}
 						</p>
-						<div class="card-actions mt-4 justify-end gap-2">
-							<Button variant="warning" onclick={() => (showTransferModal = true)}
-								>{t('workspaces.transferOwnership', language.current)}</Button
-							>
-							<Button variant="danger" onclick={() => (showDeleteModal = true)}
-								>{t('workspaces.deleteWorkspace', language.current)}</Button
-							>
+						<div class="flex flex-col gap-3">
+							<Button variant="warning" class="w-full justify-start bg-warning/10 hover:bg-warning/20 border-warning/20 text-warning-content" onclick={() => (showTransferModal = true)}>
+								<Icon name="user" class="w-4 h-4 mr-2" />
+								{t('workspaces.transferOwnership', language.current)}
+							</Button>
+							<Button variant="danger" class="w-full justify-start shadow-lg shadow-error/10" onclick={() => (showDeleteModal = true)}>
+								<Icon name="trash" class="w-4 h-4 mr-2" />
+								{t('workspaces.deleteWorkspace', language.current)}
+							</Button>
 						</div>
-					</Card>
+					</div>
 				{/if}
 			</div>
 		</div>

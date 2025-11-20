@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
+	import Button from './Button.svelte';
 	import { t } from '$lib/i18n';
 	import { language } from '$lib/stores/language.svelte';
 	let {
@@ -36,15 +37,12 @@
 			{t('common.confirmDeleteMessage', language.current, { name: itemName })}
 		</p>
 		<div class="flex justify-end gap-2">
-			<button class="btn btn-ghost" onclick={onClose} disabled={isProcessing}
-				>{t('common.cancel')}</button
-			>
-			<button class="btn btn-error" onclick={handleConfirm} disabled={isProcessing}>
-				{#if isProcessing}
-					<span class="loading loading-sm loading-spinner mr-2"></span>
-				{/if}
+			<Button variant="ghost" onclick={onClose} disabled={isProcessing}>
+				{t('common.cancel')}
+			</Button>
+			<Button variant="error" onclick={handleConfirm} loading={isProcessing}>
 				{t('common.delete')}
-			</button>
+			</Button>
 		</div>
 	</div>
 </Modal>

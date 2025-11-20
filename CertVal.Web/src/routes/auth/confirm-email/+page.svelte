@@ -6,6 +6,7 @@
 	import { t } from '$lib/i18n';
 	import { language } from '$lib/stores/language.svelte';
 	import { auth } from '$lib/stores/auth';
+	import { userSession } from '$lib/stores/userSession.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import type { LoginResponse } from '$lib/types';
 
@@ -30,6 +31,7 @@
 				isLoggingIn = true;
 
 				auth.login(response.data.token, response.data.user);
+				userSession.login(response.data.token, response.data.user);
 
 				setTimeout(() => {
 					goto('/dashboard');
