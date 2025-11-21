@@ -6,8 +6,8 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import { fade } from 'svelte/transition';
 
-	const languages: { code: Language; label: string; flag: string }[] = [
-		{ code: 'uk', label: 'Українська', flag: '🇺🇦' },
+	const languages: { code: Language; label: string; flag: string; beta?: boolean }[] = [
+		{ code: 'uk', label: 'Українська', flag: '🇺🇦', beta: true },
 		{ code: 'en', label: 'English', flag: '🇺🇸' }
 	];
 	const themes: { value: Theme; label: string; icon: string }[] = [
@@ -110,6 +110,9 @@
 						>
 							<span class="text-lg">{lang.flag}</span>
 							{lang.label}
+							{#if lang.beta}
+								<span class="badge badge-xs badge-warning text-[0.6rem] px-1 h-4 min-h-0 font-bold">BETA</span>
+							{/if}
 							{#if language.current === lang.code}
 								<div
 									class="bg-primary ml-auto h-2 w-2 rounded-full shadow-[0_0_8px_rgba(var(--p))]"
