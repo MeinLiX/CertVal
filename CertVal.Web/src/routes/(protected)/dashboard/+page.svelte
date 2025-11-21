@@ -214,19 +214,19 @@
 				<Card variant="glass" class="space-y-2">
 					<button
 						class="hover:bg-base-content/5 group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
-						onclick={() => goto('/certificates/import')}
+						onclick={() => goto('/certificates?action=upload')}
 					>
 						<div
 							class="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content rounded-lg p-2 transition-colors"
 						>
 							<Icon name="upload" class="h-5 w-5" />
 						</div>
-						<span class="font-medium">{t('certificates.import', language.current)}</span>
+						<span class="font-medium">{t('certificates.upload', language.current)}</span>
 					</button>
 
 					<button
 						class="hover:bg-base-content/5 group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
-						onclick={() => goto('/workspaces/create')}
+						onclick={() => goto('/workspaces?action=create')}
 					>
 						<div
 							class="bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-content rounded-lg p-2 transition-colors"

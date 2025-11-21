@@ -83,6 +83,18 @@
 	$effect(() => {
 		if (isMounted) {
 			loadCertificates();
+
+			const action = page.url.searchParams.get('action');
+			if (action === 'upload') {
+				if (filters.workspaceId) {
+					uploadForm.workspaceId = filters.workspaceId;
+				}
+				showUploadModal = true;
+				
+				const newUrl = new URL(window.location.href);
+				newUrl.searchParams.delete('action');
+				goto(newUrl.toString(), { replaceState: true, keepFocus: true, noScroll: true });
+			}
 		}
 	});
 
@@ -154,7 +166,12 @@
 				showResultsModal = true;
 				activeResultTab = 'success';
 				resultSearchQuery = '';
-				loadCertificates();
+
+				if (uploadResults.successCount > 0 && uploadForm.workspaceId !== filters.workspaceId) {
+					updateParams({ workspace: uploadForm.workspaceId, page: 1 });
+				} else {
+					loadCertificates();
+				}
 			} else if (response.message) {
 				errors.general = response.message;
 			}
@@ -196,7 +213,10 @@
 				variant="primary"
 				size="md"
 				class="shadow-primary/20 hover:shadow-primary/40 whitespace-nowrap shadow-lg transition-all"
-				onclick={() => (showUploadModal = true)}
+				onclick={() => {
+					if (filters.workspaceId) uploadForm.workspaceId = filters.workspaceId;
+					showUploadModal = true;
+				}}
 			>
 				<Icon name="upload" class="mr-2 h-5 w-5" />
 				{t('certificates.upload', language.current)}
@@ -267,7 +287,10 @@
 			<p class="text-base-content/60 mb-8 max-w-md">
 				{t('certificates.empty.description', language.current)}
 			</p>
-			<Button variant="outline" onclick={() => (showUploadModal = true)}>
+			<Button variant="outline" onclick={() => {
+				if (filters.workspaceId) uploadForm.workspaceId = filters.workspaceId;
+				showUploadModal = true;
+			}}>
 				{t('certificates.upload', language.current)}
 			</Button>
 		</div>
