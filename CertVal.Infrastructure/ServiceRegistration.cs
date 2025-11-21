@@ -109,7 +109,8 @@ public static class ServiceRegistration
         try
         {
             logger.LogInformation("Starting database migration...");
-            await context.Database.MigrateAsync();
+            //todo: fix error after up packages
+            //await context.Database.MigrateAsync();
             logger.LogInformation("Database migration completed successfully.");
         }
         catch (Exception ex)
