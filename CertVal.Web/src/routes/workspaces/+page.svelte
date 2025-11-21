@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { userSession } from '$lib/stores/userSession.svelte';
 	import { WorkspaceService } from '$lib/services/WorkspaceService';
 	import { language } from '$lib/stores/language.svelte';
@@ -41,6 +42,17 @@
 			return;
 		}
 		await loadWorkspaces();
+	});
+
+	$effect(() => {
+		const action = page.url.searchParams.get('action');
+		if (action === 'create') {
+			openCreateModal();
+			
+			const newUrl = new URL(window.location.href);
+			newUrl.searchParams.delete('action');
+			goto(newUrl.toString(), { replaceState: true, keepFocus: true, noScroll: true });
+		}
 	});
 
 	async function loadWorkspaces() {
