@@ -5,7 +5,7 @@
 	import { language } from '$lib/stores/language.svelte';
 	import { DashboardService } from '$lib/services/DashboardService';
 	import { t } from '$lib/i18n';
-	import { formatDate } from '$lib/utils/date';
+	import { formatDate, formatDateWithWeekday } from '$lib/utils/date';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -62,12 +62,7 @@
 			</h1>
 			<p class="text-base-content/60 mt-2 flex items-center gap-2 text-lg font-light">
 				<Icon name="calendar" class="h-5 w-5" />
-				{new Date().toLocaleDateString(language.current === 'uk' ? 'uk-UA' : 'en-US', {
-					weekday: 'long',
-					year: 'numeric',
-					month: 'long',
-					day: 'numeric'
-				})}
+				{formatDateWithWeekday(new Date())}
 			</p>
 		</div>
 		<div class="flex gap-3">
@@ -200,7 +195,7 @@
 											{cert.subject}
 										</h4>
 										<p class="text-base-content/60 truncate text-sm">
-											{t('common.expires', language.current)}: {formatDate(cert.notAfter)}
+											{t('certificates.expires', language.current)}: {formatDate(cert.notAfter)}
 										</p>
 									</div>
 									<div class="badge badge-warning gap-1">
