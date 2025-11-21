@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { auth } from '$lib/stores/auth';
+	import { userSession } from '$lib/stores/userSession.svelte';
 	import AuthBackground from '$lib/components/three/AuthBackground.svelte';
 
 	let { children } = $props();
 
 	$effect(() => {
-		if ($auth.isAuthenticated && !page.url.pathname.includes('/auth/confirm-email')) {
+		if (userSession.isAuthenticated && !page.url.pathname.includes('/auth/confirm-email')) {
 			goto('/dashboard');
 		}
 	});

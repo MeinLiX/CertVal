@@ -13,23 +13,12 @@
 	let email = $state('');
 	let password = $state('');
 	let loading = $state(false);
-	let googleLoaded = $state(false);
 	let error = $state<string | null>(null);
-
-	onMount(() => {
-		if (window.google) {
-			googleLoaded = true;
-		}
-	});
 
 	$effect(() => {
 		authUiState.isTyping = email.length > 0 || password.length > 0;
 		authUiState.isValid = email.includes('@') && password.length >= 6;
 	});
-
-	function handleGoogleLoad() {
-		googleLoaded = true;
-	}
 
 	async function handleGoogleSuccess(token: string) {
 		loading = true;
@@ -72,11 +61,7 @@
 	}
 </script>
 
-{#if !googleLoaded}
-	<GlobalLoader />
-{/if}
-
-<div class="w-full max-w-md" class:invisible={!googleLoaded} data-test-id="login-page">
+<div class="w-full max-w-md" data-test-id="login-page">
 	<div
 		class="card bg-base-100/20 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
 	>
@@ -150,11 +135,7 @@
 				{t('auth.login.orContinueWith', language.current)}
 			</div>
 
-			<GoogleSignInButton
-				onSuccess={handleGoogleSuccess}
-				onError={handleGoogleError}
-				onLoad={handleGoogleLoad}
-			/>
+			<GoogleSignInButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
 
 			<div class="mt-4 text-center text-sm">
 				<span class="text-base-content/60">{t('auth.login.noAccount', language.current)}</span>

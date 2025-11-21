@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { language } from '$lib/stores/language.svelte';
 	import { t } from '$lib/i18n';
+	import Loader from '$lib/components/ui/Loader.svelte';
 
 	let {
 		onSuccess,
@@ -15,6 +16,7 @@
 	}>();
 
 	let container = $state<HTMLDivElement>();
+	let isLoading = $state(true);
 
 	$effect(() => {
 		loadGoogleScript(language.current);
@@ -49,6 +51,7 @@
 		};
 		script.onerror = () => {
 			if (onLoad) onLoad();
+			isLoading = false;
 		};
 		document.head.appendChild(script);
 	}
@@ -58,6 +61,7 @@
 		if (!clientId) {
 			onError(t('errors.googleClientIdMissing', language.current));
 			if (onLoad) onLoad();
+			isLoading = false;
 			return;
 		}
 
@@ -85,9 +89,11 @@
 			});
 
 			if (onLoad) onLoad();
+			isLoading = false;
 		} catch (e) {
 			console.error('Google Sign-In initialization error:', e);
 			if (onLoad) onLoad();
+			isLoading = false;
 		}
 	}
 
@@ -100,4 +106,9 @@
 	}
 </script>
 
-<div bind:this={container} class="w-full" data-test-id={testId}></div>
+<div class="flex min-h-[40px] w-full flex-col items-center justify-center" data-test-id={testId}>
+	{#if isLoading}
+		<Loader size="sm" />
+	{/if}
+	<div bind:this={container} class:hidden={isLoading}></div>
+</div>
