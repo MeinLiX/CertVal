@@ -12,26 +12,26 @@ public sealed class RabbitMqHealthCheck : IHealthCheck
         _connection = connection;
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
         {
             if (_connection is null)
             {
-                return Task.FromResult(HealthCheckResult.Unhealthy("RabbitMQ connection is not available"));
+                return HealthCheckResult.Unhealthy("RabbitMQ connection is not available");
             }
 
             if (!_connection.IsOpen)
             {
-                return Task.FromResult(HealthCheckResult.Unhealthy("RabbitMQ connection is closed"));
+                return HealthCheckResult.Unhealthy("RabbitMQ connection is closed");
             }
 
-            using var model = _connection.CreateModel();
-            return Task.FromResult(HealthCheckResult.Healthy("RabbitMQ connection is healthy"));
+            await using var channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
+            return HealthCheckResult.Healthy("RabbitMQ connection is healthy");
         }
         catch (Exception ex)
         {
-            return Task.FromResult(HealthCheckResult.Unhealthy("RabbitMQ health check failed", ex));
+            return HealthCheckResult.Unhealthy("RabbitMQ health check failed", ex);
         }
     }
 }

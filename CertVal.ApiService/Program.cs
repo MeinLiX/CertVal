@@ -1,15 +1,16 @@
+using CertVal.ApiService;
 using CertVal.Application;
 using CertVal.Application.Common.Interfaces;
+using CertVal.Application.Middleware;
 using CertVal.Application.Services;
 using CertVal.Infrastructure;
 using CertVal.Infrastructure.Authentication;
 using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Services;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using System.Text.Json;
-using CertVal.Application.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +47,9 @@ builder.Services.AddOpenApi("v1", options =>
         };
 
         document.Components ??= new();
-        document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>
+
+        //todo: fix error after up packages
+        /*document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>
         {
             ["Bearer"] = new()
             {
@@ -75,7 +78,7 @@ builder.Services.AddOpenApi("v1", options =>
                 [new OpenApiSecurityScheme { Reference = new() { Type = ReferenceType.SecurityScheme, Id = "ApiKey" } }] = []
             }
         };
-
+        */
         return Task.CompletedTask;
     });
 });
@@ -140,7 +143,6 @@ app.MapScalarApiReference(options =>
 {
     options.WithTitle("CertVal API Documentation");
     options.WithTheme(ScalarTheme.Default);
-    options.WithDarkMode(false);
     options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
     options.Servers = Array.Empty<ScalarServer>();
 });
