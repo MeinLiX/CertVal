@@ -2,13 +2,18 @@ import { browser } from '$app/environment';
 import type { Language } from '$lib/types';
 
 class LanguageStore {
-    current = $state<Language>('uk');
+    current = $state<Language>('en');
 
     constructor() {
         if (browser) {
             const saved = localStorage.getItem('language') as Language;
             if (saved && (saved === 'uk' || saved === 'en')) {
                 this.current = saved;
+            } else {
+                const browserLang = navigator.language.toLowerCase();
+                if (browserLang.startsWith('uk')) {
+                    this.current = 'uk';
+                }
             }
         }
     }
