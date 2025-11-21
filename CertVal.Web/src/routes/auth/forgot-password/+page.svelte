@@ -3,7 +3,6 @@
 	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Input from '$lib/components/ui/Input.svelte';
 	import FloatingInput from '$lib/components/ui/FloatingInput.svelte';
 	import { goto } from '$app/navigation';
 
@@ -35,6 +34,7 @@
 
 <div
 	class="card bg-base-100/20 w-full max-w-md shrink-0 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
+	data-test-id="forgot-password-card"
 >
 	<form class="card-body gap-6 p-8" onsubmit={handleSubmit}>
 		<div class="mb-2 text-center">
@@ -66,10 +66,17 @@
 			type="email"
 			bind:value={email}
 			required
+			data-test-id="forgot-password-email-input"
 		/>
 
 		<div class="form-control mt-2">
-			<Button type="submit" variant="primary" loading={isLoading} class="w-full">
+			<Button
+				type="submit"
+				variant="primary"
+				loading={isLoading}
+				class="w-full"
+				data-test-id="forgot-password-submit-button"
+			>
 				{t('auth.forgot.submit', language.current)}
 			</Button>
 		</div>
@@ -81,6 +88,7 @@
 				type="button"
 				onclick={() => goto('/auth/login')}
 				class="link link-primary font-semibold no-underline hover:underline"
+				data-test-id="forgot-password-back-button"
 			>
 				{t('auth.forgot.backToLogin', language.current)}
 			</button>

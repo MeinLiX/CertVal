@@ -43,7 +43,10 @@
 	<title>{t('profile.title', language.current)} - CertVal</title>
 </svelte:head>
 
-<div class="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-5xl space-y-8 duration-500">
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-5xl space-y-8 duration-500"
+	data-test-id="profile-page"
+>
 	<div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
 		<div>
 			<h1
@@ -55,7 +58,12 @@
 				{t('profile.subtitle', language.current)}
 			</p>
 		</div>
-		<Button onclick={() => goto('/profile/settings/personal')} variant="outline" class="shadow-sm">
+		<Button
+			onclick={() => goto('/profile/settings/personal')}
+			variant="outline"
+			class="shadow-sm"
+			data-test-id="edit-profile-button"
+		>
 			<Icon name="settings" class="mr-2 h-4 w-4" />
 			{t('profile.editProfile', language.current)}
 		</Button>
@@ -67,7 +75,11 @@
 				<Loader size="lg" />
 			</div>
 		{:else if user}
-			<Card variant="glass" class="border-primary/10 relative overflow-hidden">
+			<Card
+				variant="glass"
+				class="border-primary/10 relative overflow-hidden"
+				data-test-id="profile-card"
+			>
 				<div
 					class="bg-primary/5 pointer-events-none absolute right-0 top-0 -mr-32 -mt-32 h-64 w-64 rounded-full blur-3xl"
 				></div>

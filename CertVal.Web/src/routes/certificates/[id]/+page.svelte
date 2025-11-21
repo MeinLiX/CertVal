@@ -98,7 +98,10 @@
 	>
 </svelte:head>
 
-<div class="animate-in fade-in mx-auto max-w-7xl space-y-8 p-6 duration-500">
+<div
+	class="animate-in fade-in mx-auto max-w-7xl space-y-8 p-6 duration-500"
+	data-test-id="certificate-details-page"
+>
 	{#if isLoading}
 		<div class="flex h-[60vh] items-center justify-center">
 			<Loader size="lg" variant="glass" />
@@ -110,7 +113,12 @@
 					<Icon name="security" class="text-error h-12 w-12" />
 				</div>
 				<h2 class="text-error text-xl font-bold">{t('certificates.notFound', language.current)}</h2>
-				<Button variant="ghost" class="mt-4" onclick={() => goto('/certificates')}>
+				<Button
+					variant="ghost"
+					class="mt-4"
+					onclick={() => goto('/certificates')}
+					data-test-id="cert-details-back-button"
+				>
 					<Icon name="leftArrow" class="mr-2 h-4 w-4" />
 					{t('common.back', language.current)}
 				</Button>
@@ -139,7 +147,12 @@
 			</div>
 
 			<div class="flex gap-3">
-				<Button variant="glass" onclick={handleDownload} loading={isDownloading}>
+				<Button
+					variant="glass"
+					onclick={handleDownload}
+					loading={isDownloading}
+					data-test-id="cert-download-button"
+				>
 					<Icon name="download" class="mr-2 h-4 w-4" />
 					{t('common.download', language.current)}
 					{isDownloading ? ` (${downloadProgress}%)` : ''}
@@ -148,6 +161,7 @@
 					variant="danger"
 					class="bg-error/10 hover:bg-error/20 text-error border-error/20"
 					onclick={() => (showDeleteModal = true)}
+					data-test-id="cert-delete-button"
 				>
 					<Icon name="trash" class="mr-2 h-4 w-4" />
 					{t('common.delete', language.current)}
@@ -374,6 +388,7 @@
 	isOpen={showDeleteModal}
 	title={t('certificates.deleteCertificate', language.current)}
 	onClose={() => (showDeleteModal = false)}
+	data-test-id="cert-delete-modal"
 >
 	<div class="space-y-4">
 		<div class="bg-error/10 text-error flex items-center gap-4 rounded-lg p-4">
@@ -390,7 +405,12 @@
 		<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}>
 			{t('common.cancel', language.current)}
 		</Button>
-		<Button variant="danger" loading={isDeleting} onclick={handleDelete}>
+		<Button
+			variant="danger"
+			loading={isDeleting}
+			onclick={handleDelete}
+			data-test-id="cert-delete-confirm-button"
+		>
 			{t('common.delete', language.current)}
 		</Button>
 	</div>

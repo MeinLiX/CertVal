@@ -7,7 +7,8 @@
 		onClose,
 		children,
 		class: className = '',
-		allowClickOutsideToClose = false
+		allowClickOutsideToClose = false,
+		'data-test-id': testId
 	}: {
 		isOpen?: boolean;
 		title?: string;
@@ -15,6 +16,7 @@
 		children?: any;
 		class?: string;
 		allowClickOutsideToClose?: boolean;
+		'data-test-id'?: string;
 	} = $props();
 
 	let dialog: HTMLDialogElement | undefined = $state();
@@ -47,6 +49,7 @@
 	<dialog
 		bind:this={dialog}
 		class="modal {className}"
+		data-test-id={testId}
 		oncancel={(e) => {
 			e.preventDefault();
 			if (allowClickOutsideToClose) {

@@ -116,7 +116,10 @@
 	}
 </script>
 
-<div class="animate-in fade-in slide-in-from-bottom-4 space-y-12 duration-500">
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 space-y-12 duration-500"
+	data-test-id="personal-settings-page"
+>
 	<div class="space-y-8">
 		<div
 			class="border-base-content/10 flex flex-col items-start justify-between gap-4 border-b pb-6 md:flex-row md:items-center"
@@ -137,6 +140,7 @@
 				variant="primary"
 				loading={isSavingProfile}
 				class="shadow-primary/20 min-w-[150px] shadow-lg"
+				data-test-id="save-profile-button"
 			>
 				<Icon name="save" class="mr-2 h-5 w-5" />
 				{t('common.save', language.current)}
@@ -172,12 +176,14 @@
 							bind:value={profileForm.firstName}
 							required
 							class="bg-base-100/50"
+							data-test-id="profile-firstname-input"
 						/>
 						<Input
 							label={t('auth.register.lastName', language.current)}
 							bind:value={profileForm.lastName}
 							required
 							class="bg-base-100/50"
+							data-test-id="profile-lastname-input"
 						/>
 					</div>
 
@@ -190,6 +196,7 @@
 							value={user?.email}
 							disabled
 							class="input input-bordered bg-base-200/50 text-base-content/60 w-full cursor-not-allowed"
+							data-test-id="profile-email-input"
 						/>
 						<label class="label" for="email">
 							<span class="label-text-alt text-base-content/40"
@@ -213,12 +220,14 @@
 							bind:value={profileForm.language}
 							options={languages}
 							class="bg-base-100/50"
+							data-test-id="profile-language-select"
 						/>
 						<Select
 							label={t('profile.timezone', language.current)}
 							bind:value={profileForm.timeZone}
 							options={timezones}
 							class="bg-base-100/50"
+							data-test-id="profile-timezone-select"
 						/>
 					</div>
 
@@ -230,6 +239,7 @@
 								type="checkbox"
 								class="checkbox checkbox-primary"
 								bind:checked={profileForm.emailNotificationsEnabled}
+								data-test-id="profile-notifications-checkbox"
 							/>
 							<div class="flex flex-col">
 								<span class="label-text text-base font-medium"
@@ -277,6 +287,7 @@
 						variant="primary"
 						loading={isChangingPassword}
 						class="shadow-primary/20 min-w-[150px] shadow-lg"
+						data-test-id="change-password-button"
 					>
 						<Icon name="lock" class="mr-2 h-5 w-5" />
 						{t('profile.changePassword', language.current)}
@@ -290,6 +301,7 @@
 						bind:value={passwordForm.currentPassword}
 						required
 						class="bg-base-100/50"
+						data-test-id="current-password-input"
 					/>
 					<Input
 						label={t('profile.newPassword', language.current)}
@@ -297,6 +309,7 @@
 						bind:value={passwordForm.newPassword}
 						required
 						class="bg-base-100/50"
+						data-test-id="new-password-input"
 					/>
 					<Input
 						label={t('profile.confirmNewPassword', language.current)}
@@ -304,6 +317,7 @@
 						bind:value={passwordForm.confirmNewPassword}
 						required
 						class="bg-base-100/50"
+						data-test-id="confirm-new-password-input"
 					/>
 				</div>
 			</div>

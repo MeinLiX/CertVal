@@ -61,6 +61,7 @@
 			<button
 				onclick={() => goto('/dashboard')}
 				class="group relative flex w-full items-center gap-4 p-6 text-left"
+				data-test-id="sidebar-logo-button"
 			>
 				<div
 					class="from-primary to-secondary shadow-primary/20 relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110"
@@ -99,6 +100,7 @@
 									   {active
 									? 'bg-primary text-primary-content shadow-primary/30 shadow-lg ring-1 ring-white/20'
 									: 'text-base-content/70 hover:bg-base-content/5 hover:text-primary hover:shadow-md'}"
+								data-test-id={`sidebar-menu-item-${item.href.replace('/', '') || 'home'}`}
 							>
 								{#if active}
 									<div
@@ -142,6 +144,7 @@
 										closeUserMenu();
 									}}
 									class="hover:bg-base-content/5 group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors"
+									data-test-id="sidebar-profile-link"
 								>
 									<Icon name="profile" class="h-4 w-4 transition-transform group-hover:scale-110" />
 									{t('nav.profile', language.current)}
@@ -154,6 +157,7 @@
 										closeUserMenu();
 									}}
 									class="hover:bg-base-content/5 group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors"
+									data-test-id="sidebar-settings-link"
 								>
 									<Icon
 										name="settings"
@@ -167,6 +171,7 @@
 								<button
 									onclick={handleLogout}
 									class="text-error hover:bg-error/10 group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors"
+									data-test-id="sidebar-logout-button"
 								>
 									<Icon
 										name="logout"
@@ -184,6 +189,7 @@
 						<button
 							onclick={toggleUserMenu}
 							class="flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors"
+							data-test-id="sidebar-user-menu-toggle"
 						>
 							<div class="relative">
 								<UserAvatar

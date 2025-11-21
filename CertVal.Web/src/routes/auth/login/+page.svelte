@@ -76,7 +76,7 @@
 	<GlobalLoader />
 {/if}
 
-<div class="w-full max-w-md" class:invisible={!googleLoaded}>
+<div class="w-full max-w-md" class:invisible={!googleLoaded} data-test-id="login-page">
 	<div
 		class="card bg-base-100/20 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
 	>
@@ -117,13 +117,18 @@
 
 				<div class="flex items-center justify-between text-sm">
 					<label class="label cursor-pointer gap-2">
-						<input type="checkbox" class="checkbox checkbox-primary checkbox-sm" />
+						<input
+							type="checkbox"
+							class="checkbox checkbox-primary checkbox-sm"
+							data-test-id="login-remember-me-checkbox"
+						/>
 						<span class="label-text">{t('auth.login.rememberMe', language.current)}</span>
 					</label>
 					<button
 						type="button"
 						onclick={() => goto('/auth/forgot-password')}
 						class="link link-primary no-underline hover:underline"
+						data-test-id="login-forgot-password-button"
 					>
 						{t('auth.login.forgot', language.current)}
 					</button>
@@ -135,7 +140,7 @@
 					class="mt-2 w-full"
 					{loading}
 					disabled={!authUiState.isValid}
-					data-testid="login-submit"
+					data-test-id="login-submit-button"
 				>
 					{t('auth.login.submit', language.current)}
 				</Button>
@@ -157,6 +162,7 @@
 					type="button"
 					onclick={() => goto('/auth/register')}
 					class="link link-primary ml-1 font-medium no-underline hover:underline"
+					data-test-id="login-signup-button"
 				>
 					{t('auth.login.signup', language.current)}
 				</button>

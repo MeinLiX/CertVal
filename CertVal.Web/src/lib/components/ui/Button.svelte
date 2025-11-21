@@ -32,6 +32,7 @@
 		onclick?: (event: MouseEvent) => void | Promise<void> | any;
 		children?: Snippet;
 		'data-testid'?: string;
+		'data-test-id'?: string;
 		'aria-label'?: string;
 		'aria-describedby'?: string;
 		id?: string;
@@ -57,6 +58,7 @@
 		onclick,
 		children,
 		'data-testid': testId,
+		'data-test-id': testIdAlt,
 		'aria-label': ariaLabel,
 		'aria-describedby': ariaDescribedBy,
 		id,
@@ -168,6 +170,7 @@
 		aria-describedby={ariaDescribedBy}
 		aria-busy={loading || isProcessing}
 		data-testid={testId}
+		data-test-id={testIdAlt ?? testId}
 		onclick={handleClick}
 		role="button"
 		tabindex={effectiveDisabled ? -1 : 0}
@@ -196,6 +199,7 @@
 		aria-describedby={ariaDescribedBy}
 		aria-busy={loading || isProcessing}
 		data-testid={testId}
+		data-test-id={testIdAlt ?? testId}
 		onclick={handleClick}
 		onkeydown={(e) => {
 			if ((e.key === 'Enter' || e.key === ' ') && isInteractive) {

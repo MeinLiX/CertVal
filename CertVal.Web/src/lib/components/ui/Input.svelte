@@ -53,6 +53,7 @@
 		onblur?: (event: FocusEvent) => void;
 		children?: Snippet;
 		'data-testid'?: string;
+		'data-test-id'?: string;
 		'aria-describedby'?: string;
 		'aria-invalid'?: boolean;
 	}
@@ -89,6 +90,7 @@
 		onblur,
 		children,
 		'data-testid': testId,
+		'data-test-id': testIdAlt,
 		'aria-describedby': ariaDescribedBy,
 		'aria-invalid': ariaInvalid
 	}: InputProps = $props();
@@ -290,6 +292,7 @@
 					{accept}
 					class="hidden"
 					data-testid={testId}
+					data-test-id={testIdAlt ?? testId}
 					{...ariaAttributes()}
 					oninput={handleInput}
 					onchange={handleChange}
@@ -349,6 +352,7 @@
 				{spellcheck}
 				class={computedInputClasses()}
 				data-testid={testId}
+				data-test-id={testIdAlt ?? testId}
 				{...ariaAttributes()}
 				oninput={handleInput}
 				onchange={handleChange}

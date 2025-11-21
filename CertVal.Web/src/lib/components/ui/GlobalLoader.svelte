@@ -6,12 +6,18 @@
 	interface Props {
 		variant?: 'fullscreen' | 'inline' | 'overlay';
 		class?: string;
+		'data-test-id'?: string;
 	}
 
-	let { variant = 'fullscreen', class: className = '' }: Props = $props();
+	let {
+		variant = 'fullscreen',
+		class: className = '',
+		'data-test-id': testId = 'global-loader'
+	}: Props = $props();
 </script>
 
 <div
+	data-test-id={testId}
 	class={[
 		variant === 'fullscreen'
 			? 'bg-base-100/95 fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-xl'

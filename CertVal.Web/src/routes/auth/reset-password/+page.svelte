@@ -53,6 +53,7 @@
 
 <div
 	class="card bg-base-100/20 w-full max-w-md shrink-0 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
+	data-test-id="reset-password-card"
 >
 	<form class="card-body gap-6 p-8" onsubmit={handleSubmit}>
 		<div class="mb-2 text-center">
@@ -81,6 +82,7 @@
 			type="password"
 			bind:value={password}
 			required
+			data-test-id="reset-password-input"
 		/>
 		<FloatingInput
 			id="confirmPassword"
@@ -89,10 +91,17 @@
 			bind:value={confirmPassword}
 			required
 			error={errors.confirmPassword}
+			data-test-id="reset-confirm-password-input"
 		/>
 
 		<div class="form-control mt-2">
-			<Button type="submit" variant="primary" loading={isLoading} class="w-full">
+			<Button
+				type="submit"
+				variant="primary"
+				loading={isLoading}
+				class="w-full"
+				data-test-id="reset-password-submit-button"
+			>
 				{t('auth.reset.submit', language.current)}
 			</Button>
 		</div>

@@ -194,110 +194,172 @@
 	>
 </svelte:head>
 
-<div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500"
+	data-test-id="workspace-details-page"
+>
 	{#if isLoading}
 		<div class="grid grid-cols-1 gap-4">
-			<div class="skeleton h-32 w-full rounded-xl bg-base-200/50"></div>
+			<div class="skeleton bg-base-200/50 h-32 w-full rounded-xl"></div>
 			<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
 				{#each { length: 4 } as _}
-					<div class="skeleton h-24 w-full rounded-xl bg-base-200/50"></div>
+					<div class="skeleton bg-base-200/50 h-24 w-full rounded-xl"></div>
 				{/each}
 			</div>
 		</div>
 	{:else if !workspace}
-		<div class="flex flex-col items-center justify-center py-20 text-center bg-base-100/30 rounded-3xl border border-base-content/5 backdrop-blur-sm">
-			<div class="bg-base-200/50 p-6 rounded-full mb-6">
-				<Icon name="error" class="w-16 h-16 text-base-content/20" />
+		<div
+			class="bg-base-100/30 border-base-content/5 flex flex-col items-center justify-center rounded-3xl border py-20 text-center backdrop-blur-sm"
+		>
+			<div class="bg-base-200/50 mb-6 rounded-full p-6">
+				<Icon name="error" class="text-base-content/20 h-16 w-16" />
 			</div>
-			<h3 class="text-xl font-bold mb-2">{t('workspaces.notFound', language.current)}</h3>
-			<p class="text-base-content/60 max-w-md mb-8">
+			<h3 class="mb-2 text-xl font-bold">{t('workspaces.notFound', language.current)}</h3>
+			<p class="text-base-content/60 mb-8 max-w-md">
 				{errors.load || t('workspaces.loadError', language.current)}
 			</p>
-			<Button onclick={() => goto('/workspaces')} variant="outline" class="shadow-sm">
-				<Icon name="leftArrow" class="w-4 h-4 mr-2" />
+			<Button
+				onclick={() => goto('/workspaces')}
+				variant="outline"
+				class="shadow-sm"
+				data-test-id="workspace-error-back-button"
+			>
+				<Icon name="leftArrow" class="mr-2 h-4 w-4" />
 				{t('workspaces.back', language.current)}
 			</Button>
 		</div>
 	{:else}
-		<div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between border-b border-base-content/10 pb-8">
+		<div
+			class="border-base-content/10 flex flex-col gap-6 border-b pb-8 md:flex-row md:items-start md:justify-between"
+		>
 			<div class="space-y-4">
-				<div class="breadcrumbs text-sm text-base-content/60">
+				<div class="breadcrumbs text-base-content/60 text-sm">
 					<ul>
 						<li>
-							<a href="/workspaces" class="hover:text-primary transition-colors flex items-center gap-1">
-								<Icon name="workspaces" class="w-4 h-4" />
+							<a
+								href="/workspaces"
+								class="hover:text-primary flex items-center gap-1 transition-colors"
+								data-test-id="workspace-breadcrumb-link"
+							>
+								<Icon name="workspaces" class="h-4 w-4" />
 								{t('nav.workspaces', language.current)}
 							</a>
 						</li>
-						<li><span class="font-medium text-base-content">{workspace.name}</span></li>
+						<li><span class="text-base-content font-medium">{workspace.name}</span></li>
 					</ul>
 				</div>
 				<div>
-					<h1 class="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+					<h1
+						class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-4xl font-bold tracking-tight text-transparent"
+					>
 						{workspace.name}
 					</h1>
-					<p class="text-lg text-base-content/60 mt-2 font-light max-w-2xl">{workspace.description}</p>
+					<p class="text-base-content/60 mt-2 max-w-2xl text-lg font-light">
+						{workspace.description}
+					</p>
 				</div>
 			</div>
 			<div class="flex flex-wrap gap-3">
-				<Button variant="outline" class="shadow-sm bg-base-100/50 backdrop-blur-sm" onclick={() => goto(`/certificates?workspace=${workspaceId}`)}>
-					<Icon name="certificates" class="w-4 h-4 mr-2" />
+				<Button
+					variant="outline"
+					class="bg-base-100/50 shadow-sm backdrop-blur-sm"
+					onclick={() => goto(`/certificates?workspace=${workspaceId}`)}
+					data-test-id="workspace-view-certificates-button"
+				>
+					<Icon name="certificates" class="mr-2 h-4 w-4" />
 					{t('workspaces.viewCertificates', language.current)}
 				</Button>
-				<Button variant="outline" class="shadow-sm bg-base-100/50 backdrop-blur-sm" onclick={() => goto(`/notifications?workspace=${workspaceId}`)}>
-					<Icon name="notifications" class="w-4 h-4 mr-2" />
+				<Button
+					variant="outline"
+					class="bg-base-100/50 shadow-sm backdrop-blur-sm"
+					onclick={() => goto(`/notifications?workspace=${workspaceId}`)}
+					data-test-id="workspace-manage-notifications-button"
+				>
+					<Icon name="notifications" class="mr-2 h-4 w-4" />
 					{t('workspaces.manageNotifications', language.current)}
 				</Button>
 			</div>
 		</div>
 
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-primary/20">
+			<div
+				class="border-base-content/10 bg-base-100/50 hover:bg-base-100 hover:border-primary/20 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:shadow-lg"
+			>
 				<div class="flex items-center gap-4">
-					<div class="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content transition-colors">
-						<Icon name="certificates" class="w-6 h-6" />
+					<div
+						class="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content rounded-xl p-3 transition-colors"
+					>
+						<Icon name="certificates" class="h-6 w-6" />
 					</div>
 					<div>
-						<p class="text-sm font-medium text-base-content/60">{t('nav.certificates', language.current)}</p>
-						<p class="text-2xl font-bold mt-1">{workspace.certificateCount} <span class="text-sm text-base-content/40 font-normal">/ {workspace.maxCertificates}</span></p>
+						<p class="text-base-content/60 text-sm font-medium">
+							{t('nav.certificates', language.current)}
+						</p>
+						<p class="mt-1 text-2xl font-bold">
+							{workspace.certificateCount}
+							<span class="text-base-content/40 text-sm font-normal"
+								>/ {workspace.maxCertificates}</span
+							>
+						</p>
 					</div>
 				</div>
 			</div>
 
-			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-secondary/20">
+			<div
+				class="border-base-content/10 bg-base-100/50 hover:bg-base-100 hover:border-secondary/20 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:shadow-lg"
+			>
 				<div class="flex items-center gap-4">
-					<div class="p-3 rounded-xl bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-content transition-colors">
-						<Icon name="members" class="w-6 h-6" />
+					<div
+						class="bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-content rounded-xl p-3 transition-colors"
+					>
+						<Icon name="members" class="h-6 w-6" />
 					</div>
 					<div>
-						<p class="text-sm font-medium text-base-content/60">{t('common.members', language.current)}</p>
-						<p class="text-2xl font-bold mt-1">{workspace.memberCount}</p>
+						<p class="text-base-content/60 text-sm font-medium">
+							{t('common.members', language.current)}
+						</p>
+						<p class="mt-1 text-2xl font-bold">{workspace.memberCount}</p>
 					</div>
 				</div>
 			</div>
 
-			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-accent/20">
+			<div
+				class="border-base-content/10 bg-base-100/50 hover:bg-base-100 hover:border-accent/20 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:shadow-lg"
+			>
 				<div class="flex items-center gap-4">
-					<div class="p-3 rounded-xl bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-content transition-colors">
-						<Icon name="user" class="w-6 h-6" />
+					<div
+						class="bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-content rounded-xl p-3 transition-colors"
+					>
+						<Icon name="user" class="h-6 w-6" />
 					</div>
 					<div>
-						<p class="text-sm font-medium text-base-content/60">{t('common.owner', language.current)}</p>
-						<p class="text-lg font-bold mt-1 truncate max-w-[120px]" title={members.find((m) => m.role === 'Owner')?.user.fullName}>
+						<p class="text-base-content/60 text-sm font-medium">
+							{t('common.owner', language.current)}
+						</p>
+						<p
+							class="mt-1 max-w-[120px] truncate text-lg font-bold"
+							title={members.find((m) => m.role === 'Owner')?.user.fullName}
+						>
 							{members.find((m) => m.role === 'Owner')?.user.fullName || 'N/A'}
 						</p>
 					</div>
 				</div>
 			</div>
 
-			<div class="group relative overflow-hidden rounded-2xl border border-base-content/10 bg-base-100/50 p-6 transition-all duration-300 hover:bg-base-100 hover:shadow-lg hover:border-info/20">
+			<div
+				class="border-base-content/10 bg-base-100/50 hover:bg-base-100 hover:border-info/20 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:shadow-lg"
+			>
 				<div class="flex items-center gap-4">
-					<div class="p-3 rounded-xl bg-info/10 text-info group-hover:bg-info group-hover:text-info-content transition-colors">
-						<Icon name="calendar" class="w-6 h-6" />
+					<div
+						class="bg-info/10 text-info group-hover:bg-info group-hover:text-info-content rounded-xl p-3 transition-colors"
+					>
+						<Icon name="calendar" class="h-6 w-6" />
 					</div>
 					<div>
-						<p class="text-sm font-medium text-base-content/60">{t('common.created', language.current)}</p>
-						<p class="text-lg font-bold mt-1">{formatDate(workspace.createdAt)}</p>
+						<p class="text-base-content/60 text-sm font-medium">
+							{t('common.created', language.current)}
+						</p>
+						<p class="mt-1 text-lg font-bold">{formatDate(workspace.createdAt)}</p>
 					</div>
 				</div>
 			</div>
@@ -305,18 +367,23 @@
 
 		<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 			<div class="space-y-6 lg:col-span-2">
-				<div class="rounded-2xl border border-base-content/10 bg-base-100/50 p-6 backdrop-blur-sm">
-					<div class="flex items-center justify-between mb-6">
-						<h3 class="text-xl font-bold flex items-center gap-2">
-							<div class="p-2 rounded-lg bg-warning/10 text-warning">
-								<Icon name="time" class="w-5 h-5" />
+				<div class="border-base-content/10 bg-base-100/50 rounded-2xl border p-6 backdrop-blur-sm">
+					<div class="mb-6 flex items-center justify-between">
+						<h3 class="flex items-center gap-2 text-xl font-bold">
+							<div class="bg-warning/10 text-warning rounded-lg p-2">
+								<Icon name="time" class="h-5 w-5" />
 							</div>
 							{t('workspaces.expiringSoon', language.current)}
 						</h3>
 						{#if certificates.length > 0}
-							<Button size="sm" variant="ghost" onclick={() => goto(`/certificates?workspace=${workspaceId}&status=Expiring`)}>
+							<Button
+								size="sm"
+								variant="ghost"
+								onclick={() => goto(`/certificates?workspace=${workspaceId}&status=Expiring`)}
+								data-test-id="workspace-view-all-expiring-button"
+							>
 								{t('common.viewAll', language.current)}
-								<Icon name="rightArrow" class="w-4 h-4 ml-1" />
+								<Icon name="rightArrow" class="ml-1 h-4 w-4" />
 							</Button>
 						{/if}
 					</div>
@@ -325,31 +392,46 @@
 						<div class="overflow-x-auto">
 							<table class="table w-full">
 								<thead>
-									<tr class="border-b border-base-content/10 text-base-content/60">
+									<tr class="border-base-content/10 text-base-content/60 border-b">
 										<th class="bg-transparent font-medium">{t('common.name', language.current)}</th>
-										<th class="bg-transparent font-medium">{t('certificates.expiresIn', language.current)}</th>
-										<th class="bg-transparent font-medium">{t('common.status', language.current)}</th>
+										<th class="bg-transparent font-medium"
+											>{t('certificates.expiresIn', language.current)}</th
+										>
+										<th class="bg-transparent font-medium"
+											>{t('common.status', language.current)}</th
+										>
 									</tr>
 								</thead>
 								<tbody>
 									{#each certificates as cert}
-										<tr class="border-b border-base-content/5 hover:bg-base-content/5 transition-colors group cursor-pointer" onclick={() => goto(`/certificates/${cert.id}`)}>
+										<tr
+											class="border-base-content/5 hover:bg-base-content/5 group cursor-pointer border-b transition-colors"
+											onclick={() => goto(`/certificates/${cert.id}`)}
+											data-test-id={`workspace-expiring-cert-row-${cert.id}`}
+										>
 											<td class="font-medium">
 												<div class="flex items-center gap-3">
-													<div class="p-2 rounded-lg bg-base-200 text-base-content/70 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-														<Icon name="document" class="w-4 h-4" />
+													<div
+														class="bg-base-200 text-base-content/70 group-hover:bg-primary/10 group-hover:text-primary rounded-lg p-2 transition-colors"
+													>
+														<Icon name="document" class="h-4 w-4" />
 													</div>
-													<span class="truncate max-w-[200px]">{cert.subject}</span>
+													<span class="max-w-[200px] truncate">{cert.subject}</span>
 												</div>
 											</td>
 											<td class="text-base-content/70">
-												{formatDate(cert.notAfter)} 
-												<span class="text-xs opacity-60 ml-1">({cert.daysUntilExpiry} {t('certificates.days', language.current)})</span>
+												{formatDate(cert.notAfter)}
+												<span class="ml-1 text-xs opacity-60"
+													>({cert.daysUntilExpiry} {t('certificates.days', language.current)})</span
+												>
 											</td>
 											<td>
 												<span class="badge badge-sm badge-warning gap-1 shadow-sm">
-													<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-													{t(`certificates.${getCertificateStatus(cert.notAfter)}`, language.current)}
+													<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-white"></span>
+													{t(
+														`certificates.${getCertificateStatus(cert.notAfter)}`,
+														language.current
+													)}
 												</span>
 											</td>
 										</tr>
@@ -359,8 +441,8 @@
 						</div>
 					{:else}
 						<div class="flex flex-col items-center justify-center py-12 text-center">
-							<div class="bg-base-200/50 p-4 rounded-full mb-4">
-								<Icon name="checkCircle" class="w-8 h-8 text-success" />
+							<div class="bg-base-200/50 mb-4 rounded-full p-4">
+								<Icon name="checkCircle" class="text-success h-8 w-8" />
 							</div>
 							<p class="text-base-content/70 font-medium">
 								{t('workspaces.noExpiringCertificates', language.current)}
@@ -371,21 +453,24 @@
 			</div>
 
 			<div class="space-y-8">
-				<div class="rounded-2xl border border-base-content/10 bg-base-100/50 p-6 backdrop-blur-sm">
-					<div class="flex items-center justify-between mb-6">
-						<h3 class="text-xl font-bold flex items-center gap-2">
-							<div class="p-2 rounded-lg bg-secondary/10 text-secondary">
-								<Icon name="members" class="w-5 h-5" />
+				<div class="border-base-content/10 bg-base-100/50 rounded-2xl border p-6 backdrop-blur-sm">
+					<div class="mb-6 flex items-center justify-between">
+						<h3 class="flex items-center gap-2 text-xl font-bold">
+							<div class="bg-secondary/10 text-secondary rounded-lg p-2">
+								<Icon name="members" class="h-5 w-5" />
 							</div>
 							{t('common.members', language.current)}
 						</h3>
 						<span class="badge badge-ghost">{members.length}</span>
 					</div>
 
-					<div class="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+					<div class="custom-scrollbar max-h-[400px] space-y-4 overflow-y-auto pr-2">
 						{#each members as member}
 							{@const statusInfo = getStatusBadge(member.status)}
-							<div class="flex items-center justify-between p-3 rounded-xl bg-base-100/50 border border-base-content/5 hover:border-base-content/20 transition-all">
+							<div
+								class="bg-base-100/50 border-base-content/5 hover:border-base-content/20 flex items-center justify-between rounded-xl border p-3 transition-all"
+								data-test-id={`workspace-member-item-${member.id}`}
+							>
 								<div class="flex items-center gap-3">
 									<UserAvatar
 										firstName={member.user.firstName}
@@ -394,8 +479,12 @@
 										textSize="text-sm"
 									/>
 									<div class="min-w-0">
-										<div class="font-bold text-sm truncate max-w-[120px]">{member.user.fullName}</div>
-										<div class="text-xs text-base-content/60 truncate max-w-[120px]">{member.user.email}</div>
+										<div class="max-w-[120px] truncate text-sm font-bold">
+											{member.user.fullName}
+										</div>
+										<div class="text-base-content/60 max-w-[120px] truncate text-xs">
+											{member.user.email}
+										</div>
 									</div>
 								</div>
 								<div class="flex flex-col items-end gap-1">
@@ -404,11 +493,12 @@
 									</span>
 									{#if canManage && member.role !== 'Owner'}
 										<button
-											class="text-xs text-error hover:underline flex items-center gap-1 mt-1"
+											class="text-error mt-1 flex items-center gap-1 text-xs hover:underline"
 											onclick={() => {
 												memberToRemove = member;
 												showRemoveMemberModal = true;
 											}}
+											data-test-id={`workspace-remove-member-button-${member.id}`}
 										>
 											{t('common.delete', language.current)}
 										</button>
@@ -417,11 +507,16 @@
 							</div>
 						{/each}
 					</div>
-					
+
 					{#if canManage && workspace.allowMemberInvites}
-						<div class="mt-6 pt-6 border-t border-base-content/10">
-							<Button class="w-full shadow-sm" variant="outline" onclick={() => (showInviteModal = true)}>
-								<Icon name="plus" class="w-4 h-4 mr-2" />
+						<div class="border-base-content/10 mt-6 border-t pt-6">
+							<Button
+								class="w-full shadow-sm"
+								variant="outline"
+								onclick={() => (showInviteModal = true)}
+								data-test-id="workspace-invite-member-button"
+							>
+								<Icon name="plus" class="mr-2 h-4 w-4" />
 								{t('workspaces.inviteMember', language.current)}
 							</Button>
 						</div>
@@ -429,21 +524,31 @@
 				</div>
 
 				{#if currentUserMember?.role === 'Owner'}
-					<div class="rounded-2xl border border-error/20 bg-error/5 p-6 backdrop-blur-sm">
-						<h3 class="text-lg font-bold text-error flex items-center gap-2 mb-2">
-							<Icon name="warning" class="w-5 h-5" />
+					<div class="border-error/20 bg-error/5 rounded-2xl border p-6 backdrop-blur-sm">
+						<h3 class="text-error mb-2 flex items-center gap-2 text-lg font-bold">
+							<Icon name="warning" class="h-5 w-5" />
 							{t('workspaces.dangerZone', language.current)}
 						</h3>
-						<p class="text-sm text-base-content/70 mb-6">
+						<p class="text-base-content/70 mb-6 text-sm">
 							{t('workspaces.dangerZoneWarning', language.current)}
 						</p>
 						<div class="flex flex-col gap-3">
-							<Button variant="warning" class="w-full justify-start bg-warning/10 hover:bg-warning/20 border-warning/20 text-warning-content" onclick={() => (showTransferModal = true)}>
-								<Icon name="user" class="w-4 h-4 mr-2" />
+							<Button
+								variant="warning"
+								class="bg-warning/10 hover:bg-warning/20 border-warning/20 text-warning-content w-full justify-start"
+								onclick={() => (showTransferModal = true)}
+								data-test-id="workspace-transfer-ownership-button"
+							>
+								<Icon name="user" class="mr-2 h-4 w-4" />
 								{t('workspaces.transferOwnership', language.current)}
 							</Button>
-							<Button variant="danger" class="w-full justify-start shadow-lg shadow-error/10" onclick={() => (showDeleteModal = true)}>
-								<Icon name="trash" class="w-4 h-4 mr-2" />
+							<Button
+								variant="danger"
+								class="shadow-error/10 w-full justify-start shadow-lg"
+								onclick={() => (showDeleteModal = true)}
+								data-test-id="workspace-delete-button"
+							>
+								<Icon name="trash" class="mr-2 h-4 w-4" />
 								{t('workspaces.deleteWorkspace', language.current)}
 							</Button>
 						</div>
@@ -457,6 +562,7 @@
 		isOpen={showInviteModal}
 		title={t('workspaces.inviteNewMember', language.current)}
 		onClose={() => (showInviteModal = false)}
+		data-test-id="workspace-invite-modal"
 	>
 		<form onsubmit={handleInvite} class="space-y-4">
 			{#if errors.invite}<div role="alert" class="alert alert-error text-sm">
@@ -468,6 +574,7 @@
 				bind:value={inviteForm.email}
 				required
 				placeholder="member@example.com"
+				data-test-id="invite-email-input"
 			/>
 			<Select
 				label={t('common.role', language.current)}
@@ -479,12 +586,17 @@
 						? [{ value: 'Admin', label: t('workspaces.roles.admin', language.current) }]
 						: [])
 				]}
+				data-test-id="invite-role-select"
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showInviteModal = false)}
 					>{t('common.cancel', language.current)}</Button
 				>
-				<Button type="submit" loading={isProcessing} variant="primary"
+				<Button
+					type="submit"
+					loading={isProcessing}
+					variant="primary"
+					data-test-id="invite-submit-button"
 					>{t('workspaces.sendInvitation', language.current)}</Button
 				>
 			</div>
@@ -495,6 +607,7 @@
 		isOpen={showDeleteModal}
 		title={t('workspaces.deleteWorkspace', language.current)}
 		onClose={() => (showDeleteModal = false)}
+		data-test-id="workspace-delete-modal"
 	>
 		<form onsubmit={handleDelete} class="space-y-4">
 			<p>
@@ -511,6 +624,7 @@
 			<Input
 				bind:value={confirmDeleteName}
 				placeholder={t('workspaces.workspaceName', language.current)}
+				data-test-id="delete-workspace-name-input"
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}
@@ -521,6 +635,7 @@
 					variant="danger"
 					loading={isProcessing}
 					disabled={confirmDeleteName !== workspace?.name}
+					data-test-id="delete-workspace-confirm-button"
 					>{t('workspaces.deleteWorkspace', language.current)}</Button
 				>
 			</div>
@@ -531,6 +646,7 @@
 		isOpen={showTransferModal}
 		title={t('workspaces.transferOwnership', language.current)}
 		onClose={() => (showTransferModal = false)}
+		data-test-id="workspace-transfer-modal"
 	>
 		<form onsubmit={handleTransferOwnership} class="space-y-4">
 			<p>{t('workspaces.transferWarning', language.current)}</p>
@@ -543,13 +659,17 @@
 				bind:value={transferForm.newOwnerEmail}
 				required
 				placeholder="new.owner@example.com"
+				data-test-id="transfer-email-input"
 			/>
 			<div class="modal-action">
 				<Button type="button" variant="ghost" onclick={() => (showTransferModal = false)}
 					>{t('common.cancel', language.current)}</Button
 				>
-				<Button type="submit" variant="warning" loading={isProcessing}
-					>{t('workspaces.transfer', language.current)}</Button
+				<Button
+					type="submit"
+					variant="warning"
+					loading={isProcessing}
+					data-test-id="transfer-submit-button">{t('workspaces.transfer', language.current)}</Button
 				>
 			</div>
 		</form>
@@ -562,6 +682,7 @@
 			showRemoveMemberModal = false;
 			memberToRemove = null;
 		}}
+		data-test-id="workspace-remove-member-modal"
 	>
 		<p>
 			{t('workspaces.removeMemberWarning', language.current, {
@@ -580,7 +701,11 @@
 					memberToRemove = null;
 				}}>{t('common.cancel', language.current)}</Button
 			>
-			<Button variant="danger" loading={isProcessing} onclick={handleRemoveMember}
+			<Button
+				variant="danger"
+				loading={isProcessing}
+				onclick={handleRemoveMember}
+				data-test-id="remove-member-confirm-button"
 				>{t('workspaces.remove', language.current)}</Button
 			>
 		</div>
