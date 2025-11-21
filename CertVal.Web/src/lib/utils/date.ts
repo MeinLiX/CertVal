@@ -1,6 +1,8 @@
+import { language } from '$lib/stores/language.svelte';
+
 export function formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('uk-UA', {
+    return date.toLocaleDateString(language.current === 'uk' ? 'uk-UA' : 'en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -9,12 +11,21 @@ export function formatDate(dateString: string): string {
 
 export function formatDateTime(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleString('uk-UA', {
+    return date.toLocaleString(language.current === 'uk' ? 'uk-UA' : 'en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
+    });
+}
+
+export function formatDateWithWeekday(date: Date): string {
+    return date.toLocaleDateString(language.current === 'uk' ? 'uk-UA' : 'en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     });
 }
 
