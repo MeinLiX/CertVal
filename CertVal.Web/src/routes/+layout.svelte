@@ -29,24 +29,26 @@
 
 <div
 	class="bg-base-200 text-base-content selection:bg-primary selection:text-primary-content min-h-screen font-sans antialiased"
+	data-test-id="app-root"
 >
 	{#if isAppLoading}
-		<GlobalLoader />
+		<GlobalLoader data-test-id="global-loader" />
 	{/if}
 
 	<Navbar />
 	{#if isAuthPage}
-		<main class="relative min-h-screen w-full overflow-hidden">
+		<main class="relative min-h-screen w-full overflow-hidden" data-test-id="auth-layout-main">
 			{@render children?.()}
 		</main>
 	{:else if isAuthenticated}
-		<div class="drawer lg:drawer-open">
+		<div class="drawer lg:drawer-open" data-test-id="app-layout-drawer">
 			<input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
 			<div
 				class="drawer-content bg-base-100/50 flex h-screen flex-col overflow-hidden backdrop-blur-3xl"
 			>
 				<main
 					class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-base-300 hover:scrollbar-thumb-base-content/20 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"
+					data-test-id="app-layout-main"
 				>
 					<div
 						class="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-7xl pt-16 duration-500"

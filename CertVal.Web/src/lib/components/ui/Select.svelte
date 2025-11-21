@@ -21,7 +21,8 @@
 		icon,
 		iconPosition = 'left',
 		class: className = '',
-		onchange
+		onchange,
+		'data-test-id': testId
 	}: {
 		value?: string | number;
 		label?: string;
@@ -36,6 +37,7 @@
 		iconPosition?: 'left' | 'right';
 		class?: string;
 		onchange?: (event: Event) => void;
+		'data-test-id'?: string;
 	} = $props();
 
 	const selectId = $derived(id || `select-${Math.random().toString(36).substring(2, 9)}`);
@@ -104,6 +106,7 @@
 			bind:value
 			{onchange}
 			aria-invalid={!!error}
+			data-test-id={testId}
 		>
 			{#each options as option}
 				<option value={option.value}>{option.label}</option>

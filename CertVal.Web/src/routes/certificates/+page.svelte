@@ -90,7 +90,7 @@
 					uploadForm.workspaceId = filters.workspaceId;
 				}
 				showUploadModal = true;
-				
+
 				const newUrl = new URL(window.location.href);
 				newUrl.searchParams.delete('action');
 				goto(newUrl.toString(), { replaceState: true, keepFocus: true, noScroll: true });
@@ -196,6 +196,7 @@
 
 <div
 	class="animate-in fade-in slide-in-from-bottom-4 flex h-[calc(100vh-8rem)] min-h-[600px] flex-col space-y-2 duration-500"
+	data-test-id="certificates-page"
 >
 	<div class="flex-none">
 		<div class="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -217,6 +218,7 @@
 					if (filters.workspaceId) uploadForm.workspaceId = filters.workspaceId;
 					showUploadModal = true;
 				}}
+				data-test-id="upload-certificate-button"
 			>
 				<Icon name="upload" class="mr-2 h-5 w-5" />
 				{t('certificates.upload', language.current)}
@@ -233,12 +235,14 @@
 					oninput={(e) => updateParams({ search: (e.target as HTMLInputElement).value, page: 1 })}
 					icon="search"
 					class="bg-base-100"
+					data-test-id="search-certificate-input"
 				/>
 				<Input
 					placeholder={t('certificates.issuerPlaceholder', language.current)}
 					value={filters.issuerTerm}
 					oninput={(e) => updateParams({ issuer: (e.target as HTMLInputElement).value, page: 1 })}
 					class="bg-base-100"
+					data-test-id="search-issuer-input"
 				/>
 				<Select
 					options={workspaceOptions}
@@ -247,6 +251,7 @@
 						updateParams({ workspace: (e.target as HTMLSelectElement).value, page: 1 })}
 					class="bg-base-100"
 					icon="workspaces"
+					data-test-id="filter-workspace-select"
 				/>
 				<Select
 					options={[
@@ -259,6 +264,7 @@
 					onchange={(e) => updateParams({ status: (e.target as HTMLSelectElement).value, page: 1 })}
 					class="bg-base-100"
 					icon="filter"
+					data-test-id="filter-status-select"
 				/>
 			</div>
 		</div>
@@ -287,10 +293,14 @@
 			<p class="text-base-content/60 mb-8 max-w-md">
 				{t('certificates.empty.description', language.current)}
 			</p>
-			<Button variant="outline" onclick={() => {
-				if (filters.workspaceId) uploadForm.workspaceId = filters.workspaceId;
-				showUploadModal = true;
-			}}>
+			<Button
+				variant="outline"
+				onclick={() => {
+					if (filters.workspaceId) uploadForm.workspaceId = filters.workspaceId;
+					showUploadModal = true;
+				}}
+				data-test-id="empty-state-upload-button"
+			>
 				{t('certificates.upload', language.current)}
 			</Button>
 		</div>
@@ -310,6 +320,7 @@
 				currentPage={filters.page}
 				{totalPages}
 				onPageChange={(p) => updateParams({ page: p })}
+				data-test-id="certificates-pagination"
 			/>
 		</div>
 	{/if}
@@ -319,6 +330,7 @@
 	isOpen={showUploadModal}
 	title={t('certificates.upload', language.current)}
 	onClose={() => (showUploadModal = false)}
+	data-test-id="upload-certificate-modal"
 >
 	<form onsubmit={handleUpload} class="space-y-6">
 		<div class="form-control w-full">
@@ -332,6 +344,7 @@
 				class="select select-bordered focus:select-primary w-full transition-all"
 				bind:value={uploadForm.workspaceId}
 				required
+				data-test-id="upload-workspace-select"
 			>
 				<option value="" disabled selected>{t('common.select', language.current)}</option>
 				{#each workspaceList as workspace}
@@ -353,6 +366,7 @@
 				accept=".cer,.crt,.pem,.pfx,.p12"
 				onchange={handleFileChange}
 				required
+				data-test-id="upload-file-input"
 			/>
 			<div class="label">
 				<span class="label-text-alt text-base-content/60"
@@ -374,6 +388,7 @@
 				variant="ghost"
 				onclick={() => (showUploadModal = false)}
 				disabled={isUploading}
+				data-test-id="upload-cancel-button"
 			>
 				{t('common.cancel', language.current)}
 			</Button>
@@ -382,6 +397,7 @@
 				variant="primary"
 				loading={isUploading}
 				class="shadow-primary/20 shadow-lg"
+				data-test-id="upload-submit-button"
 			>
 				<Icon name="upload" class="mr-2 h-4 w-4" />
 				{t('common.upload', language.current)}
@@ -394,6 +410,7 @@
 	isOpen={showResultsModal}
 	title={t('certificates.uploadResults', language.current)}
 	onClose={() => (showResultsModal = false)}
+	data-test-id="upload-results-modal"
 >
 	{#if uploadResults}
 		<div class="space-y-4">
@@ -404,6 +421,7 @@
 						? 'tab-active !bg-success !text-success-content shadow-sm'
 						: 'hover:bg-base-300/50'}"
 					onclick={() => (activeResultTab = 'success')}
+					data-test-id="upload-results-tab-success"
 				>
 					{t('common.success', language.current)}
 					<div
@@ -418,6 +436,7 @@
 						? 'tab-active !bg-warning !text-warning-content shadow-sm'
 						: 'hover:bg-base-300/50'}"
 					onclick={() => (activeResultTab = 'skipped')}
+					data-test-id="upload-results-tab-skipped"
 				>
 					{t('certificates.skipped', language.current)}
 					<div
@@ -432,6 +451,7 @@
 						? 'tab-active !bg-error !text-error-content shadow-sm'
 						: 'hover:bg-base-300/50'}"
 					onclick={() => (activeResultTab = 'failure')}
+					data-test-id="upload-results-tab-failure"
 				>
 					{t('common.failed', language.current)}
 					<div
@@ -448,6 +468,7 @@
 					bind:value={resultSearchQuery}
 					icon="search"
 					class="bg-base-100 rounded-lg"
+					data-test-id="upload-results-search-input"
 				/>
 			</div>
 
@@ -477,6 +498,7 @@
 								: result.isSkipped
 									? 'alert-warning/10 border-warning/20 text-warning-content'
 									: 'alert-error/10 border-error/20 text-error-content'} flex flex-col items-start gap-1 rounded-lg border px-4 py-3 text-xs shadow-sm"
+							data-test-id={`upload-result-item-${result.fileName}`}
 						>
 							<div class="flex w-full items-center gap-2">
 								<Icon
@@ -513,7 +535,11 @@
 		</div>
 	{/if}
 	<div class="modal-action">
-		<Button variant="primary" onclick={() => (showResultsModal = false)}>
+		<Button
+			variant="primary"
+			onclick={() => (showResultsModal = false)}
+			data-test-id="upload-results-close-button"
+		>
 			{t('common.close', language.current)}
 		</Button>
 	</div>

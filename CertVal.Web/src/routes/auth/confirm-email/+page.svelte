@@ -53,6 +53,7 @@
 
 <div
 	class="card bg-base-100/20 w-full max-w-md shrink-0 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
+	data-test-id="confirm-email-card"
 >
 	<div class="card-body items-center gap-6 p-8 text-center">
 		<div class="mb-2">
@@ -75,7 +76,12 @@
 				</div>
 			{:else}
 				<div class="card-actions mt-2 w-full">
-					<Button variant="primary" onclick={() => goto('/dashboard')} class="w-full">
+					<Button
+						variant="primary"
+						onclick={() => goto('/dashboard')}
+						class="w-full"
+						data-test-id="confirm-email-continue-button"
+					>
 						{t('auth.confirm.continue', language.current)}
 					</Button>
 				</div>
@@ -84,7 +90,12 @@
 
 		{#if isError}
 			<div class="card-actions mt-4 w-full">
-				<Button variant="primary" onclick={() => goto('/auth/login')} class="w-full">
+				<Button
+					variant="primary"
+					onclick={() => goto('/auth/login')}
+					class="w-full"
+					data-test-id="confirm-email-login-button"
+				>
 					{t('auth.confirm.login', language.current)}
 				</Button>
 			</div>

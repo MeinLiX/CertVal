@@ -52,7 +52,7 @@
 	}
 </script>
 
-<div class="w-full max-w-lg">
+<div class="w-full max-w-lg" data-test-id="register-page">
 	<div
 		class="card bg-base-100/20 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
 	>
@@ -123,7 +123,7 @@
 					class="mt-2 w-full"
 					{loading}
 					disabled={!authUiState.isValid}
-					data-testid="register-submit"
+					data-test-id="register-submit-button"
 				>
 					{t('auth.register.submit', language.current)}
 				</Button>
@@ -135,6 +135,7 @@
 					type="button"
 					onclick={() => goto('/auth/login')}
 					class="link link-primary ml-1 font-medium no-underline hover:underline"
+					data-test-id="register-login-link"
 				>
 					{t('auth.register.loginLink', language.current)}
 				</button>

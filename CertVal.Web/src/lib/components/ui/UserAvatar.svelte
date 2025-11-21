@@ -4,13 +4,15 @@
 		lastName,
 		size = 'w-24',
 		textSize = 'text-3xl',
-		class: className = ''
+		class: className = '',
+		'data-test-id': testId
 	}: {
 		firstName: string | undefined;
 		lastName: string | undefined;
 		size?: string;
 		textSize?: string;
 		class?: string;
+		'data-test-id'?: string;
 	} = $props();
 
 	const initials = $derived(
@@ -18,7 +20,7 @@
 	);
 </script>
 
-<div class="avatar avatar-placeholder {className}">
+<div class="avatar avatar-placeholder {className}" data-test-id={testId}>
 	<div
 		class="from-neutral to-neutral/80 text-neutral-content ring-base-100 bg-gradient-to-br shadow-lg ring-2 {size} rounded-full"
 	>

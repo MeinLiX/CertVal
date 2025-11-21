@@ -24,6 +24,7 @@
 		target?: string;
 		rel?: string;
 		class?: string;
+		'data-test-id'?: string;
 	}
 
 	let {
@@ -35,7 +36,8 @@
 		href,
 		target,
 		rel,
-		class: className = ''
+		class: className = '',
+		'data-test-id': testId
 	}: Props = $props();
 
 	const tooltipClass = tooltip ? `tooltip tooltip-${tooltipPosition}` : '';
@@ -43,13 +45,21 @@
 </script>
 
 {#if href}
-	<a {href} {target} {rel} class={combinedClass} data-tip={tooltip} role="button">
+	<a
+		{href}
+		{target}
+		{rel}
+		class={combinedClass}
+		data-tip={tooltip}
+		role="button"
+		data-test-id={testId}
+	>
 		<Button {variant} shape="circle" class="shadow-lg transition-all duration-300 hover:shadow-xl">
 			<Icon name={iconName} class="h-6 w-6" />
 		</Button>
 	</a>
 {:else}
-	<div class={combinedClass} data-tip={tooltip} role="button">
+	<div class={combinedClass} data-tip={tooltip} role="button" data-test-id={testId}>
 		<Button
 			{variant}
 			shape="circle"

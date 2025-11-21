@@ -117,7 +117,10 @@
 	<title>{t('nav.apiTokens', language.current)} - CertVal</title>
 </svelte:head>
 
-<div class="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500">
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500"
+	data-test-id="api-tokens-page"
+>
 	<div
 		class="border-base-content/10 flex flex-col items-start justify-between gap-4 border-b pb-6 md:flex-row md:items-center"
 	>
@@ -131,7 +134,12 @@
 				{t('profile.apiTokensSubtitle', language.current)}
 			</p>
 		</div>
-		<Button onclick={openCreateModal} variant="primary" class="shadow-primary/20 shadow-lg">
+		<Button
+			onclick={openCreateModal}
+			variant="primary"
+			class="shadow-primary/20 shadow-lg"
+			data-test-id="create-token-button"
+		>
 			<Icon name="plus" class="mr-2 h-5 w-5" />
 			{t('common.create', language.current)}
 		</Button>
@@ -164,6 +172,7 @@
 			{#each tokens as token}
 				<div
 					class="border-base-content/10 bg-base-100/50 hover:bg-base-100 hover:border-primary/20 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
+					data-test-id={`token-item-${token.id}`}
 				>
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div class="flex items-start gap-4">
@@ -215,6 +224,7 @@
 								class="text-error hover:bg-error/10 hover:text-error"
 								onclick={() => openRevokeModal(token)}
 								disabled={!token.isActive}
+								data-test-id={`revoke-token-button-${token.id}`}
 							>
 								<Icon name="trash" class="mr-2 h-4 w-4" />
 								{t('common.revoke', language.current)}
@@ -231,6 +241,7 @@
 	isOpen={showCreateModal}
 	title={t('common.createTokenTitle', language.current)}
 	onClose={() => (showCreateModal = false)}
+	data-test-id="create-token-modal"
 >
 	<form onsubmit={handleCreateToken} class="space-y-6">
 		{#if errors.create}
@@ -245,6 +256,7 @@
 			required
 			placeholder="e.g. CI/CD Pipeline"
 			class="bg-base-100/50"
+			data-test-id="token-name-input"
 		/>
 		<Select
 			label={t('common.scope', language.current)}
@@ -254,6 +266,7 @@
 				{ value: 'ReadWrite', label: t('common.scopes.readWrite', language.current) }
 			]}
 			class="bg-base-100"
+			data-test-id="token-scope-select"
 		/>
 		<div class="modal-action pt-4">
 			<Button type="button" variant="ghost" onclick={() => (showCreateModal = false)}
@@ -264,6 +277,7 @@
 				variant="primary"
 				loading={isProcessing}
 				class="shadow-primary/20 shadow-lg"
+				data-test-id="token-submit-button"
 			>
 				<Icon name="plus" class="mr-2 h-4 w-4" />
 				{t('common.create', language.current)}
@@ -276,6 +290,7 @@
 	isOpen={showTokenModal}
 	title={t('common.newTokenTitle', language.current)}
 	onClose={() => (showTokenModal = false)}
+	data-test-id="new-token-modal"
 >
 	{#if newTokenResponse}
 		<div class="space-y-6">
@@ -295,11 +310,13 @@
 						readonly
 						value={newTokenResponse.token}
 						class="input input-bordered join-item bg-base-200/50 w-full font-mono text-sm focus:outline-none"
+						data-test-id="new-token-input"
 					/>
 					<button
 						class="btn btn-primary join-item"
 						disabled={isCopied}
 						onclick={() => copyToClipboard(newTokenResponse?.token ?? '')}
+						data-test-id="copy-token-button"
 					>
 						{#if isCopied}
 							<Icon name="check" class="h-5 w-5" />
@@ -323,6 +340,7 @@
 	isOpen={showRevokeModal}
 	title={t('common.revokeTokenTitle', language.current)}
 	onClose={() => (showRevokeModal = false)}
+	data-test-id="revoke-token-modal"
 >
 	{#if tokenToRevoke}
 		<div class="space-y-6">
@@ -350,6 +368,7 @@
 					loading={isProcessing}
 					onclick={handleRevokeToken}
 					class="shadow-error/20 shadow-lg"
+					data-test-id="revoke-token-confirm-button"
 				>
 					<Icon name="trash" class="mr-2 h-4 w-4" />
 					{t('common.revoke', language.current)}

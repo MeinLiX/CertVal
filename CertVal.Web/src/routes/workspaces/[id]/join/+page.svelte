@@ -76,7 +76,10 @@
 	<title>{t('workspaces.join.title', language.current)}</title>
 </svelte:head>
 
-<div class="bg-base-200/30 flex min-h-[calc(100vh-10rem)] items-center justify-center p-4">
+<div
+	class="bg-base-200/30 flex min-h-[calc(100vh-10rem)] items-center justify-center p-4"
+	data-test-id="join-workspace-page"
+>
 	<div class="w-full max-w-md space-y-8">
 		<div
 			class="border-base-content/10 bg-base-100/50 rounded-2xl border p-8 shadow-xl backdrop-blur-sm"
@@ -96,7 +99,12 @@
 						<Icon name="error" class="h-8 w-8" />
 					</div>
 					<p class="text-error font-medium">{error}</p>
-					<Button class="mt-4 w-full" variant="outline" onclick={() => goto('/auth/login')}>
+					<Button
+						class="mt-4 w-full"
+						variant="outline"
+						onclick={() => goto('/auth/login')}
+						data-test-id="join-back-to-login-button"
+					>
 						<Icon name="leftArrow" class="mr-2 h-4 w-4" />
 						{t('auth.login.title', language.current)}
 					</Button>
@@ -120,6 +128,7 @@
 							size="lg"
 							onclick={handleAccept}
 							loading={isLoading}
+							data-test-id="join-workspace-button"
 						>
 							{#if $auth.isAuthenticated}
 								<Icon name="check" class="mr-2 h-5 w-5" />

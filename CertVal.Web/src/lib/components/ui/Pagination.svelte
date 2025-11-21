@@ -5,11 +5,13 @@
 	let {
 		currentPage,
 		totalPages,
-		onPageChange
+		onPageChange,
+		'data-test-id': testId
 	}: {
 		currentPage: number;
 		totalPages: number;
 		onPageChange: (page: number) => void;
+		'data-test-id'?: string;
 	} = $props();
 
 	const pageNumbers = $derived(() => {
@@ -56,12 +58,13 @@
 	});
 </script>
 
-<div class="join shadow-sm">
+<div class="join shadow-sm" data-test-id={testId}>
 	<Button
 		class="join-item {currentPage <= 1 ? 'btn-disabled opacity-50' : ''}"
 		onclick={() => onPageChange(currentPage - 1)}
 		disabled={currentPage <= 1}
 		aria-label="Previous Page"
+		data-test-id={testId ? `${testId}-prev` : undefined}
 	>
 		<Icon name="leftArrow" class="h-4 w-4" />
 	</Button>
@@ -74,6 +77,7 @@
 				class="join-item"
 				variant={currentPage === page ? 'primary' : 'ghost'}
 				onclick={() => onPageChange(page)}
+				data-test-id={testId ? `${testId}-page-${page}` : undefined}
 			>
 				{page}
 			</Button>
@@ -85,6 +89,7 @@
 		onclick={() => onPageChange(currentPage + 1)}
 		disabled={currentPage >= totalPages}
 		aria-label="Next Page"
+		data-test-id={testId ? `${testId}-next` : undefined}
 	>
 		<Icon name="rightArrow" class="h-4 w-4" />
 	</Button>

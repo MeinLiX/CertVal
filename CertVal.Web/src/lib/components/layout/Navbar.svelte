@@ -39,6 +39,7 @@
 				for="drawer-toggle"
 				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 text-base-content border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110 lg:hidden"
 				transition:fade
+				data-test-id="drawer-toggle"
 			>
 				<Icon name="menu" />
 			</label>
@@ -51,6 +52,7 @@
 				tabindex="0"
 				role="button"
 				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110"
+				data-test-id="theme-switcher"
 			>
 				<span class="indicator text-xl drop-shadow-md filter">
 					{currentThemeData.icon}
@@ -67,6 +69,7 @@
 								? 'bg-primary/10 text-primary'
 								: ''}"
 							onclick={() => switchTheme(themeOption.value)}
+							data-test-id={`theme-option-${themeOption.value}`}
 						>
 							<span class="text-lg">{themeOption.icon}</span>
 							{themeOption.label}
@@ -86,6 +89,7 @@
 				tabindex="0"
 				role="button"
 				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110"
+				data-test-id="language-switcher"
 			>
 				<span class="indicator text-xl drop-shadow-md filter">
 					{currentLanguageData.flag}
@@ -102,6 +106,7 @@
 								? 'bg-primary/10 text-primary'
 								: ''}"
 							onclick={() => switchLanguage(lang.code)}
+							data-test-id={`language-option-${lang.code}`}
 						>
 							<span class="text-lg">{lang.flag}</span>
 							{lang.label}

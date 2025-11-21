@@ -12,7 +12,10 @@
 
 <svelte:window onmousemove={handleMouseMove} />
 
-<div class="pointer-events-none fixed inset-0 z-0 h-full w-full overflow-hidden">
+<div
+	class="pointer-events-none fixed inset-0 z-0 h-full w-full overflow-hidden"
+	data-test-id="auth-background"
+>
 	<Canvas>
 		<Scene />
 	</Canvas>

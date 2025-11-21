@@ -5,7 +5,7 @@
 	import { language } from '$lib/stores/language.svelte';
 	import { DashboardService } from '$lib/services/DashboardService';
 	import { t } from '$lib/i18n';
-	import { formatDate, getCertificateStatus } from '$lib/utils/date';
+	import { formatDate } from '$lib/utils/date';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -49,7 +49,10 @@
 	<link rel="canonical" href="/dashboard" />
 </svelte:head>
 
-<div class="animate-in fade-in slide-in-from-bottom-4 min-h-[80vh] space-y-8 duration-500">
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 min-h-[80vh] space-y-8 duration-500"
+	data-test-id="dashboard-page"
+>
 	<div class="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
 		<div>
 			<h1
@@ -68,7 +71,11 @@
 			</p>
 		</div>
 		<div class="flex gap-3">
-			<Button variant="outline" onclick={() => goto('/workspaces')}>
+			<Button
+				variant="outline"
+				onclick={() => goto('/workspaces')}
+				data-test-id="dashboard-workspaces-button"
+			>
 				<Icon name="workspaces" class="mr-2 h-5 w-5" />
 				{t('workspaces.title', language.current)}
 			</Button>
@@ -84,6 +91,7 @@
 			<Card
 				variant="glass"
 				class="from-primary/5 to-primary/10 border-primary/20 bg-gradient-to-br transition-transform hover:scale-[1.02]"
+				data-test-id="dashboard-stat-card-workspaces"
 			>
 				<div class="flex items-center gap-4">
 					<div class="bg-primary/20 text-primary shadow-primary/10 rounded-xl p-3 shadow-inner">
@@ -98,7 +106,11 @@
 				</div>
 			</Card>
 
-			<Card variant="glass" class="transition-transform hover:scale-[1.02]">
+			<Card
+				variant="glass"
+				class="transition-transform hover:scale-[1.02]"
+				data-test-id="dashboard-stat-card-certificates"
+			>
 				<div class="flex items-center gap-4">
 					<div class="bg-base-content/5 text-base-content rounded-xl p-3 shadow-inner">
 						<Icon name="certificates" class="h-8 w-8" />
@@ -112,7 +124,11 @@
 				</div>
 			</Card>
 
-			<Card variant="glass" class="transition-transform hover:scale-[1.02]">
+			<Card
+				variant="glass"
+				class="transition-transform hover:scale-[1.02]"
+				data-test-id="dashboard-stat-card-active"
+			>
 				<div class="flex items-center gap-4">
 					<div class="bg-success/10 text-success shadow-success/10 rounded-xl p-3 shadow-inner">
 						<Icon name="checkCircle" class="h-8 w-8" />
@@ -126,7 +142,11 @@
 				</div>
 			</Card>
 
-			<Card variant="glass" class="transition-transform hover:scale-[1.02]">
+			<Card
+				variant="glass"
+				class="transition-transform hover:scale-[1.02]"
+				data-test-id="dashboard-stat-card-expiring"
+			>
 				<div class="flex items-center gap-4">
 					<div class="bg-warning/10 text-warning shadow-warning/10 rounded-xl p-3 shadow-inner">
 						<Icon name="alert" class="h-8 w-8" />
@@ -148,7 +168,12 @@
 						<Icon name="time" class="text-warning h-6 w-6" />
 						{t('dashboard.expiringSoon', language.current)}
 					</h2>
-					<Button variant="ghost" size="sm" onclick={() => goto('/certificates?filter=expiring')}>
+					<Button
+						variant="ghost"
+						size="sm"
+						onclick={() => goto('/certificates?filter=expiring')}
+						data-test-id="dashboard-view-all-expiring-button"
+					>
 						{t('common.viewAll', language.current)}
 						<Icon name="rightArrow" class="ml-2 h-4 w-4" />
 					</Button>
@@ -159,6 +184,7 @@
 						{#each expiringCerts as cert}
 							<div
 								class="card bg-base-100/50 border-base-content/5 hover:border-warning/30 hover:shadow-warning/5 group border transition-all duration-300 hover:shadow-lg"
+								data-test-id={`dashboard-expiring-cert-item-${cert.id}`}
 							>
 								<div class="card-body flex-row items-center gap-4 p-4">
 									<div
@@ -189,6 +215,7 @@
 										size="sm"
 										shape="circle"
 										onclick={() => goto(`/certificates/${cert.id}`)}
+										data-test-id={`dashboard-view-cert-button-${cert.id}`}
 									>
 										<Icon name="rightArrow" class="h-4 w-4" />
 									</Button>
@@ -215,6 +242,7 @@
 					<button
 						class="hover:bg-base-content/5 group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
 						onclick={() => goto('/certificates?action=upload')}
+						data-test-id="dashboard-quick-action-upload"
 					>
 						<div
 							class="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content rounded-lg p-2 transition-colors"
@@ -227,6 +255,7 @@
 					<button
 						class="hover:bg-base-content/5 group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
 						onclick={() => goto('/workspaces?action=create')}
+						data-test-id="dashboard-quick-action-create-workspace"
 					>
 						<div
 							class="bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-secondary-content rounded-lg p-2 transition-colors"
@@ -239,6 +268,7 @@
 					<button
 						class="hover:bg-base-content/5 group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
 						onclick={() => goto('/profile')}
+						data-test-id="dashboard-quick-action-profile"
 					>
 						<div
 							class="bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-content rounded-lg p-2 transition-colors"

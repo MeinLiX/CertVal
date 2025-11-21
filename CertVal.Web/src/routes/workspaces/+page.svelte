@@ -48,7 +48,7 @@
 		const action = page.url.searchParams.get('action');
 		if (action === 'create') {
 			openCreateModal();
-			
+
 			const newUrl = new URL(window.location.href);
 			newUrl.searchParams.delete('action');
 			goto(newUrl.toString(), { replaceState: true, keepFocus: true, noScroll: true });
@@ -105,7 +105,10 @@
 	<title>{t('workspaces.title', language.current)}</title>
 </svelte:head>
 
-<div class="animate-in fade-in slide-in-from-bottom-4 min-h-[80vh] space-y-8 duration-500">
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 min-h-[80vh] space-y-8 duration-500"
+	data-test-id="workspaces-page"
+>
 	<div class="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
 		<div class="space-y-2">
 			<h1
@@ -126,6 +129,7 @@
 					icon="search"
 					variant="bordered"
 					class="bg-base-100/50"
+					data-test-id="search-workspace-input"
 				/>
 			</div>
 			<Button
@@ -133,7 +137,7 @@
 				size="md"
 				class="shadow-primary/20 hover:shadow-primary/40 whitespace-nowrap shadow-lg transition-all"
 				onclick={openCreateModal}
-				data-testid="create-workspace-btn"
+				data-test-id="create-workspace-button"
 			>
 				<Icon name="plus" class="mr-2 h-5 w-5" />
 				{t('workspaces.create', language.current)}
@@ -159,6 +163,7 @@
 				<Card
 					variant="glass"
 					class="hover:border-primary/30 group flex h-full flex-col transition-all duration-300"
+					data-test-id={`workspace-card-${workspace.id}`}
 				>
 					<div class="mb-4 flex items-start justify-between">
 						<h3
@@ -233,6 +238,7 @@
 							size="sm"
 							class="group-hover:bg-primary group-hover:text-primary-content"
 							onclick={() => goto(`/workspaces/${workspace.id}`)}
+							data-test-id={`view-workspace-${workspace.id}`}
 						>
 							{t('common.view', language.current)}
 							<Icon name="rightArrow" class="ml-2 h-4 w-4" />
@@ -255,7 +261,11 @@
 					: t('workspaces.emptyDescription', language.current)}
 			</p>
 			{#if !searchQuery}
-				<Button variant="primary" onclick={openCreateModal}>
+				<Button
+					variant="primary"
+					onclick={openCreateModal}
+					data-test-id="empty-state-create-workspace-button"
+				>
 					{t('workspaces.createFirst', language.current)}
 				</Button>
 			{/if}
@@ -267,6 +277,7 @@
 	isOpen={showCreateModal}
 	title={t('workspaces.create', language.current)}
 	onClose={() => (showCreateModal = false)}
+	data-test-id="create-workspace-modal"
 >
 	<form onsubmit={handleCreateWorkspace} class="space-y-6">
 		<Input
@@ -275,6 +286,7 @@
 			error={errors.name}
 			required
 			placeholder={t('workspaces.namePlaceholder', language.current)}
+			data-test-id="create-workspace-name-input"
 		/>
 
 		<Input
@@ -282,6 +294,7 @@
 			bind:value={createForm.description}
 			error={errors.description}
 			placeholder={t('workspaces.descriptionPlaceholder', language.current)}
+			data-test-id="create-workspace-description-input"
 		/>
 
 		<Input
@@ -291,6 +304,7 @@
 			error={errors.maxCertificates}
 			min="1"
 			max="10000"
+			data-test-id="create-workspace-max-certs-input"
 		/>
 
 		<div class="form-control">
@@ -299,6 +313,7 @@
 					type="checkbox"
 					class="checkbox checkbox-primary"
 					bind:checked={createForm.isPublic}
+					data-test-id="create-workspace-public-checkbox"
 				/>
 				<span class="label-text font-medium">{t('workspaces.isPublic', language.current)}</span>
 			</label>
@@ -310,6 +325,7 @@
 					type="checkbox"
 					class="checkbox checkbox-primary"
 					bind:checked={createForm.allowMemberInvites}
+					data-test-id="create-workspace-invites-checkbox"
 				/>
 				<span class="label-text font-medium"
 					>{t('workspaces.allowMemberInvites', language.current)}</span
@@ -325,10 +341,20 @@
 		{/if}
 
 		<div class="flex justify-end gap-3 pt-4">
-			<Button variant="ghost" onclick={() => (showCreateModal = false)} disabled={isCreating}>
+			<Button
+				variant="ghost"
+				onclick={() => (showCreateModal = false)}
+				disabled={isCreating}
+				data-test-id="create-workspace-cancel-button"
+			>
 				{t('common.cancel', language.current)}
 			</Button>
-			<Button type="submit" variant="primary" loading={isCreating}>
+			<Button
+				type="submit"
+				variant="primary"
+				loading={isCreating}
+				data-test-id="create-workspace-submit-button"
+			>
 				{t('common.create', language.current)}
 			</Button>
 		</div>

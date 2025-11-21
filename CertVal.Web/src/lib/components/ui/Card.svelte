@@ -20,6 +20,7 @@
 		image?: Snippet;
 		actions?: Snippet;
 		'data-testid'?: string;
+		'data-test-id'?: string;
 		id?: string;
 		'aria-label'?: string;
 		'aria-labelledby'?: string;
@@ -42,6 +43,7 @@
 		image,
 		actions,
 		'data-testid': testId,
+		'data-test-id': testIdAlt,
 		id,
 		'aria-label': ariaLabel,
 		'aria-labelledby': ariaLabelledBy,
@@ -134,6 +136,7 @@
 		aria-labelledby={ariaLabelledBy || titleId}
 		aria-busy={isProcessing}
 		data-testid={testId}
+		data-test-id={testIdAlt ?? testId}
 		onclick={handleClick}
 		onkeydown={handleKeydown}
 	>
@@ -194,6 +197,7 @@
 		aria-labelledby={ariaLabelledBy || titleId}
 		aria-busy={isProcessing}
 		data-testid={testId}
+		data-test-id={testIdAlt ?? testId}
 		onclick={handleClick}
 		onkeydown={handleKeydown}
 	>

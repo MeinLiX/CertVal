@@ -15,7 +15,10 @@
 	<title>{t('nav.documentation', language.current)}</title>
 </svelte:head>
 
-<div class="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500">
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-500"
+	data-test-id="docs-page"
+>
 	<div class="border-base-content/10 flex items-center justify-between border-b pb-6">
 		<div>
 			<h1
@@ -33,6 +36,7 @@
 			rel="noopener noreferrer"
 			variant="outline"
 			class="gap-2"
+			data-test-id="open-docs-button"
 		>
 			<Icon name="externalLink" class="h-4 w-4" />
 			{t('common.openDocsInNewTab', language.current)}
@@ -42,6 +46,11 @@
 	<div
 		class="border-base-content/10 bg-base-100/50 h-[65vh] overflow-hidden rounded-2xl border shadow-sm backdrop-blur-sm"
 	>
-		<iframe src={scalarUrl} class="h-full w-full bg-transparent" title="API Documentation"></iframe>
+		<iframe
+			src={scalarUrl}
+			class="h-full w-full bg-transparent"
+			title="API Documentation"
+			data-test-id="docs-iframe"
+		></iframe>
 	</div>
 </div>

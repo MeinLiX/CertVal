@@ -7,12 +7,14 @@
 		isOpen = false,
 		itemName = '',
 		onConfirm,
-		onClose
+		onClose,
+		'data-test-id': testId
 	}: {
 		isOpen?: boolean;
 		itemName?: string;
 		onConfirm?: () => Promise<void> | void;
 		onClose?: () => void;
+		'data-test-id'?: string;
 	} = $props();
 
 	let isProcessing = $state(false);
@@ -31,16 +33,26 @@
 	}
 </script>
 
-<Modal {isOpen} title={t('common.confirmDelete', language.current)} {onClose}>
+<Modal {isOpen} title={t('common.confirmDelete', language.current)} {onClose} data-test-id={testId}>
 	<div class="space-y-4">
 		<p class="text-base-content/80">
 			{t('common.confirmDeleteMessage', language.current, { name: itemName })}
 		</p>
 		<div class="flex justify-end gap-2">
-			<Button variant="ghost" onclick={onClose} disabled={isProcessing}>
+			<Button
+				variant="ghost"
+				onclick={onClose}
+				disabled={isProcessing}
+				data-test-id={testId ? `${testId}-cancel` : undefined}
+			>
 				{t('common.cancel')}
 			</Button>
-			<Button variant="error" onclick={handleConfirm} loading={isProcessing}>
+			<Button
+				variant="error"
+				onclick={handleConfirm}
+				loading={isProcessing}
+				data-test-id={testId ? `${testId}-confirm` : undefined}
+			>
 				{t('common.delete')}
 			</Button>
 		</div>

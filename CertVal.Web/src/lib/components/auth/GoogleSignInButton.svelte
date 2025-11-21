@@ -2,10 +2,16 @@
 	import { language } from '$lib/stores/language.svelte';
 	import { t } from '$lib/i18n';
 
-	let { onSuccess, onError, onLoad } = $props<{
+	let {
+		onSuccess,
+		onError,
+		onLoad,
+		'data-test-id': testId = 'google-signin-button'
+	} = $props<{
 		onSuccess: (token: string) => void;
 		onError: (error: string) => void;
 		onLoad?: () => void;
+		'data-test-id'?: string;
 	}>();
 
 	let container = $state<HTMLDivElement>();
@@ -72,8 +78,8 @@
 				type: 'standard',
 				theme: 'outline',
 				size: 'large',
-				shape: 'rectangular',
 				text: 'signin_with',
+				shape: 'rectangular',
 				logo_alignment: 'left',
 				width: 320
 			});
@@ -94,4 +100,4 @@
 	}
 </script>
 
-<div bind:this={container} class="flex min-h-[40px] w-full justify-center"></div>
+<div bind:this={container} class="w-full" data-test-id={testId}></div>

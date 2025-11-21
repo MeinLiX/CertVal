@@ -39,6 +39,7 @@
 	class="group/card certificate-card relative h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
 	clickable={true}
 	onclick={() => goto(`/certificates/${certificate.id}`)}
+	data-test-id={`certificate-card-${certificate.id}`}
 >
 	<div
 		class="absolute left-0 top-0 h-full w-1 {statusInfo()

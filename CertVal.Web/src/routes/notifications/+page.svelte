@@ -193,7 +193,10 @@
 	<title>{t('notifications.title', language.current)}</title>
 </svelte:head>
 
-<div class="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500">
+<div
+	class="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500"
+	data-test-id="notifications-page"
+>
 	<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
 		<div>
 			<h1
@@ -206,11 +209,15 @@
 			</p>
 		</div>
 		<div class="flex gap-2">
-			<Button variant="outline" onclick={loadHistory}>
+			<Button variant="outline" onclick={loadHistory} data-test-id="notification-history-button">
 				<Icon name="document" class="mr-2 h-5 w-5" />
 				{t('notifications.history', language.current)}
 			</Button>
-			<Button variant="primary" onclick={openCreateModal}>
+			<Button
+				variant="primary"
+				onclick={openCreateModal}
+				data-test-id="create-notification-rule-button"
+			>
 				<Icon name="plus" class="mr-2 h-5 w-5" />
 				{t('notifications.create', language.current)}
 			</Button>
@@ -229,6 +236,7 @@
 				class="select select-bordered focus:select-primary w-full transition-all"
 				bind:value={selectedWorkspaceId}
 				onchange={loadRulesForWorkspace}
+				data-test-id="notification-workspace-select"
 			>
 				{#each workspaces as workspace}
 					<option value={workspace.id}>{workspace.name}</option>
@@ -252,7 +260,11 @@
 			<p class="text-base-content/60 mb-8 max-w-md">
 				{t('notifications.empty.description', language.current)}
 			</p>
-			<Button variant="outline" onclick={openCreateModal}>
+			<Button
+				variant="outline"
+				onclick={openCreateModal}
+				data-test-id="empty-state-create-rule-button"
+			>
 				{t('notifications.create', language.current)}
 			</Button>
 		</div>
@@ -262,6 +274,7 @@
 				<Card
 					variant="glass"
 					class="border-base-content/5 hover:border-primary/20 group border transition-all duration-300"
+					data-test-id={`notification-rule-card-${rule.id}`}
 				>
 					<div class="mb-4 flex items-start justify-between">
 						<div
@@ -279,7 +292,10 @@
 								class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
 							>
 								<li>
-									<button class="text-error" onclick={() => handleDeleteRule(rule.id)}
+									<button
+										class="text-error"
+										onclick={() => handleDeleteRule(rule.id)}
+										data-test-id={`delete-rule-button-${rule.id}`}
 										>{t('common.delete', language.current)}</button
 									>
 								</li>
@@ -312,6 +328,7 @@
 	isOpen={showCreateModal}
 	title={t('notifications.create', language.current)}
 	onClose={() => (showCreateModal = false)}
+	data-test-id="create-notification-rule-modal"
 >
 	<form onsubmit={handleCreateRule} class="space-y-4">
 		{#if errors.general}
@@ -323,6 +340,7 @@
 			bind:value={createForm.name}
 			required
 			placeholder="e.g. 30 Days Warning"
+			data-test-id="create-rule-name-input"
 		/>
 
 		<Input
@@ -330,6 +348,7 @@
 			label={t('notifications.daysBefore', language.current)}
 			bind:value={createForm.daysBeforeExpiry}
 			required
+			data-test-id="create-rule-days-input"
 		/>
 
 		<Select
@@ -340,6 +359,7 @@
 				{ value: 'Daily', label: 'Daily' },
 				{ value: 'Weekly', label: 'Weekly' }
 			]}
+			data-test-id="create-rule-frequency-select"
 		/>
 
 		<div class="form-control">
@@ -350,6 +370,7 @@
 				id="channel"
 				class="select select-bordered focus:select-primary w-full transition-all"
 				bind:value={createForm.channelType}
+				data-test-id="create-rule-channel-select"
 			>
 				<option value="Email">Email</option>
 				<option value="Webhook">Webhook</option>
@@ -362,6 +383,7 @@
 				bind:value={webhookUrl}
 				required
 				placeholder="https://api.example.com/webhook"
+				data-test-id="create-rule-webhook-input"
 			/>
 		{/if}
 
@@ -385,6 +407,7 @@
 									class="checkbox checkbox-sm checkbox-primary"
 									value={member.userId}
 									bind:group={createForm.recipientUserIds}
+									data-test-id={`create-rule-recipient-${member.userId}`}
 								/>
 								<div class="flex flex-col">
 									<span class="label-text font-medium"
@@ -412,6 +435,7 @@
 							label: t('notifications.aggregationIndividualOption', language.current)
 						}
 					]}
+					data-test-id="create-rule-aggregation-select"
 				/>
 			{/if}
 		{/if}
@@ -422,10 +446,16 @@
 				variant="ghost"
 				onclick={() => (showCreateModal = false)}
 				disabled={isProcessing}
+				data-test-id="create-rule-cancel-button"
 			>
 				{t('common.cancel', language.current)}
 			</Button>
-			<Button type="submit" variant="primary" loading={isProcessing}>
+			<Button
+				type="submit"
+				variant="primary"
+				loading={isProcessing}
+				data-test-id="create-rule-submit-button"
+			>
 				{t('common.create', language.current)}
 			</Button>
 		</div>
@@ -440,12 +470,14 @@
 		pendingDeleteRuleId = null;
 		showConfirmModal = false;
 	}}
+	data-test-id="delete-rule-confirm-modal"
 />
 
 <Modal
 	isOpen={showHistoryModal}
 	title={t('notifications.history', language.current)}
 	onClose={() => (showHistoryModal = false)}
+	data-test-id="notification-history-modal"
 >
 	<div class="max-h-96 space-y-2 overflow-y-auto">
 		{#if isProcessing}
@@ -472,7 +504,8 @@
 		{/if}
 	</div>
 	<div class="modal-action">
-		<Button onclick={() => (showHistoryModal = false)}>{t('common.close', language.current)}</Button
+		<Button onclick={() => (showHistoryModal = false)} data-test-id="history-modal-close-button"
+			>{t('common.close', language.current)}</Button
 		>
 	</div>
 </Modal>
