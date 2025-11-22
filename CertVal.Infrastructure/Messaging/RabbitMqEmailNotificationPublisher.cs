@@ -8,13 +8,14 @@ using System.Text.Json;
 
 namespace CertVal.Infrastructure.Messaging;
 
-public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, IDisposable
+public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, IAsyncDisposable
 {
     private readonly IConnection _connection;
     private readonly MessagingConfiguration _config;
     private readonly IConfiguration _appConfig;
     private readonly ILogger<RabbitMqEmailNotificationPublisher> _logger;
-    private readonly Lazy<IModel> _channelLazy;
+    private IChannel? _channel;
+    private readonly SemaphoreSlim _channelLock = new(1, 1);
     private bool _disposed;
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -33,8 +34,6 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
         _config = messagingOptions.Value ?? throw new ArgumentNullException(nameof(messagingOptions));
         _appConfig = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        _channelLazy = new Lazy<IModel>(CreateChannel);
     }
 
     public async Task PublishAsync(EmailNotificationMessage message, CancellationToken cancellationToken = default)
@@ -43,23 +42,35 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
 
         try
         {
-            var channel = _channelLazy.Value;
+            var channel = await GetChannelAsync();
             var messageJson = JsonSerializer.Serialize(message, SerializerOptions);
             var body = Encoding.UTF8.GetBytes(messageJson);
 
-            var properties = CreateBasicProperties(channel, message);
+            var properties = new BasicProperties
+            {
+                MessageId = message.MessageId,
+                Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
+                Persistent = _config.PersistentMessages,
+                Type = message.Type.ToString(),
+                ContentType = "application/json",
+                ContentEncoding = "utf-8"
+            };
 
-            channel.BasicPublish(
+            if (!string.IsNullOrEmpty(message.CorrelationId))
+            {
+                properties.CorrelationId = message.CorrelationId;
+            }
+
+            await channel.BasicPublishAsync(
                 exchange: _config.ExchangeName,
                 routingKey: _config.EmailRoutingKey,
                 mandatory: false,
                 basicProperties: properties,
-                body: body);
+                body: body,
+                cancellationToken: cancellationToken);
 
             _logger.LogDebug("Published email notification: {MessageId}, Type: {Type}, To: {Email}",
                 message.MessageId, message.Type, message.ToEmail);
-
-            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -185,27 +196,44 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
         await PublishAsync(message, cancellationToken);
     }
 
-    private IModel CreateChannel()
+    private async Task<IChannel> GetChannelAsync()
+    {
+        if (_channel != null) return _channel;
+
+        await _channelLock.WaitAsync();
+        try
+        {
+            if (_channel != null) return _channel;
+            _channel = await CreateChannelAsync();
+            return _channel;
+        }
+        finally
+        {
+            _channelLock.Release();
+        }
+    }
+
+    private async Task<IChannel> CreateChannelAsync()
     {
         try
         {
-            var channel = _connection.CreateModel();
+            var channel = await _connection.CreateChannelAsync();
 
             // Declare exchange
-            channel.ExchangeDeclare(
+            await channel.ExchangeDeclareAsync(
                 exchange: _config.ExchangeName,
                 type: ExchangeType.Direct,
                 durable: _config.DurableQueues);
 
             // Declare queue
-            channel.QueueDeclare(
+            await channel.QueueDeclareAsync(
                 queue: _config.EmailQueueName,
                 durable: _config.DurableQueues,
                 exclusive: false,
                 autoDelete: false);
 
             // Bind queue
-            channel.QueueBind(
+            await channel.QueueBindAsync(
                 queue: _config.EmailQueueName,
                 exchange: _config.ExchangeName,
                 routingKey: _config.EmailRoutingKey);
@@ -220,24 +248,6 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
             _logger.LogError(ex, "Failed to create RabbitMQ channel");
             throw;
         }
-    }
-
-    private IBasicProperties CreateBasicProperties(IModel channel, EmailNotificationMessage message)
-    {
-        var properties = channel.CreateBasicProperties();
-        properties.MessageId = message.MessageId;
-        properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-        properties.Persistent = _config.PersistentMessages;
-        properties.Type = message.Type.ToString();
-        properties.ContentType = "application/json";
-        properties.ContentEncoding = "utf-8";
-
-        if (!string.IsNullOrEmpty(message.CorrelationId))
-        {
-            properties.CorrelationId = message.CorrelationId;
-        }
-
-        return properties;
     }
 
     private EmailNotificationMessage CreateEmailMessage(
@@ -260,16 +270,18 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
         };
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
 
         try
         {
-            if (_channelLazy.IsValueCreated)
+            if (_channel != null)
             {
-                _channelLazy.Value?.Dispose();
+                await _channel.CloseAsync();
+                await _channel.DisposeAsync();
             }
+            _channelLock.Dispose();
         }
         catch (Exception ex)
         {
@@ -280,9 +292,8 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
         GC.SuppressFinalize(this);
     }
 
-    public ValueTask DisposeAsync()
+    public void Dispose()
     {
-        Dispose();
-        return ValueTask.CompletedTask;
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 }
