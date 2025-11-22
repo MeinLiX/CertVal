@@ -103,7 +103,7 @@
 	data-test-id="certificate-details-page"
 >
 	{#if isLoading}
-		<GlobalLoader variant="inline" />
+		<GlobalLoader variant="overlay" />
 	{:else if !certificate}
 		<Card variant="glass" class="border-error/20 bg-error/5">
 			<div class="flex flex-col items-center justify-center py-12 text-center">
