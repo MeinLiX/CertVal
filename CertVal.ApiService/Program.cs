@@ -1,4 +1,3 @@
-using CertVal.ApiService;
 using CertVal.Application;
 using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Middleware;
@@ -47,18 +46,16 @@ builder.Services.AddOpenApi("v1", options =>
         };
 
         document.Components ??= new();
-
-        //todo: fix error after up packages
-        /*document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>
+        document.Components.SecuritySchemes = new Dictionary<string, IOpenApiSecurityScheme>
         {
-            ["Bearer"] = new()
+            ["Bearer"] = new OpenApiSecurityScheme()
             {
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT",
                 Description = "JWT Authorization header using the Bearer scheme."
             },
-            ["ApiKey"] = new()
+            ["ApiKey"] = new OpenApiSecurityScheme()
             {
                 Type = SecuritySchemeType.ApiKey,
                 In = ParameterLocation.Header,
@@ -67,18 +64,12 @@ builder.Services.AddOpenApi("v1", options =>
             }
         };
 
-        document.SecurityRequirements = new List<OpenApiSecurityRequirement>
-        {
-            new()
-            {
-                [new OpenApiSecurityScheme { Reference = new() { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = []
-            },
-            new()
-            {
-                [new OpenApiSecurityScheme { Reference = new() { Type = ReferenceType.SecurityScheme, Id = "ApiKey" } }] = []
-            }
-        };
-        */
+        document.Security =
+        [
+            new() { [new OpenApiSecuritySchemeReference("Bearer", document)] = [] },
+            new() { [new OpenApiSecuritySchemeReference("ApiKey", document)] = [] }
+        ];
+
         return Task.CompletedTask;
     });
 });
