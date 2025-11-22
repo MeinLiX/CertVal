@@ -16,9 +16,9 @@ public class RabbitMqService : IRabbitMqService
     private readonly IConnection _connection;
     private readonly EmailServiceMetrics _metrics;
     private readonly IdempotencyTracker _idempotencyTracker;
-    private readonly object _channelLock = new();
+    private readonly SemaphoreSlim _channelLock = new(1, 1);
 
-    private IModel? _channel;
+    private IChannel? _channel;
     private string? _consumerTag;
     private bool _disposed;
 
@@ -43,14 +43,26 @@ public class RabbitMqService : IRabbitMqService
         _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
         _idempotencyTracker = idempotencyTracker ?? throw new ArgumentNullException(nameof(idempotencyTracker));
 
-        _connection.CallbackException += (_, args) =>
+        _connection.CallbackExceptionAsync += (_, args) =>
+        {
             _logger.LogError(args.Exception, "RabbitMQ connection callback exception");
-        _connection.ConnectionShutdown += (_, reason) =>
+            return Task.CompletedTask;
+        };
+        _connection.ConnectionShutdownAsync += (_, reason) =>
+        {
             _logger.LogWarning("RabbitMQ connection shutdown: {ReplyText}", reason.ReplyText);
-        _connection.ConnectionBlocked += (_, reason) =>
+            return Task.CompletedTask;
+        };
+        _connection.ConnectionBlockedAsync += (_, reason) =>
+        {
             _logger.LogWarning("RabbitMQ connection blocked: {Reason}", reason.Reason);
-        _connection.ConnectionUnblocked += (_, __) =>
+            return Task.CompletedTask;
+        };
+        _connection.ConnectionUnblockedAsync += (_, __) =>
+        {
             _logger.LogInformation("RabbitMQ connection unblocked");
+            return Task.CompletedTask;
+        };
     }
 
     public async Task StartConsumingAsync(CancellationToken cancellationToken)
@@ -62,17 +74,16 @@ public class RabbitMqService : IRabbitMqService
             _logger.LogInformation("Config: Exchange={Exchange}, Queue={Queue}, RoutingKey={RoutingKey}",
                 _config.ExchangeName, _config.EmailQueueName, _config.EmailRoutingKey);
 
-            SetupQueue();
-            StartConsumer();
+            await SetupQueueAsync();
+            await StartConsumerAsync();
 
             if (cancellationToken.CanBeCanceled)
             {
                 cancellationToken.Register(() => _ = StopConsumingAsync());
             }
 
-            LogQueueStatus();
+            await LogQueueStatusAsync();
             _logger.LogInformation("Started consuming messages from queue: {QueueName}", _config.EmailQueueName);
-            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -81,13 +92,13 @@ public class RabbitMqService : IRabbitMqService
         }
     }
 
-    public Task StopConsumingAsync()
+    public async Task StopConsumingAsync()
     {
         try
         {
             if (!string.IsNullOrEmpty(_consumerTag) && _channel?.IsOpen == true)
             {
-                _channel.BasicCancel(_consumerTag);
+                await _channel.BasicCancelAsync(_consumerTag);
                 _consumerTag = null;
                 _logger.LogInformation("Stopped consuming messages");
             }
@@ -96,31 +107,31 @@ public class RabbitMqService : IRabbitMqService
         {
             _logger.LogError(ex, "Error stopping message consumer");
         }
-
-        return Task.CompletedTask;
     }
 
-    private void SetupQueue()
+    private async Task SetupQueueAsync()
     {
-        EnsureChannel();
+        await EnsureChannelAsync();
     }
 
-    private void StartConsumer()
+    private async Task StartConsumerAsync()
     {
-        var channel = EnsureChannel();
+        var channel = await EnsureChannelAsync();
         if (!string.IsNullOrEmpty(_consumerTag)) return;
 
-        var consumer = new EventingBasicConsumer(channel);
+        var consumer = new AsyncEventingBasicConsumer(channel);
 
-        consumer.Registered += (_, e) =>
+        consumer.RegisteredAsync += (_, e) =>
         {
             _logger.LogInformation("Consumer registered: {ConsumerTag}", e.ConsumerTags.FirstOrDefault());
+            return Task.CompletedTask;
         };
-        consumer.Shutdown += (_, e) =>
+        consumer.ShutdownAsync += (_, e) =>
         {
             _logger.LogWarning("Consumer shutdown: {ReplyText}", e.ReplyText);
+            return Task.CompletedTask;
         };
-        consumer.Received += async (_, eventArgs) =>
+        consumer.ReceivedAsync += async (_, eventArgs) =>
         {
             try
             {
@@ -132,7 +143,7 @@ public class RabbitMqService : IRabbitMqService
             }
         };
 
-        _consumerTag = channel.BasicConsume(
+        _consumerTag = await channel.BasicConsumeAsync(
             queue: _config.EmailQueueName,
             autoAck: false,
             consumer: consumer);
@@ -140,32 +151,42 @@ public class RabbitMqService : IRabbitMqService
         _logger.LogInformation("BasicConsume started. ConsumerTag={ConsumerTag}", _consumerTag);
     }
 
-    private IModel EnsureChannel()
+    private async Task<IChannel> EnsureChannelAsync()
     {
         if (_disposed) throw new ObjectDisposedException(nameof(RabbitMqService));
 
-        lock (_channelLock)
+        await _channelLock.WaitAsync();
+        try
         {
             if (_channel?.IsOpen == true) return _channel;
 
             try
             {
-                _channel?.Dispose();
-                var ch = _connection.CreateModel();
-                ch.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+                if (_channel != null)
+                {
+                    await _channel.CloseAsync();
+                    await _channel.DisposeAsync();
+                }
 
-                ch.CallbackException += (_, args) =>
+                var ch = await _connection.CreateChannelAsync();
+                await ch.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
+
+                ch.CallbackExceptionAsync += (_, args) =>
+                {
                     _logger.LogError(args.Exception, "RabbitMQ channel callback exception");
-                ch.ModelShutdown += (_, reason) =>
+                    return Task.CompletedTask;
+                };
+                ch.ChannelShutdownAsync += (_, reason) =>
                 {
                     _logger.LogWarning("RabbitMQ channel shutdown: {ReplyText}", reason.ReplyText);
                     if (!reason.Initiator.Equals(ShutdownInitiator.Application))
                     {
                         _logger.LogInformation("Attempting to recover channel...");
                     }
+                    return Task.CompletedTask;
                 };
 
-                DeclareTopology(ch);
+                await DeclareTopologyAsync(ch);
                 _channel = ch;
                 _logger.LogInformation("RabbitMQ channel created successfully");
                 return ch;
@@ -176,22 +197,26 @@ public class RabbitMqService : IRabbitMqService
                 throw;
             }
         }
+        finally
+        {
+            _channelLock.Release();
+        }
     }
 
-    private void DeclareTopology(IModel ch)
+    private async Task DeclareTopologyAsync(IChannel ch)
     {
-        ch.ExchangeDeclare(
+        await ch.ExchangeDeclareAsync(
             exchange: _config.ExchangeName,
             type: ExchangeType.Direct,
             durable: _config.DurableQueues);
 
-        ch.QueueDeclare(
+        await ch.QueueDeclareAsync(
             queue: _config.EmailQueueName,
             durable: _config.DurableQueues,
             exclusive: false,
             autoDelete: false);
 
-        ch.QueueBind(
+        await ch.QueueBindAsync(
             queue: _config.EmailQueueName,
             exchange: _config.ExchangeName,
             routingKey: _config.EmailRoutingKey);
@@ -199,26 +224,26 @@ public class RabbitMqService : IRabbitMqService
         var dlxName = $"{_config.ExchangeName}-dlx";
         var retryQueueName = $"{_config.EmailQueueName}-retry";
 
-        ch.ExchangeDeclare(
+        await ch.ExchangeDeclareAsync(
             exchange: dlxName,
             type: ExchangeType.Direct,
             durable: _config.DurableQueues);
 
-        var retryQueueArgs = new Dictionary<string, object>
+        var retryQueueArgs = new Dictionary<string, object?>
         {
             ["x-dead-letter-exchange"] = _config.ExchangeName,
             ["x-dead-letter-routing-key"] = _config.EmailRoutingKey,
             ["x-message-ttl"] = (int)_config.RetryDelay.TotalMilliseconds
         };
 
-        ch.QueueDeclare(
+        await ch.QueueDeclareAsync(
             queue: retryQueueName,
             durable: _config.DurableQueues,
             exclusive: false,
             autoDelete: false,
             arguments: retryQueueArgs);
 
-        ch.QueueBind(
+        await ch.QueueBindAsync(
             queue: retryQueueName,
             exchange: dlxName,
             routingKey: _config.EmailRoutingKey);
@@ -227,12 +252,12 @@ public class RabbitMqService : IRabbitMqService
             _config.ExchangeName, _config.EmailQueueName, _config.EmailRoutingKey, retryQueueName);
     }
 
-    private void LogQueueStatus()
+    private async Task LogQueueStatusAsync()
     {
         try
         {
-            var channel = EnsureChannel();
-            var result = channel.QueueDeclarePassive(_config.EmailQueueName);
+            var channel = await EnsureChannelAsync();
+            var result = await channel.QueueDeclarePassiveAsync(_config.EmailQueueName);
             _logger.LogInformation("Queue status: {Queue} -> messages={MessageCount}, consumers={ConsumerCount}",
                 _config.EmailQueueName, result.MessageCount, result.ConsumerCount);
 
@@ -258,7 +283,7 @@ public class RabbitMqService : IRabbitMqService
             {
                 _logger.LogWarning("Failed to deserialize message, rejecting");
                 _metrics.RecordMessageFailed("unknown", "deserialization_failed");
-                AcknowledgeMessage(eventArgs, success: false);
+                await AcknowledgeMessageAsync(eventArgs, success: false);
                 return;
             }
 
@@ -266,7 +291,7 @@ public class RabbitMqService : IRabbitMqService
             {
                 _logger.LogWarning("Duplicate message {MessageId} detected, skipping", message.MessageId);
                 _metrics.RecordMessageFailed(message.Type.ToString(), "duplicate_message");
-                AcknowledgeMessage(eventArgs, success: true);
+                await AcknowledgeMessageAsync(eventArgs, success: true);
                 return;
             }
 
@@ -274,7 +299,7 @@ public class RabbitMqService : IRabbitMqService
             {
                 _logger.LogError("Message {MessageId} exceeded max retry attempts, discarding", message.MessageId);
                 _metrics.RecordMessageFailed(message.Type.ToString(), "max_retries_exceeded");
-                AcknowledgeMessage(eventArgs, success: false);
+                await AcknowledgeMessageAsync(eventArgs, success: false);
                 return;
             }
 
@@ -287,17 +312,17 @@ public class RabbitMqService : IRabbitMqService
             if (success)
             {
                 _idempotencyTracker.TryMarkAsProcessed(message.MessageId);
-                AcknowledgeMessage(eventArgs, success: true);
+                await AcknowledgeMessageAsync(eventArgs, success: true);
                 return;
             }
 
-            await HandleFailedMessage(message, eventArgs);
+            await HandleFailedMessageAsync(message, eventArgs);
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "Invalid message format, rejecting");
             _metrics.RecordMessageFailed("unknown", "invalid_json");
-            AcknowledgeMessage(eventArgs, success: false);
+            await AcknowledgeMessageAsync(eventArgs, success: false);
         }
         catch (Exception ex)
         {
@@ -306,15 +331,15 @@ public class RabbitMqService : IRabbitMqService
             {
                 _metrics.RecordMessageFailed(message.Type.ToString(), "unexpected_error");
             }
-            AcknowledgeMessage(eventArgs, success: false, requeue: true);
+            await AcknowledgeMessageAsync(eventArgs, success: false, requeue: true);
         }
         finally
         {
-            LogQueueStatus();
+            await LogQueueStatusAsync();
         }
     }
 
-    private async Task HandleFailedMessage(EmailNotificationMessage message, BasicDeliverEventArgs eventArgs)
+    private async Task HandleFailedMessageAsync(EmailNotificationMessage message, BasicDeliverEventArgs eventArgs)
     {
         if (message.RetryCount + 1 < _config.MaxRetryAttempts)
         {
@@ -328,29 +353,27 @@ public class RabbitMqService : IRabbitMqService
             _metrics.RecordMessageFailed(message.Type.ToString(), "permanent_failure");
         }
 
-        AcknowledgeMessage(eventArgs, success: false);
+        await AcknowledgeMessageAsync(eventArgs, success: false);
     }
 
-    private void AcknowledgeMessage(BasicDeliverEventArgs eventArgs, bool success, bool requeue = false)
+    private async Task AcknowledgeMessageAsync(BasicDeliverEventArgs eventArgs, bool success, bool requeue = false)
     {
         try
         {
-            lock (_channelLock)
+            var channel = await EnsureChannelAsync();
+            if (channel.IsOpen != true)
             {
-                if (_channel?.IsOpen != true)
-                {
-                    _logger.LogWarning("Cannot acknowledge message: channel is not open");
-                    return;
-                }
+                _logger.LogWarning("Cannot acknowledge message: channel is not open");
+                return;
+            }
 
-                if (success)
-                {
-                    _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
-                }
-                else
-                {
-                    _channel.BasicNack(eventArgs.DeliveryTag, multiple: false, requeue: requeue);
-                }
+            if (success)
+            {
+                await channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
+            }
+            else
+            {
+                await channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: requeue);
             }
         }
         catch (Exception ex)
@@ -361,46 +384,41 @@ public class RabbitMqService : IRabbitMqService
 
     private async Task RequeueMessageAsync(EmailNotificationMessage message)
     {
-        var channel = EnsureChannel();
+        var channel = await EnsureChannelAsync();
 
         try
         {
             var dlxName = $"{_config.ExchangeName}-dlx";
             var messageJson = JsonSerializer.Serialize(message, JsonOptions);
             var body = Encoding.UTF8.GetBytes(messageJson);
-            var properties = BuildProperties(message, channel);
+            
+            var properties = new BasicProperties
+            {
+                MessageId = message.MessageId,
+                Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
+                Persistent = true,
+                Type = message.Type.ToString()
+            };
 
-            channel.BasicPublish(
+            if (!string.IsNullOrWhiteSpace(message.CorrelationId))
+            {
+                properties.CorrelationId = message.CorrelationId;
+            }
+
+            await channel.BasicPublishAsync(
                 exchange: dlxName,
                 routingKey: _config.EmailRoutingKey,
+                mandatory: false,
                 basicProperties: properties,
                 body: body);
 
             _logger.LogInformation("Message {MessageId} queued for retry (attempt {RetryCount}/{MaxRetries})",
                 message.MessageId, message.RetryCount + 1, _config.MaxRetryAttempts);
-
-            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to requeue message {MessageId}", message.MessageId);
         }
-    }
-
-    private static IBasicProperties BuildProperties(EmailNotificationMessage message, IModel channel)
-    {
-        var properties = channel.CreateBasicProperties();
-        properties.MessageId = message.MessageId;
-        properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-        properties.Persistent = true;
-        properties.Type = message.Type.ToString();
-
-        if (!string.IsNullOrWhiteSpace(message.CorrelationId))
-        {
-            properties.CorrelationId = message.CorrelationId;
-        }
-
-        return properties;
     }
 
     public async ValueTask DisposeAsync()
