@@ -11,6 +11,7 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import type { Workspace, CreateWorkspaceRequest } from '$lib/types';
 
 	let workspaces = $state<Workspace[]>([]);
@@ -146,16 +147,8 @@
 	</div>
 
 	{#if isLoading}
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each Array(3) as _}
-				<div class="card bg-base-100 h-48 animate-pulse shadow-xl">
-					<div class="card-body">
-						<div class="bg-base-300 mb-4 h-6 w-1/2 rounded"></div>
-						<div class="bg-base-300 h-4 w-3/4 rounded"></div>
-						<div class="bg-base-300 mt-2 h-4 w-1/2 rounded"></div>
-					</div>
-				</div>
-			{/each}
+		<div class="relative min-h-[200px]">
+			<GlobalLoader variant="overlay" />
 		</div>
 	{:else if filteredWorkspaces.length > 0}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -258,7 +251,7 @@
 			<p class="text-base-content/60 mb-8 max-w-md">
 				{searchQuery
 					? t('common.noResults', language.current)
-					: t('workspaces.emptyDescription', language.current)}
+					: ''}
 			</p>
 			{#if !searchQuery}
 				<Button

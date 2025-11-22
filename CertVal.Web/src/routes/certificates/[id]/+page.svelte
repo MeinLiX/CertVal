@@ -11,7 +11,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import Loader from '$lib/components/ui/Loader.svelte';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import type { Certificate } from '$lib/types';
 
 	let certificate = $state<Certificate | null>(null);
@@ -103,9 +103,7 @@
 	data-test-id="certificate-details-page"
 >
 	{#if isLoading}
-		<div class="flex h-[60vh] items-center justify-center">
-			<Loader size="lg" variant="glass" />
-		</div>
+		<GlobalLoader variant="inline" />
 	{:else if !certificate}
 		<Card variant="glass" class="border-error/20 bg-error/5">
 			<div class="flex flex-col items-center justify-center py-12 text-center">
@@ -374,7 +372,7 @@
 							</div>
 						{:else}
 							<div class="flex items-center justify-center py-8 opacity-50">
-								<Loader size="sm" />
+								<GlobalLoader variant="inline" size="sm" />
 							</div>
 						{/if}
 					</Card>

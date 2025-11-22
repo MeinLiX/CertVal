@@ -312,8 +312,9 @@
 						class="input input-bordered join-item bg-base-200/50 w-full font-mono text-sm focus:outline-none"
 						data-test-id="new-token-input"
 					/>
-					<button
-						class="btn btn-primary join-item"
+					<Button
+						variant="primary"
+						class="join-item"
 						disabled={isCopied}
 						onclick={() => copyToClipboard(newTokenResponse?.token ?? '')}
 						data-test-id="copy-token-button"
@@ -323,7 +324,7 @@
 						{:else}
 							<Icon name="document" class="h-5 w-5" />
 						{/if}
-					</button>
+					</Button>
 				</div>
 			</div>
 

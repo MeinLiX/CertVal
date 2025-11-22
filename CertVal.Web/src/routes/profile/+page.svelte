@@ -10,7 +10,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import Loader from '$lib/components/ui/Loader.svelte';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import type { User } from '$lib/types';
 
 	let user = $state<User | null>(null);
@@ -71,10 +71,9 @@
 
 	<div class="relative min-h-[400px]">
 		{#if isLoading}
-			<div class="flex h-64 items-center justify-center">
-				<Loader size="lg" />
-			</div>
-		{:else if user}
+			<GlobalLoader variant="overlay" />
+		{/if}
+		{#if user}
 			<Card
 				variant="glass"
 				class="border-primary/10 relative overflow-hidden"

@@ -15,7 +15,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import Loader from '$lib/components/ui/Loader.svelte';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import type {
 		CreateNotificationRuleRequest,
 		NotificationHistory,
@@ -245,11 +245,12 @@
 		</div>
 	</div>
 
-	{#if isLoading}
-		<div class="flex h-64 items-center justify-center">
-			<Loader size="lg" />
-		</div>
-	{:else if rules.length === 0}
+	<div class="relative min-h-[200px]">
+		{#if isLoading}
+			<GlobalLoader variant="overlay" />
+		{/if}
+
+		{#if rules.length === 0 && !isLoading}
 		<div
 			class="bg-base-100/50 border-base-200 flex flex-col items-center justify-center rounded-3xl border py-20 text-center backdrop-blur-sm"
 		>
@@ -283,9 +284,9 @@
 							<Icon name="notifications" class="h-6 w-6" />
 						</div>
 						<div class="dropdown dropdown-end">
-							<div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle">
+							<Button variant="ghost" size="sm" shape="circle">
 								<Icon name="settings" class="h-4 w-4" />
-							</div>
+							</Button>
 							<ul
 								tabindex="0"
 								role="menu"
@@ -322,6 +323,7 @@
 			{/each}
 		</div>
 	{/if}
+	</div>
 </div>
 
 <Modal

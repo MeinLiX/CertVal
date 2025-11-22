@@ -5,15 +5,23 @@
 
 	interface Props {
 		variant?: 'fullscreen' | 'inline' | 'overlay';
+		size?: 'sm' | 'md' | 'lg';
 		class?: string;
 		'data-test-id'?: string;
 	}
 
 	let {
 		variant = 'fullscreen',
+		size = 'lg',
 		class: className = '',
 		'data-test-id': testId = 'global-loader'
 	}: Props = $props();
+
+	const sizeClasses = {
+		sm: 'h-8 w-8',
+		md: 'h-16 w-16',
+		lg: 'h-32 w-32'
+	};
 </script>
 
 <div
@@ -23,13 +31,16 @@
 			? 'bg-base-100/95 fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-xl'
 			: variant === 'overlay'
 				? 'bg-base-100/95 absolute inset-0 z-50 flex items-center justify-center backdrop-blur-xl'
-				: 'flex h-full min-h-[400px] w-full flex-col items-center justify-center py-12',
+				: `flex h-full w-full flex-col items-center justify-center ${size === 'sm' ? 'py-2' : 'py-12 min-h-[400px]'}`,
 		className
 	].join(' ')}
 	transition:fade={{ duration: 500 }}
 >
 	<div class="relative flex flex-col items-center justify-center gap-8">
-		<svg class="h-32 w-32 drop-shadow-[0_0_15px_var(--color-primary)]" viewBox="0 0 100 100">
+		<svg
+			class="{sizeClasses[size]} drop-shadow-[0_0_15px_var(--color-primary)]"
+			viewBox="0 0 100 100"
+		>
 			<defs>
 				<linearGradient id="shield-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
 					<stop offset="0%" stop-color="var(--color-primary)" />
@@ -57,11 +68,13 @@
 			/>
 		</svg>
 
-		<div class="flex flex-col items-center gap-2">
-			<span class="text-primary animate-pulse text-xl font-bold tracking-[0.2em]">
-				{t('common.loading', language.current).replace('...', '').toUpperCase()}
-			</span>
-		</div>
+		{#if size !== 'sm'}
+			<div class="flex flex-col items-center gap-2">
+				<span class="text-primary animate-pulse text-xl font-bold tracking-[0.2em]">
+					{t('common.loading', language.current).replace('...', '').toUpperCase()}
+				</span>
+			</div>
+		{/if}
 	</div>
 </div>
 

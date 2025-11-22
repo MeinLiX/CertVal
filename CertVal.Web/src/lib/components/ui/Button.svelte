@@ -71,16 +71,16 @@
 	}: ButtonProps = $props();
 
 	const baseClasses =
-		'btn relative overflow-hidden transition-all duration-300 ease-spring active:scale-95 hover:shadow-lg hover:-translate-y-0.5';
+		'btn relative overflow-hidden transition-colors transition-shadow duration-300 hover:shadow-lg';
 
 	const variantClasses = $derived(() => {
 		const classes = {
 			primary:
-				'btn-primary bg-gradient-to-r from-primary to-secondary border-none text-primary-content shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.02]',
+				'btn-primary bg-gradient-to-r from-primary to-secondary border-none text-primary-content shadow-lg shadow-primary/20 hover:shadow-primary/40',
 			secondary:
-				'btn-secondary bg-gradient-to-r from-secondary to-accent border-none text-secondary-content shadow-lg shadow-secondary/20 hover:shadow-secondary/40 hover:scale-[1.02]',
+				'btn-secondary bg-gradient-to-r from-secondary to-accent border-none text-secondary-content shadow-lg shadow-secondary/20 hover:shadow-secondary/40',
 			accent:
-				'btn-accent bg-gradient-to-r from-accent to-accent-focus border-none text-accent-content shadow-lg shadow-accent/20 hover:shadow-accent/40 hover:scale-[1.02]',
+				'btn-accent bg-gradient-to-r from-accent to-accent-focus border-none text-accent-content shadow-lg shadow-accent/20 hover:shadow-accent/40',
 			success:
 				'btn-success text-success-content shadow-lg shadow-success/20 hover:shadow-success/40',
 			warning:
@@ -126,7 +126,6 @@
 			variantClasses(),
 			sizeClasses(),
 			shapeClasses(),
-			loading ? 'loading' : '',
 			className
 		]
 			.filter(Boolean)
@@ -176,12 +175,17 @@
 		tabindex={effectiveDisabled ? -1 : 0}
 	>
 		{#if loading || isProcessing}
-			<span class="loading loading-sm loading-spinner" aria-hidden="true"></span>
+			<span
+				class="loading loading-sm loading-spinner absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+				aria-hidden="true"
+			></span>
 		{/if}
 
-		{#if children}
-			{@render children()}
-		{/if}
+		<span class:invisible={loading || isProcessing} class="contents">
+			{#if children}
+				{@render children()}
+			{/if}
+		</span>
 	</a>
 {:else}
 	<button
@@ -209,24 +213,27 @@
 		}}
 	>
 		{#if loading || isProcessing}
-			<span class="loading loading-sm loading-spinner" aria-hidden="true"></span>
+			<span
+				class="loading loading-sm loading-spinner absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+				aria-hidden="true"
+			></span>
 		{/if}
 
-		{#if children}
-			{@render children()}
-		{/if}
+		<span class:invisible={loading || isProcessing} class="contents">
+			{#if children}
+				{@render children()}
+			{/if}
+		</span>
 	</button>
 {/if}
 
 <style>
 	.btn {
-		--btn-focus-scale: 1.05;
 		position: relative;
 		overflow: hidden;
 	}
 
 	.btn:focus-visible {
-		transform: scale(var(--btn-focus-scale));
 		outline: 2px solid oklch(from var(--color-primary) l c h);
 		outline-offset: 2px;
 	}
@@ -248,7 +255,6 @@
 	}
 
 	.btn:active {
-		transform: scale(0.98);
 		animation: none;
 	}
 
@@ -260,10 +266,6 @@
 
 	.btn.loading {
 		pointer-events: none;
-	}
-
-	.btn.loading .loading-spinner {
-		margin-right: 0.5rem;
 	}
 
 	@media (prefers-contrast: high) {
@@ -278,7 +280,6 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.btn {
-			--btn-focus-scale: 1.02;
 			transition-duration: 0.05s;
 		}
 

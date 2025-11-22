@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { language } from '$lib/stores/language.svelte';
 	import { t } from '$lib/i18n';
-	import Loader from '$lib/components/ui/Loader.svelte';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 
 	let {
 		onSuccess,
@@ -108,7 +108,7 @@
 
 <div class="flex min-h-[40px] w-full flex-col items-center justify-center" data-test-id={testId}>
 	{#if isLoading}
-		<Loader size="sm" />
+		<GlobalLoader variant="inline" size="sm" />
 	{/if}
 	<div bind:this={container} class:hidden={isLoading}></div>
 </div>

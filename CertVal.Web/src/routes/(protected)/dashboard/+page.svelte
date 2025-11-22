@@ -9,7 +9,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import Loader from '$lib/components/ui/Loader.svelte';
+	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import type { DashboardStats, Certificate } from '$lib/types';
 
 	let stats = $state<DashboardStats | null>(null);
@@ -77,12 +77,13 @@
 		</div>
 	</div>
 
-	{#if isLoading}
-		<div class="flex h-64 items-center justify-center">
-			<Loader size="lg" />
-		</div>
-	{:else if stats}
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+	<div class="relative min-h-[200px]">
+		{#if isLoading}
+			<GlobalLoader variant="overlay" />
+		{/if}
+
+		{#if stats}
+			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
 			<Card
 				variant="glass"
 				class="from-primary/5 to-primary/10 border-primary/20 bg-gradient-to-br transition-transform hover:scale-[1.02]"
@@ -276,4 +277,5 @@
 			</div>
 		</div>
 	{/if}
+	</div>
 </div>

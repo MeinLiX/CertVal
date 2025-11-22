@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let {
 		isOpen = false,
@@ -66,9 +67,15 @@
 			{#if title}
 				<h3 class="text-lg font-bold">{title}</h3>
 			{/if}
-			<button class="btn btn-circle btn-ghost btn-sm absolute right-2 top-2" onclick={onClose}>
+			<Button
+				variant="ghost"
+				size="sm"
+				shape="circle"
+				class="absolute right-2 top-2"
+				onclick={onClose}
+			>
 				✕
-			</button>
+			</Button>
 			<div>
 				{@render children?.()}
 			</div>

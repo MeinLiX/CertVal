@@ -4,6 +4,7 @@
 	import { userSession } from '$lib/stores/userSession.svelte';
 	import type { Language, Theme } from '$lib/types';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 	import { fade } from 'svelte/transition';
 
 	const languages: { code: Language; label: string; flag: string; beta?: boolean }[] = [
@@ -37,7 +38,7 @@
 		{#if isAuthenticated}
 			<label
 				for="drawer-toggle"
-				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 text-base-content border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110 lg:hidden"
+				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 text-base-content border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 lg:hidden"
 				transition:fade
 				data-test-id="drawer-toggle"
 			>
@@ -48,16 +49,16 @@
 
 	<div class="pointer-events-auto flex gap-3">
 		<div class="dropdown dropdown-end">
-			<div
-				tabindex="0"
-				role="button"
-				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110"
+			<Button
+				variant="ghost"
+				shape="circle"
+				class="bg-base-100/10 hover:bg-base-100/20 border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300"
 				data-test-id="theme-switcher"
 			>
 				<span class="indicator text-xl drop-shadow-md filter">
 					{currentThemeData.icon}
 				</span>
-			</div>
+			</Button>
 			<ul
 				class="dropdown-content menu bg-base-100/80 mt-4 w-48 rounded-2xl border border-white/10 p-2 shadow-xl backdrop-blur-xl"
 			>
@@ -85,16 +86,16 @@
 		</div>
 
 		<div class="dropdown dropdown-end">
-			<div
-				tabindex="0"
-				role="button"
-				class="btn btn-circle btn-ghost bg-base-100/10 hover:bg-base-100/20 border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-110"
+			<Button
+				variant="ghost"
+				shape="circle"
+				class="bg-base-100/10 hover:bg-base-100/20 border border-white/10 shadow-lg backdrop-blur-md transition-all duration-300"
 				data-test-id="language-switcher"
 			>
 				<span class="indicator text-xl drop-shadow-md filter">
 					{currentLanguageData.flag}
 				</span>
-			</div>
+			</Button>
 			<ul
 				class="dropdown-content menu bg-base-100/80 mt-4 w-48 rounded-2xl border border-white/10 p-2 shadow-xl backdrop-blur-xl"
 			>
