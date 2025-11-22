@@ -536,6 +536,11 @@ export const translations = {
             name: 'Name',
             prefix: 'Prefix',
             scope: 'Scope',
+            scopes: {
+                readOnly: 'Read only',
+                readWrite: 'Read and write',
+                fullAccess: 'Full access'
+            },
             lastUsed: 'Last Used',
             active: 'Active',
             revoked: 'Revoked',
