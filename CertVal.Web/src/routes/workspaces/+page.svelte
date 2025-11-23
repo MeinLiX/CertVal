@@ -147,8 +147,23 @@
 	</div>
 
 	{#if isLoading}
-		<div class="relative min-h-[200px]">
-			<GlobalLoader variant="overlay" />
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+			{#each Array(6) as _}
+				<div class="card bg-base-100 h-64 animate-pulse shadow-xl">
+					<div class="card-body">
+						<div class="flex justify-between">
+							<div class="bg-base-300 h-6 w-1/2 rounded"></div>
+							<div class="bg-base-300 h-6 w-16 rounded"></div>
+						</div>
+						<div class="bg-base-300 mt-4 h-4 w-full rounded"></div>
+						<div class="bg-base-300 mt-2 h-4 w-3/4 rounded"></div>
+						<div class="mt-auto grid grid-cols-2 gap-4">
+							<div class="bg-base-300 h-16 rounded-lg"></div>
+							<div class="bg-base-300 h-16 rounded-lg"></div>
+						</div>
+					</div>
+				</div>
+			{/each}
 		</div>
 	{:else if filteredWorkspaces.length > 0}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

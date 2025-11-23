@@ -29,7 +29,7 @@
 		try {
 			const [statsRes, certsRes] = await Promise.all([
 				DashboardService.getStats(),
-				DashboardService.getExpiringCertificates(30)
+				DashboardService.getExpiringCertificates(30, 5)
 			]);
 
 			if (statsRes.data) stats = statsRes.data;
@@ -79,10 +79,44 @@
 
 	<div class="relative min-h-[200px]">
 		{#if isLoading}
-			<GlobalLoader variant="overlay" />
-		{/if}
-
-		{#if stats}
+			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+				{#each Array(4) as _}
+					<div class="card bg-base-100 h-26 animate-pulse shadow-xl">
+						<div class="card-body flex flex-row items-center gap-4">
+							<div class="bg-base-300 h-12 w-12 rounded-xl"></div>
+							<div class="flex-1 space-y-2">
+								<div class="bg-base-300 h-4 w-24 rounded"></div>
+								<div class="bg-base-300 h-8 w-16 rounded"></div>
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+			<div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+				<div class="space-y-6 order-2 lg:col-span-2 lg:order-1">
+					<div class="bg-base-300 h-8 w-48 rounded"></div>
+					<div class="grid gap-4">
+						{#each Array(3) as _}
+							<div class="card bg-base-100 h-24 animate-pulse shadow-xl">
+								<div class="card-body p-4">
+									<div class="flex items-center gap-4">
+										<div class="bg-base-300 h-10 w-10 rounded-xl"></div>
+										<div class="flex-1 space-y-2">
+											<div class="bg-base-300 h-4 w-3/4 rounded"></div>
+											<div class="bg-base-300 h-3 w-1/2 rounded"></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+				<div class="space-y-6 order-1 lg:order-2">
+					<div class="bg-base-300 h-8 w-32 rounded"></div>
+					<div class="card bg-base-100 h-48 animate-pulse shadow-xl"></div>
+				</div>
+			</div>
+		{:else if stats}
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
 			<Card
 				variant="glass"
@@ -157,8 +191,8 @@
 			</Card>
 		</div>
 
-		<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-			<div class="space-y-6 lg:col-span-2">
+		<div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+			<div class="space-y-6 order-2 lg:col-span-2 lg:order-1">
 				<div class="flex items-center justify-between">
 					<h2 class="flex items-center gap-2 text-2xl font-bold">
 						<Icon name="time" class="text-warning h-6 w-6" />
@@ -167,7 +201,7 @@
 					<Button
 						variant="ghost"
 						size="sm"
-						onclick={() => goto('/certificates?filter=expiring')}
+						onclick={() => goto('/certificates?status=Expiring&page=1')}
 						data-test-id="dashboard-view-all-expiring-button"
 					>
 						{t('common.viewAll', language.current)}
@@ -232,7 +266,7 @@
 				{/if}
 			</div>
 
-			<div class="space-y-6">
+			<div class="space-y-6 order-1 lg:order-2">
 				<h2 class="text-2xl font-bold">{t('common.quickActions', language.current)}</h2>
 				<Card variant="glass" class="space-y-2">
 					<button
