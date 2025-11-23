@@ -32,6 +32,7 @@ public static class ServiceRegistration
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddSingleton<IWebhookSecurityService, WebhookSecurityService>();
+        services.AddScoped<IRateLimitService, RedisRateLimitService>();
 
         return services;
     }
