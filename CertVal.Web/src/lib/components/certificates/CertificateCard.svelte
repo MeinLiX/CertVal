@@ -7,8 +7,13 @@
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import { goto } from '$app/navigation';
 
-	let { certificate, workspaceName = '' }: { certificate: Certificate; workspaceName?: string } =
-		$props();
+	let {
+		certificate,
+		workspaceName = ''
+	}: {
+		certificate: Certificate;
+		workspaceName?: string;
+	} = $props();
 
 	const status = $derived(getCertificateStatus(certificate.notAfter));
 	const statusInfo = $derived(() => {
@@ -41,6 +46,18 @@
 	onclick={() => goto(`/certificates/${certificate.id}`)}
 	data-test-id={`certificate-card-${certificate.id}`}
 >
+	<div class="absolute right-2 top-2 z-20">
+		{#if certificate.isSkipped}
+			<div
+				class="badge badge-ghost badge-sm text-base-content/50 gap-1"
+				title={t('certificates.ignored', language.current)}
+			>
+				<Icon name="eye-off" class="h-3 w-3" />
+				<span class="text-[10px] uppercase">{t('common.skipped', language.current)}</span>
+			</div>
+		{/if}
+	</div>
+
 	<div
 		class="absolute left-0 top-0 h-full w-1 {statusInfo()
 			.barColor} transition-all duration-300 group-hover/card:w-1.5"
