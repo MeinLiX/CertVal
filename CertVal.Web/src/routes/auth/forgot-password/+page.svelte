@@ -19,7 +19,11 @@
 
 		try {
 			const response = await api.post('/auth/forgot-password', { email });
-			successMessage = t('auth.forgot.emailSent', language.current);
+			if (response.message) {
+				errors.general = response.message;
+			} else {
+				successMessage = t('auth.forgot.emailSent', language.current);
+			}
 		} catch (error) {
 			errors.general = t('errors.network', language.current);
 		} finally {

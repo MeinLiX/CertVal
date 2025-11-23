@@ -1,9 +1,12 @@
+using CertVal.Application.Common.Constants;
+using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
 using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
 using CertVal.Core.Utils;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 
 namespace CertVal.Application.Features.Auth.Commands;
 
@@ -26,15 +29,31 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEmailNotificationPublisher _emailPublisher;
+    private readonly IRateLimitService _rateLimitService;
+    private readonly IConfiguration _configuration;
 
-    public ForgotPasswordCommandHandler(IUnitOfWork unitOfWork, IEmailNotificationPublisher emailPublisher)
+    public ForgotPasswordCommandHandler(
+        IUnitOfWork unitOfWork,
+        IEmailNotificationPublisher emailPublisher,
+        IRateLimitService rateLimitService,
+        IConfiguration configuration)
     {
         _unitOfWork = unitOfWork;
         _emailPublisher = emailPublisher;
+        _rateLimitService = rateLimitService;
+        _configuration = configuration;
     }
 
     public async Task<Result> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
+        var rateLimitMinutes = _configuration.GetValue<int>(RateLimitConstants.ConfigurationKeys.PasswordResetMinutes, 5);
+        var key = $"{RateLimitConstants.CacheKeys.PasswordResetPrefix}:{request.Email.ToLowerInvariant()}";
+
+        if (!await _rateLimitService.IsAllowedAsync(key, TimeSpan.FromMinutes(rateLimitMinutes)))
+        {
+            return Result.Failure("Too many requests. Please try again later.");
+        }
+
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
         if (user != null)
         {

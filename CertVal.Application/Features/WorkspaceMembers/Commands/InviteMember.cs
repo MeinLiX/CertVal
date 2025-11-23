@@ -1,4 +1,5 @@
-﻿using CertVal.Application.Common.Interfaces;
+﻿using CertVal.Application.Common.Constants;
+using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
 using CertVal.Core.Entities;
@@ -6,6 +7,7 @@ using CertVal.Core.Enums;
 using CertVal.Core.Repositories;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 
 namespace CertVal.Application.Features.WorkspaceMembers.Commands;
 
@@ -37,11 +39,19 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
+    private readonly IRateLimitService _rateLimitService;
+    private readonly IConfiguration _configuration;
 
-    public InviteMemberCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public InviteMemberCommandHandler(
+        IUnitOfWork unitOfWork,
+        ICurrentUserService currentUser,
+        IRateLimitService rateLimitService,
+        IConfiguration configuration)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
+        _rateLimitService = rateLimitService;
+        _configuration = configuration;
     }
 
     public async Task<Result<WorkspaceMemberDto>> Handle(InviteMemberCommand request, CancellationToken cancellationToken)
@@ -59,6 +69,14 @@ public class InviteMemberCommandHandler : IRequestHandler<InviteMemberCommand, R
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email, cancellationToken);
         if (user == null)
             return Result.Failure<WorkspaceMemberDto>("User with this email does not exist");
+
+        var rateLimitMinutes = _configuration.GetValue<int>(RateLimitConstants.ConfigurationKeys.InviteMemberMinutes, 5);
+        var key = $"{RateLimitConstants.CacheKeys.InviteMemberPrefix}:{request.WorkspaceId}:{user.Id}";
+
+        if (!await _rateLimitService.IsAllowedAsync(key, TimeSpan.FromMinutes(rateLimitMinutes)))
+        {
+            return Result.Failure<WorkspaceMemberDto>("Too many invite requests for this user in this workspace. Please try again later.");
+        }
 
         if (workspace.OwnerId == user.Id)
             return Result.Failure<WorkspaceMemberDto>("Cannot invite workspace owner");
