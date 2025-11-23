@@ -19,6 +19,9 @@ public record CertificateDto
     public long FileSize { get; init; }
     public bool IsBundle { get; init; }
     public Guid? ParentCertificateId { get; init; }
+    public bool IsSkipped { get; init; }
+    public Guid? PreviousCertificateId { get; init; }
+    public Guid? NextCertificateId { get; init; }
     public string Status { get; init; } = string.Empty;
     public bool IsExpired { get; init; }
     public int DaysUntilExpiry { get; init; }
@@ -70,4 +73,13 @@ public record CertificateFilterRequest
 
     public string? SortBy { get; init; } = "NotAfter";
     public bool SortDescending { get; init; } = false;
+}
+
+public record ToggleCertificateSkipRequest
+{
+    [Required]
+    public Guid WorkspaceId { get; init; }
+
+    [Required]
+    public bool IsSkipped { get; init; }
 }
