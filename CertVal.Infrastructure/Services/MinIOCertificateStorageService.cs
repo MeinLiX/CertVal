@@ -75,9 +75,9 @@ public class MinIOCertificateStorageService : ICertificateStorageService
     {
         try
         {
-            _logger.LogDebug("Getting certificate with ObjectKey: '{ObjectKey}' from bucket '{Bucket}'", 
+            _logger.LogDebug("Getting certificate with ObjectKey: '{ObjectKey}' from bucket '{Bucket}'",
                 objectKey, _config.BucketName);
-            
+
             using var stream = new MemoryStream();
 
             var getObjectArgs = new GetObjectArgs()
@@ -90,7 +90,7 @@ public class MinIOCertificateStorageService : ICertificateStorageService
 
             await _minioClient.GetObjectAsync(getObjectArgs, cancellationToken);
 
-            _logger.LogDebug("Successfully retrieved certificate {ObjectKey}, size: {Size} bytes", 
+            _logger.LogDebug("Successfully retrieved certificate {ObjectKey}, size: {Size} bytes",
                 objectKey, stream.Length);
 
             return stream.ToArray();
@@ -125,18 +125,18 @@ public class MinIOCertificateStorageService : ICertificateStorageService
     {
         try
         {
-            _logger.LogDebug("Checking existence of ObjectKey: '{ObjectKey}' in bucket '{Bucket}'", 
+            _logger.LogDebug("Checking existence of ObjectKey: '{ObjectKey}' in bucket '{Bucket}'",
                 objectKey, _config.BucketName);
-            
+
             var statObjectArgs = new StatObjectArgs()
                 .WithBucket(_config.BucketName)
                 .WithObject(objectKey);
 
             var objectStat = await _minioClient.StatObjectAsync(statObjectArgs, cancellationToken);
-            
-            _logger.LogDebug("Certificate exists: '{ObjectKey}', Size: {Size} bytes, LastModified: {LastModified}", 
+
+            _logger.LogDebug("Certificate exists: '{ObjectKey}', Size: {Size} bytes, LastModified: {LastModified}",
                 objectKey, objectStat.Size, objectStat.LastModified);
-            
+
             return true;
         }
         catch (Minio.Exceptions.ObjectNotFoundException ex)

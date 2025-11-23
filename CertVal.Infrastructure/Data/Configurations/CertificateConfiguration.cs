@@ -46,6 +46,9 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
         builder.Property(c => c.IsBundle)
             .HasDefaultValue(false);
 
+        builder.Property(c => c.IsSkipped)
+            .HasDefaultValue(false);
+
         // Indexes
         builder.HasIndex(c => c.WorkspaceId)
             .HasDatabaseName("IX_Certificates_WorkspaceId");
@@ -78,7 +81,12 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
         builder.HasOne(c => c.ParentCertificate)
             .WithMany(c => c.ChildCertificates)
             .HasForeignKey(c => c.ParentCertificateId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(c => c.PreviousCertificate)
+            .WithMany()
+            .HasForeignKey(c => c.PreviousCertificateId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasMany(c => c.NotificationHistory)
             .WithOne(nh => nh.Certificate)

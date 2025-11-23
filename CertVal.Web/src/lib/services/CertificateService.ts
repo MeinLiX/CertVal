@@ -43,4 +43,15 @@ export class CertificateService {
     static async delete(id: string): Promise<ApiResponse<void>> {
         return api.delete<void>(`/certificates/${id}`);
     }
+
+    static async toggleSkip(id: string, workspaceId: string, isSkipped: boolean): Promise<ApiResponse<void>> {
+        return api.patch<void>(`/certificates/${id}/skip`, { workspaceId, isSkipped });
+    }
+
+    static async uploadUpdated(id: string, workspaceId: string, file: File): Promise<ApiResponse<Certificate>> {
+        const formData = new FormData();
+        formData.append('workspaceId', workspaceId);
+        formData.append('file', file);
+        return api.upload<Certificate>(`/certificates/${id}/update`, formData);
+    }
 }
