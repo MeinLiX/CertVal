@@ -1,7 +1,7 @@
-using Google.Apis.Auth;
-using Microsoft.Extensions.Configuration;
 using CertVal.Application.Common.Interfaces;
 using CertVal.Application.DTOs;
+using Google.Apis.Auth;
+using Microsoft.Extensions.Configuration;
 
 namespace CertVal.Infrastructure.Authentication;
 

@@ -86,4 +86,15 @@ public class CertificateRepository : BaseRepository<Certificate>, ICertificateRe
         return await DbSet
             .FirstOrDefaultAsync(c => c.PreviousCertificateId == previousCertificateId, cancellationToken);
     }
+
+    public async Task<IEnumerable<Certificate>> GetExpiringByWorkspacesAsync(IEnumerable<Guid> workspaceIds, int daysAhead, int limit, CancellationToken cancellationToken = default)
+    {
+        var cutoffDate = DateTime.UtcNow.AddDays(daysAhead);
+
+        return await DbSet
+            .Where(c => workspaceIds.Contains(c.WorkspaceId) && c.NotAfter <= cutoffDate && c.NotAfter > DateTime.UtcNow && !c.IsSkipped)
+            .OrderBy(c => c.NotAfter)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
 }
