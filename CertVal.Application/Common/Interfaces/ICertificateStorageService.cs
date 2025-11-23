@@ -3,7 +3,7 @@ namespace CertVal.Application.Common.Interfaces;
 public interface ICertificateStorageService
 {
     Task<string> StoreCertificateAsync(Guid workspaceId, string fileName, byte[] fileContent, CancellationToken cancellationToken = default);
-    
+
     Task<string> StoreCertificateAsync(Guid workspaceId, Guid certificateId, string fileName, byte[] fileContent, CancellationToken cancellationToken = default);
 
     Task<byte[]> GetCertificateAsync(string objectKey, CancellationToken cancellationToken = default);

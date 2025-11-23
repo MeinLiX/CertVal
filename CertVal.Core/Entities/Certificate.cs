@@ -33,6 +33,13 @@ public class Certificate : BaseEntity
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
 
+    // Monitoring
+    public bool IsSkipped { get; private set; }
+
+    // Versioning
+    public Guid? PreviousCertificateId { get; private set; }
+    public virtual Certificate? PreviousCertificate { get; private set; }
+
     // Navigation properties
     public virtual Workspace Workspace { get; private set; } = null!;
     public virtual Certificate? ParentCertificate { get; private set; }
@@ -122,5 +129,17 @@ public class Certificate : BaseEntity
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new CertificateExpiredEvent(Id, WorkspaceId, Subject, NotAfter));
+    }
+
+    public void ToggleSkipMonitoring(bool isSkipped)
+    {
+        IsSkipped = isSkipped;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetPreviousCertificate(Guid previousCertificateId)
+    {
+        PreviousCertificateId = previousCertificateId;
+        UpdatedAt = DateTime.UtcNow;
     }
 }
