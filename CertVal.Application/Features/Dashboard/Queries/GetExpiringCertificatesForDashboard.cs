@@ -11,6 +11,7 @@ namespace CertVal.Application.Features.Dashboard.Queries;
 public record GetExpiringCertificatesForDashboardQuery : IRequest<Result<IEnumerable<CertificateDto>>>
 {
     public int DaysAhead { get; init; } = 30;
+    public int Limit { get; init; } = 10;
 }
 
 public class GetExpiringCertificatesForDashboardQueryValidator : AbstractValidator<GetExpiringCertificatesForDashboardQuery>
@@ -20,6 +21,10 @@ public class GetExpiringCertificatesForDashboardQueryValidator : AbstractValidat
         RuleFor(x => x.DaysAhead)
             .GreaterThan(0).WithMessage("Days ahead must be greater than 0")
             .LessThanOrEqualTo(365).WithMessage("Days ahead must not exceed 365");
+
+        RuleFor(x => x.Limit)
+            .GreaterThan(0).WithMessage("Limit must be greater than 0")
+            .LessThanOrEqualTo(100).WithMessage("Limit must not exceed 100");
     }
 }
 
@@ -42,18 +47,13 @@ public class GetExpiringCertificatesForDashboardQueryHandler : IRequestHandler<G
         var workspaces = await _unitOfWork.Workspaces.GetUserWorkspacesAsync(_currentUser.UserId.Value, cancellationToken);
         var workspaceIds = workspaces.Select(w => w.Id).ToList();
 
-        var expiringCertificates = new List<Core.Entities.Certificate>();
-        var cutoffDate = DateTime.UtcNow.AddDays(request.DaysAhead);
-
-        foreach (var workspaceId in workspaceIds)
-        {
-            var workspaceCerts = await _unitOfWork.Certificates.GetByWorkspaceAsync(workspaceId, cancellationToken);
-            var expiring = workspaceCerts.Where(c => c.NotAfter <= cutoffDate && c.NotAfter > DateTime.UtcNow);
-            expiringCertificates.AddRange(expiring);
-        }
+        var expiringCertificates = await _unitOfWork.Certificates.GetExpiringByWorkspacesAsync(
+            workspaceIds,
+            request.DaysAhead,
+            request.Limit,
+            cancellationToken);
 
         var certificateDtos = expiringCertificates
-            .OrderBy(c => c.NotAfter)
             .Select(c => MapToCertificateDto(c))
             .ToList();
 

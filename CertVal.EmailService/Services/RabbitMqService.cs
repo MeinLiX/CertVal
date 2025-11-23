@@ -391,7 +391,7 @@ public class RabbitMqService : IRabbitMqService
             var dlxName = $"{_config.ExchangeName}-dlx";
             var messageJson = JsonSerializer.Serialize(message, JsonOptions);
             var body = Encoding.UTF8.GetBytes(messageJson);
-            
+
             var properties = new BasicProperties
             {
                 MessageId = message.MessageId,

@@ -50,11 +50,13 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IEnumerable<CertificateDto>>> GetExpiringCertificates(
         [FromQuery] int daysAhead = 30,
+        [FromQuery] int limit = 10,
         CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(new GetExpiringCertificatesForDashboardQuery
         {
-            DaysAhead = daysAhead
+            DaysAhead = daysAhead,
+            Limit = limit
         }, cancellationToken);
 
         if (!result.IsSuccess)
