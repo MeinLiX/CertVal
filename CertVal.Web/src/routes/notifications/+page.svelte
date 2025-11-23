@@ -247,10 +247,21 @@
 
 	<div class="relative min-h-[200px]">
 		{#if isLoading}
-			<GlobalLoader variant="overlay" />
-		{/if}
-
-		{#if rules.length === 0 && !isLoading}
+			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+				{#each Array(6) as _}
+					<div class="card bg-base-100 h-56 animate-pulse shadow-xl">
+						<div class="card-body">
+							<div class="flex justify-between">
+								<div class="bg-base-300 h-10 w-10 rounded-xl"></div>
+								<div class="bg-base-300 h-8 w-8 rounded-full"></div>
+							</div>
+							<div class="bg-base-300 mt-4 h-6 w-3/4 rounded"></div>
+							<div class="bg-base-300 mt-2 h-4 w-1/2 rounded"></div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{:else if rules.length === 0}
 		<div
 			class="bg-base-100/50 border-base-200 flex flex-col items-center justify-center rounded-3xl border py-20 text-center backdrop-blur-sm"
 		>

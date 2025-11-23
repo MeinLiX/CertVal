@@ -273,7 +273,7 @@
 	{#if isLoading}
 		<div class="grid flex-grow grid-cols-1 gap-6 overflow-y-auto p-1 md:grid-cols-2 lg:grid-cols-3">
 			{#each Array(6) as _}
-				<div class="card bg-base-100 h-48 animate-pulse shadow-xl">
+				<div class="card bg-base-100 h-44 animate-pulse shadow-xl">
 					<div class="card-body">
 						<div class="bg-base-300 mb-4 h-6 w-1/2 rounded"></div>
 						<div class="bg-base-300 h-4 w-3/4 rounded"></div>
