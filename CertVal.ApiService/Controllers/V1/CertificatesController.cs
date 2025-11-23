@@ -132,4 +132,57 @@ public class CertificatesController : ControllerBase
 
         return File(fileContents, contentType, fileName);
     }
+
+    [HttpPatch("{id:guid}/skip")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ToggleSkip(
+        Guid id,
+        [FromBody] ToggleCertificateSkipRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ToggleCertificateSkipCommand(request.WorkspaceId, id, request.IsSkipped);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error.Contains("not found"))
+                return NotFound(new ErrorResponseDto(result.Error));
+            if (result.Error.Contains("Access denied"))
+                return Forbid();
+
+            return BadRequest(new ErrorResponseDto(result.Error));
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/update")]
+    [ProducesResponseType(typeof(CertificateDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<CertificateDto>> UploadUpdatedCertificate(
+        Guid id,
+        [FromForm] Guid workspaceId,
+        [FromForm] IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        var command = new UploadUpdatedCertificateCommand(workspaceId, id, file);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error.Contains("not found"))
+                return NotFound(new ErrorResponseDto(result.Error));
+            if (result.Error.Contains("Access denied"))
+                return Forbid();
+
+            return BadRequest(new ErrorResponseDto(result.Error));
+        }
+
+        return Ok(result.Value);
+    }
 }

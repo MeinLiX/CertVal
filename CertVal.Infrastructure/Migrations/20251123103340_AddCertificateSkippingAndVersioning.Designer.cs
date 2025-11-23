@@ -3,6 +3,7 @@ using System;
 using CertVal.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CertVal.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251123103340_AddCertificateSkippingAndVersioning")]
+    partial class AddCertificateSkippingAndVersioning
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -662,12 +665,12 @@ namespace CertVal.Infrastructure.Migrations
                     b.HasOne("CertVal.Core.Entities.Certificate", "ParentCertificate")
                         .WithMany("ChildCertificates")
                         .HasForeignKey("ParentCertificateId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("CertVal.Core.Entities.Certificate", "PreviousCertificate")
                         .WithMany()
                         .HasForeignKey("PreviousCertificateId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("CertVal.Core.Entities.Workspace", "Workspace")
                         .WithMany("Certificates")

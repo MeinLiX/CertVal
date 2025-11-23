@@ -11,4 +11,5 @@ public interface ICertificateRepository : IRepository<Certificate>
     Task<Certificate?> GetByThumbprintInWorkspaceAsync(string thumbprint, Guid workspaceId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Certificate>> GetBundleContentsAsync(Guid parentCertificateId, CancellationToken cancellationToken = default);
     Task<int> GetWorkspaceCertificateCountAsync(Guid workspaceId, CancellationToken cancellationToken = default);
+    Task<Certificate?> GetNextVersionAsync(Guid previousCertificateId, CancellationToken cancellationToken = default);
 }

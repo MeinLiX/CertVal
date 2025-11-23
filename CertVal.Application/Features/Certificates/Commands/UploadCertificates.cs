@@ -194,7 +194,7 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                 else
                 {
                     var mainCertificate = newCertificates.First();
-                    
+
                     parentCertificate = Certificate.Create(
                         request.WorkspaceId,
                         mainCertificate.Subject,

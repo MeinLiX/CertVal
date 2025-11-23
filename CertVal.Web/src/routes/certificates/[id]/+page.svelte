@@ -5,6 +5,7 @@
 	import { auth } from '$lib/stores/auth';
 	import { language } from '$lib/stores/language.svelte';
 	import { api } from '$lib/utils/api';
+	import { CertificateService } from '$lib/services/CertificateService';
 	import { t } from '$lib/i18n';
 	import { formatDate, formatDateTime, getCertificateStatus } from '$lib/utils/date';
 	import Card from '$lib/components/ui/Card.svelte';
@@ -21,6 +22,13 @@
 	let isDownloading = $state(false);
 	let downloadProgress = $state(0);
 	let parentCertificate = $state<Certificate | null>(null);
+	let previousCertificate = $state<Certificate | null>(null);
+	let nextCertificate = $state<Certificate | null>(null);
+	let showUpdateModal = $state(false);
+	let updateFile = $state<File | null>(null);
+	let isUpdating = $state(false);
+	let showToggleSkipModal = $state(false);
+	let isTogglingSkip = $state(false);
 
 	const certificateId = $derived(page.params.id);
 
@@ -40,6 +48,10 @@
 
 	async function loadCertificate() {
 		isLoading = true;
+		parentCertificate = null;
+		previousCertificate = null;
+		nextCertificate = null;
+
 		try {
 			const response = await api.get<Certificate>(`/certificates/${certificateId}`);
 			if (response.data) {
@@ -49,6 +61,18 @@
 						`/certificates/${certificate.parentCertificateId}`
 					);
 					if (parentRes.data) parentCertificate = parentRes.data;
+				}
+				if (certificate.previousCertificateId) {
+					const prevRes = await api.get<Certificate>(
+						`/certificates/${certificate.previousCertificateId}`
+					);
+					if (prevRes.data) previousCertificate = prevRes.data;
+				}
+				if (certificate.nextCertificateId) {
+					const nextRes = await api.get<Certificate>(
+						`/certificates/${certificate.nextCertificateId}`
+					);
+					if (nextRes.data) nextCertificate = nextRes.data;
 				}
 			}
 		} catch (err) {
@@ -88,6 +112,58 @@
 		} finally {
 			isDownloading = false;
 			downloadProgress = 0;
+		}
+	}
+
+	async function handleUpdate(e: Event) {
+		e.preventDefault();
+		if (!certificate || !updateFile) return;
+
+		isUpdating = true;
+		try {
+			const res = await CertificateService.uploadUpdated(
+				certificate.id,
+				certificate.workspaceId,
+				updateFile
+			);
+			if (res.data) {
+				goto(`/certificates/${res.data.id}`);
+			}
+		} catch (err) {
+			console.error(err);
+		} finally {
+			isUpdating = false;
+			showUpdateModal = false;
+		}
+	}
+
+	function handleUpdateFileChange(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (input.files && input.files.length > 0) {
+			updateFile = input.files[0];
+		}
+	}
+
+	function toggleSkip() {
+		if (!certificate) return;
+		showToggleSkipModal = true;
+	}
+
+	async function confirmToggleSkip() {
+		if (!certificate) return;
+		isTogglingSkip = true;
+		try {
+			await CertificateService.toggleSkip(
+				certificate.id,
+				certificate.workspaceId,
+				!certificate.isSkipped
+			);
+			await loadCertificate();
+		} catch (err) {
+			console.error('Failed to toggle skip:', err);
+		} finally {
+			isTogglingSkip = false;
+			showToggleSkipModal = false;
 		}
 	}
 </script>
@@ -146,6 +222,32 @@
 
 			<div class="flex gap-3">
 				<Button
+					variant="outline"
+					onclick={toggleSkip}
+					disabled={!!certificate.nextCertificateId && certificate.isSkipped}
+					title={!!certificate.nextCertificateId && certificate.isSkipped
+						? t('certificates.cannotEnableMonitoring', language.current)
+						: ''}
+					data-test-id="cert-toggle-skip-button"
+				>
+					<Icon name={certificate.isSkipped ? 'eye' : 'eye-off'} class="mr-2 h-4 w-4" />
+					{certificate.isSkipped
+						? t('certificates.monitor', language.current)
+						: t('certificates.ignore', language.current)}
+				</Button>
+				<Button
+					variant="outline"
+					onclick={() => (showUpdateModal = true)}
+					disabled={!!certificate.nextCertificateId}
+					title={!!certificate.nextCertificateId
+						? t('certificates.newerVersionAvailable', language.current)
+						: ''}
+					data-test-id="cert-update-button"
+				>
+					<Icon name="upload" class="mr-2 h-4 w-4" />
+					{t('certificates.uploadUpdated', language.current)}
+				</Button>
+				<Button
 					variant="glass"
 					onclick={handleDownload}
 					loading={isDownloading}
@@ -166,6 +268,56 @@
 				</Button>
 			</div>
 		</div>
+
+		{#if nextCertificate}
+			<div class="alert alert-info shadow-lg">
+				<Icon name="history" class="h-6 w-6" />
+				<div>
+					<h3 class="font-bold">{t('certificates.newerVersionAvailable', language.current)}</h3>
+					<div class="text-xs">{t('certificates.newerVersionDescription', language.current)}</div>
+				</div>
+				<Button
+					size="sm"
+					variant="ghost"
+					onclick={() => goto(`/certificates/${nextCertificate?.id}`)}
+				>
+					{t('common.view', language.current)}
+				</Button>
+			</div>
+		{/if}
+
+		{#if certificate.isSkipped}
+			<div class="alert alert-warning shadow-lg">
+				<Icon name="eye-off" class="h-6 w-6" />
+				<div>
+					<h3 class="font-bold">{t('certificates.monitoringSkipped', language.current)}</h3>
+					<div class="text-xs">
+						{t('certificates.monitoringSkippedDescription', language.current)}
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		{#if previousCertificate}
+			<Card variant="glass" class="border-l-info bg-info/5 border-l-4">
+				<div class="flex items-center gap-4 p-2">
+					<div class="bg-info/10 text-info rounded-full p-2">
+						<Icon name="history" class="h-6 w-6" />
+					</div>
+					<div>
+						<div class="text-lg font-semibold">
+							{t('certificates.newVersion', language.current)}
+						</div>
+						<div class="text-sm opacity-70">
+							{t('certificates.previousVersion', language.current)}:
+							<a href="/certificates/{previousCertificate.id}" class="link link-info font-bold">
+								{previousCertificate.subject}
+							</a>
+						</div>
+					</div>
+				</div>
+			</Card>
+		{/if}
 
 		{@const status = getCertificateStatus(certificate.notAfter)}
 		<Card
@@ -410,6 +562,89 @@
 			data-test-id="cert-delete-confirm-button"
 		>
 			{t('common.delete', language.current)}
+		</Button>
+	</div>
+</Modal>
+
+<Modal
+	isOpen={showUpdateModal}
+	title={t('certificates.uploadUpdated', language.current)}
+	onClose={() => (showUpdateModal = false)}
+	data-test-id="update-certificate-modal"
+>
+	<form onsubmit={handleUpdate} class="space-y-6">
+		<div class="form-control w-full">
+			<label class="label" for="update-file-upload">
+				<span class="label-text font-medium">{t('certificates.selectFile', language.current)}</span>
+			</label>
+			<input
+				id="update-file-upload"
+				type="file"
+				class="file-input file-input-bordered file-input-primary bg-base-100/50 w-full transition-all"
+				accept=".cer,.crt,.pem,.pfx,.p12"
+				onchange={handleUpdateFileChange}
+				required
+				data-test-id="update-file-input"
+			/>
+			<div class="label">
+				<span class="label-text-alt text-base-content/60"
+					>{t('certificates.supportedFormats', language.current)}: .cer, .crt, .pem, .pfx, .p12</span
+				>
+			</div>
+		</div>
+
+		<div class="modal-action">
+			<Button
+				variant="ghost"
+				onclick={() => (showUpdateModal = false)}
+				type="button"
+				data-test-id="update-cancel-button"
+			>
+				{t('common.cancel', language.current)}
+			</Button>
+			<Button
+				variant="primary"
+				type="submit"
+				loading={isUpdating}
+				disabled={!updateFile}
+				data-test-id="update-submit-button"
+			>
+				{t('common.upload', language.current)}
+			</Button>
+		</div>
+	</form>
+</Modal>
+
+<Modal
+	isOpen={showToggleSkipModal}
+	title={certificate?.isSkipped
+		? t('certificates.monitorConfirmTitle', language.current)
+		: t('certificates.ignoreConfirmTitle', language.current)}
+	onClose={() => (showToggleSkipModal = false)}
+	data-test-id="cert-toggle-skip-modal"
+>
+	<div class="space-y-4">
+		<div class="bg-warning/10 text-warning flex items-center gap-4 rounded-lg p-4">
+			<Icon name={certificate?.isSkipped ? 'eye' : 'eye-off'} class="h-6 w-6" />
+			<p class="font-medium">
+				{certificate?.isSkipped
+					? t('certificates.monitorConfirmMessage', language.current)
+					: t('certificates.ignoreConfirmMessage', language.current)}
+			</p>
+		</div>
+	</div>
+
+	<div class="modal-action mt-6">
+		<Button type="button" variant="ghost" onclick={() => (showToggleSkipModal = false)}>
+			{t('common.cancel', language.current)}
+		</Button>
+		<Button
+			variant="primary"
+			loading={isTogglingSkip}
+			onclick={confirmToggleSkip}
+			data-test-id="cert-toggle-skip-confirm-button"
+		>
+			{t('common.confirm', language.current)}
 		</Button>
 	</div>
 </Modal>
