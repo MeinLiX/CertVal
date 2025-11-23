@@ -141,6 +141,12 @@ public class EmailNotificationEventHandlers :
         var certificate = await _unitOfWork.Certificates.GetByIdAsync(certificateId, cancellationToken);
         if (certificate == null) return;
 
+        if (certificate.IsSkipped)
+        {
+            _logger.LogInformation("Skipping email notification for certificate {CertificateId} as it is marked as skipped", certificateId);
+            return;
+        }
+
         var workspace = await _unitOfWork.Workspaces.GetByIdAsync(workspaceId, cancellationToken);
         if (workspace == null) return;
 

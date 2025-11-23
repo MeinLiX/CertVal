@@ -61,6 +61,12 @@ public class WebhookNotificationEventHandlers :
                 return;
             }
 
+            if (certificate.IsSkipped)
+            {
+                _logger.LogInformation("Skipping webhook notification for certificate {CertificateId} as it is marked as skipped", certificateId);
+                return;
+            }
+
             var webhookRules = await GetActiveWebhookRulesAsync(workspaceId, daysUntilExpiry, cancellationToken);
             var processedCount = 0;
 
