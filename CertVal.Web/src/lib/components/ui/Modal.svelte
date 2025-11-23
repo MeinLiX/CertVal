@@ -65,7 +65,7 @@
 	>
 		<div class="modal-box">
 			{#if title}
-				<h3 class="text-lg font-bold">{title}</h3>
+				<h3 class="text-lg font-bold mb-6">{title}</h3>
 			{/if}
 			<div>
 				{@render children?.()}
