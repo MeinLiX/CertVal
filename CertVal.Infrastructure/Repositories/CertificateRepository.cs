@@ -26,7 +26,7 @@ public class CertificateRepository : BaseRepository<Certificate>, ICertificateRe
         return await DbSet
             .Include(c => c.Workspace)
                 .ThenInclude(w => w.Owner)
-            .Where(c => c.NotAfter <= cutoffDate && c.NotAfter > DateTime.UtcNow)
+            .Where(c => c.NotAfter <= cutoffDate && c.NotAfter > DateTime.UtcNow && !c.IsSkipped)
             .OrderBy(c => c.NotAfter)
             .ToListAsync(cancellationToken);
     }
@@ -36,7 +36,7 @@ public class CertificateRepository : BaseRepository<Certificate>, ICertificateRe
         return await DbSet
             .Include(c => c.Workspace)
                 .ThenInclude(w => w.Owner)
-            .Where(c => c.NotAfter <= DateTime.UtcNow)
+            .Where(c => c.NotAfter <= DateTime.UtcNow && !c.IsSkipped)
             .OrderBy(c => c.NotAfter)
             .ToListAsync(cancellationToken);
     }
@@ -79,5 +79,11 @@ public class CertificateRepository : BaseRepository<Certificate>, ICertificateRe
             .Include(c => c.NotificationHistory)
                 .ThenInclude(nh => nh.NotificationRule)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+    }
+
+    public async Task<Certificate?> GetNextVersionAsync(Guid previousCertificateId, CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .FirstOrDefaultAsync(c => c.PreviousCertificateId == previousCertificateId, cancellationToken);
     }
 }
