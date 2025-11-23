@@ -19,6 +19,11 @@ var rabbitmq = builder.AddRabbitMQ("CertVal-rabbitmq")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithVolume("certval-rabbitmq-data", "/var/lib/rabbitmq");
 
+var redis = builder.AddRedis("CertVal-redis")
+    .WithImageTag("8.4") //sync version with docker compose
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithVolume("certval-redis-data", "/data");
+
 var minio = builder.AddMinioContainer("CertVal-minio", rootUser: minioUser, rootPassword: minioUserPassword)
     .WithImageTag("RELEASE.2025-09-07T16-13-09Z") //sync version with docker compose
     .WithLifetime(ContainerLifetime.Persistent)
@@ -34,6 +39,7 @@ var emailService = builder.AddProject<Projects.CertVal_EmailService>("email-serv
 var apiService = builder.AddProject<Projects.CertVal_ApiService>("CertVal-api-server")
     .WithReference(db)
     .WithReference(rabbitmq)
+    .WithReference(redis)
     .WithReference(minio)
     .WithMessagingConfig(builder.Configuration)
     .WaitFor(db)
