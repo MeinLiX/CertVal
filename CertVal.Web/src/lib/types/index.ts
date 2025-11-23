@@ -48,6 +48,9 @@ export interface Certificate {
     originalFileName: string;
     fileFormat: string;
     fileSize: number;
+    isSkipped: boolean;
+    previousCertificateId?: string;
+    nextCertificateId?: string;
     isBundle: boolean;
     parentCertificateId?: string;
     status: string;

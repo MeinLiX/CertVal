@@ -17,7 +17,7 @@ namespace CertVal.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.9")
+                .HasAnnotation("ProductVersion", "9.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -117,6 +117,11 @@ namespace CertVal.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<bool>("IsSkipped")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Issuer")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -134,6 +139,9 @@ namespace CertVal.Infrastructure.Migrations
                         .HasColumnType("character varying(255)");
 
                     b.Property<Guid?>("ParentCertificateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PreviousCertificateId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("SerialNumber")
@@ -167,6 +175,8 @@ namespace CertVal.Infrastructure.Migrations
                     b.HasIndex("ParentCertificateId")
                         .HasDatabaseName("IX_Certificates_ParentId")
                         .HasFilter("\"ParentCertificateId\" IS NOT NULL");
+
+                    b.HasIndex("PreviousCertificateId");
 
                     b.HasIndex("Thumbprint")
                         .HasDatabaseName("IX_Certificates_Thumbprint");
@@ -652,7 +662,12 @@ namespace CertVal.Infrastructure.Migrations
                     b.HasOne("CertVal.Core.Entities.Certificate", "ParentCertificate")
                         .WithMany("ChildCertificates")
                         .HasForeignKey("ParentCertificateId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CertVal.Core.Entities.Certificate", "PreviousCertificate")
+                        .WithMany()
+                        .HasForeignKey("PreviousCertificateId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("CertVal.Core.Entities.Workspace", "Workspace")
                         .WithMany("Certificates")
@@ -661,6 +676,8 @@ namespace CertVal.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ParentCertificate");
+
+                    b.Navigation("PreviousCertificate");
 
                     b.Navigation("Workspace");
                 });

@@ -42,6 +42,7 @@
 		formaction?: string;
 		formnovalidate?: boolean;
 		formtarget?: string;
+		title?: string;
 	}
 
 	let {
@@ -67,7 +68,8 @@
 		form,
 		formaction,
 		formnovalidate,
-		formtarget
+		formtarget,
+		title
 	}: ButtonProps = $props();
 
 	const baseClasses =
@@ -121,13 +123,7 @@
 	});
 
 	const computedClasses = $derived(() => {
-		return [
-			baseClasses,
-			variantClasses(),
-			sizeClasses(),
-			shapeClasses(),
-			className
-		]
+		return [baseClasses, variantClasses(), sizeClasses(), shapeClasses(), className]
 			.filter(Boolean)
 			.join(' ');
 	});
@@ -164,6 +160,7 @@
 		{href}
 		{target}
 		{rel}
+		{title}
 		class={computedClasses()}
 		aria-label={effectiveAriaLabel()}
 		aria-describedby={ariaDescribedBy}
@@ -197,6 +194,7 @@
 		{formaction}
 		{formnovalidate}
 		{formtarget}
+		{title}
 		class={computedClasses()}
 		disabled={effectiveDisabled}
 		aria-label={effectiveAriaLabel()}
