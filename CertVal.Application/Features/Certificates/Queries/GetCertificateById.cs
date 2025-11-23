@@ -42,13 +42,16 @@ public class GetCertificateByIdQueryHandler : IRequestHandler<GetCertificateById
         if (!await CanAccessWorkspace(certificate.WorkspaceId, cancellationToken))
             return Result.Failure<CertificateDto>("Access denied to this certificate");
 
+        var nextVersion = await _unitOfWork.Certificates.GetNextVersionAsync(certificate.Id, cancellationToken);
+
         var dto = certificate.Adapt<CertificateDto>();
         dto = dto with
         {
             DaysUntilExpiry = (certificate.NotAfter - DateTime.UtcNow).Days,
             Status = certificate.Status.ToString(),
             FileFormat = certificate.FileFormat.ToString(),
-            ChildCertificates = certificate.ChildCertificates.Select(c => c.Adapt<CertificateDto>()).ToList()
+            ChildCertificates = certificate.ChildCertificates.Select(c => c.Adapt<CertificateDto>()).ToList(),
+            NextCertificateId = nextVersion?.Id
         };
 
         return Result.Success(dto);
