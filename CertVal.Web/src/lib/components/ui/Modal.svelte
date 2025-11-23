@@ -67,15 +67,6 @@
 			{#if title}
 				<h3 class="text-lg font-bold">{title}</h3>
 			{/if}
-			<Button
-				variant="ghost"
-				size="sm"
-				shape="circle"
-				class="absolute right-2 top-2"
-				onclick={onClose}
-			>
-				✕
-			</Button>
 			<div>
 				{@render children?.()}
 			</div>
