@@ -20,6 +20,8 @@ builder.Services.AddDataProtection()
 
 builder.AddRabbitMQClient("CertVal-rabbitmq");
 
+builder.AddRedisClient("CertVal-redis");
+
 builder.AddMinioClient("CertVal-minio");
 
 builder.Services.AddControllers()
