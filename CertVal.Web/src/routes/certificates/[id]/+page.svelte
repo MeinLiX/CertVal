@@ -199,7 +199,7 @@
 			</div>
 		</Card>
 	{:else}
-		<div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+		<div class="flex flex-col gap-6">
 			<div class="space-y-2">
 				<div class="text-base-content/60 flex items-center gap-2 text-sm">
 					<a
@@ -220,7 +220,7 @@
 				</div>
 			</div>
 
-			<div class="flex gap-3">
+			<div class="flex flex-wrap gap-3 self-end">
 				<Button
 					variant="outline"
 					onclick={toggleSkip}
