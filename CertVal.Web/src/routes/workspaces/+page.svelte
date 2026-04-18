@@ -12,6 +12,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
 	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
+	import FloatingActionBar from '$lib/components/layout/FloatingActionBar.svelte';
 	import type { Workspace, CreateWorkspaceRequest } from '$lib/types';
 
 	let workspaces = $state<Workspace[]>([]);
@@ -49,7 +50,6 @@
 		const action = page.url.searchParams.get('action');
 		if (action === 'create') {
 			openCreateModal();
-
 			const newUrl = new URL(window.location.href);
 			newUrl.searchParams.delete('action');
 			goto(newUrl.toString(), { replaceState: true, keepFocus: true, noScroll: true });
@@ -106,167 +106,82 @@
 	<title>{t('workspaces.title', language.current)}</title>
 </svelte:head>
 
-<div
-	class="animate-in fade-in slide-in-from-bottom-4 min-h-[80vh] space-y-8 duration-500"
-	data-test-id="workspaces-page"
->
-	<div class="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-		<div class="space-y-2">
-			<h1
-				class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-4xl font-bold tracking-tight text-transparent"
-			>
-				{t('workspaces.title', language.current)}
-			</h1>
-			<p class="text-base-content/60 max-w-2xl text-lg font-light">
-				{t('workspaces.subtitle', language.current)}
-			</p>
-		</div>
-		<div class="flex w-full flex-col items-center gap-4 sm:flex-row md:w-auto">
-			<div class="w-full sm:w-64">
-				<Input
-					type="search"
-					placeholder={t('common.search', language.current)}
-					bind:value={searchQuery}
-					icon="search"
-					variant="bordered"
-					class="bg-base-100/50"
-					data-test-id="search-workspace-input"
-				/>
-			</div>
-			<Button
-				variant="primary"
-				size="md"
-				class="shadow-primary/20 hover:shadow-primary/40 whitespace-nowrap shadow-lg transition-all"
-				onclick={openCreateModal}
-				data-test-id="create-workspace-button"
-			>
-				<Icon name="plus" class="mr-2 h-5 w-5" />
-				{t('workspaces.create', language.current)}
-			</Button>
-		</div>
-	</div>
-
+<div class="page" data-test-id="workspaces-page">
+	<!-- Content -->
 	{#if isLoading}
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each Array(6) as _}
-				<div class="card bg-base-100 h-64 animate-pulse shadow-xl">
-					<div class="card-body">
-						<div class="flex justify-between">
-							<div class="bg-base-300 h-6 w-1/2 rounded"></div>
-							<div class="bg-base-300 h-6 w-16 rounded"></div>
-						</div>
-						<div class="bg-base-300 mt-4 h-4 w-full rounded"></div>
-						<div class="bg-base-300 mt-2 h-4 w-3/4 rounded"></div>
-						<div class="mt-auto grid grid-cols-2 gap-4">
-							<div class="bg-base-300 h-16 rounded-lg"></div>
-							<div class="bg-base-300 h-16 rounded-lg"></div>
-						</div>
-					</div>
-				</div>
-			{/each}
+		<div class="page__loading">
+			<GlobalLoader variant="inline" />
 		</div>
 	{:else if filteredWorkspaces.length > 0}
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+		<div class="workspace-grid">
 			{#each filteredWorkspaces as workspace (workspace.id)}
 				<Card
-					variant="glass"
-					class="hover:border-primary/30 group flex h-full flex-col transition-all duration-300"
+					clickable
+					onclick={() => goto(`/workspaces/${workspace.id}`)}
 					data-test-id={`workspace-card-${workspace.id}`}
 				>
-					<div class="mb-4 flex items-start justify-between">
-						<h3
-							class="group-hover:text-primary line-clamp-1 text-xl font-bold transition-colors"
-							title={workspace.name}
-						>
-							{workspace.name}
-						</h3>
-						<div class="flex gap-2">
-							{#if workspace.isPublic}
-								<span
-									class="badge badge-sm badge-info gap-1"
-									title={t('common.public', language.current)}
-								>
-									<Icon name="users" class="h-3 w-3" />
-									{t('common.public', language.current)}
+					<div class="workspace-card">
+						<div class="workspace-card__header">
+							<h3 class="workspace-card__title" title={workspace.name}>{workspace.name}</h3>
+							<span class="workspace-card__badge workspace-card__badge--{workspace.isPublic ? 'public' : 'private'}">
+								<Icon name={workspace.isPublic ? 'users' : 'lock'} size="sm" />
+								{workspace.isPublic ? t('common.public', language.current) : t('common.private', language.current)}
+							</span>
+						</div>
+
+						<p class="workspace-card__desc">
+							{workspace.description || t('common.noDescription', language.current)}
+						</p>
+
+						<div class="workspace-card__stats">
+							<div class="workspace-stat">
+								<span class="workspace-stat__label">
+									<Icon name="certificates" size="sm" />
+									{t('workspaces.certificates', language.current)}
 								</span>
-							{:else}
-								<span
-									class="badge badge-sm badge-ghost gap-1"
-									title={t('common.private', language.current)}
-								>
-									<Icon name="lock" class="h-3 w-3" />
-									{t('common.private', language.current)}
+								<span class="workspace-stat__value">
+									{workspace.certificateCount}
+									<span class="workspace-stat__max">/ {workspace.maxCertificates}</span>
 								</span>
-							{/if}
-						</div>
-					</div>
-
-					<p class="text-base-content/60 mb-6 line-clamp-2 flex-grow text-sm">
-						{workspace.description || t('common.noDescription', language.current)}
-					</p>
-
-					<div class="mb-4 grid grid-cols-2 gap-4">
-						<div class="bg-base-200/30 flex flex-col gap-1 rounded-lg p-2">
-							<div class="text-base-content/60 flex items-center gap-2 text-xs">
-								<Icon name="certificates" class="h-3 w-3" />
-								{t('workspaces.certificates', language.current)}
 							</div>
-							<div class="font-semibold">
-								{workspace.certificateCount}
-								<span class="text-base-content/40 text-xs">/ {workspace.maxCertificates}</span>
+							<div class="workspace-stat">
+								<span class="workspace-stat__label">
+									<Icon name="users" size="sm" />
+									{t('workspaces.members', language.current)}
+								</span>
+								<span class="workspace-stat__value">{workspace.memberCount}</span>
 							</div>
 						</div>
 
-						<div class="bg-base-200/30 flex flex-col gap-1 rounded-lg p-2">
-							<div class="text-base-content/60 flex items-center gap-2 text-xs">
-								<Icon name="users" class="h-3 w-3" />
-								{t('workspaces.members', language.current)}
+						<div class="workspace-card__footer">
+							<div class="workspace-card__status">
+								<span class="status-dot status-dot--{workspace.allowMemberInvites ? 'active' : 'inactive'}"></span>
+								{workspace.allowMemberInvites
+									? t('workspaces.invitesAllowed', language.current)
+									: t('workspaces.invitesDisabled', language.current)}
 							</div>
-							<div class="font-semibold">
-								{workspace.memberCount}
-							</div>
+							<Button
+								variant="ghost"
+								size="sm"
+								onclick={() => goto(`/workspaces/${workspace.id}`)}
+								data-test-id={`view-workspace-${workspace.id}`}
+							>
+								{t('common.view', language.current)}
+								<Icon name="rightArrow" size="sm" />
+							</Button>
 						</div>
-					</div>
-
-					<div class="border-base-content/5 flex items-center justify-between border-t pt-4">
-						<div
-							class="text-base-content/60 flex items-center gap-2 text-xs"
-							title={t('workspaces.invitesAllowed', language.current)}
-						>
-							<div
-								class={`h-2 w-2 rounded-full ${workspace.allowMemberInvites ? 'bg-success' : 'bg-base-300'}`}
-							></div>
-							{workspace.allowMemberInvites
-								? t('workspaces.invitesAllowed', language.current)
-								: t('workspaces.invitesDisabled', language.current)}
-						</div>
-
-						<Button
-							variant="ghost"
-							size="sm"
-							class="group-hover:bg-primary group-hover:text-primary-content"
-							onclick={() => goto(`/workspaces/${workspace.id}`)}
-							data-test-id={`view-workspace-${workspace.id}`}
-						>
-							{t('common.view', language.current)}
-							<Icon name="rightArrow" class="ml-2 h-4 w-4" />
-						</Button>
 					</div>
 				</Card>
 			{/each}
 		</div>
 	{:else}
-		<div
-			class="bg-base-100/30 border-base-content/5 flex flex-col items-center justify-center rounded-3xl border py-20 text-center backdrop-blur-sm"
-		>
-			<div class="bg-base-200/50 mb-6 rounded-full p-6">
-				<Icon name="workspaces" class="text-base-content/20 h-16 w-16" />
+		<div class="empty-state">
+			<div class="empty-state__icon">
+				<Icon name="workspaces" />
 			</div>
-			<h3 class="mb-2 text-xl font-bold">{t('workspaces.empty', language.current)}</h3>
-			<p class="text-base-content/60 mb-8 max-w-md">
-				{searchQuery
-					? t('common.noResults', language.current)
-					: ''}
+			<h3 class="empty-state__title">{t('workspaces.empty', language.current)}</h3>
+			<p class="empty-state__text">
+				{searchQuery ? t('common.noResults', language.current) : ''}
 			</p>
 			{#if !searchQuery}
 				<Button
@@ -279,15 +194,38 @@
 			{/if}
 		</div>
 	{/if}
+
+	<FloatingActionBar label={t('workspaces.title', language.current)}>
+		{#snippet leading()}
+			<Input
+				type="search"
+				placeholder={t('common.search', language.current)}
+				bind:value={searchQuery}
+				icon="search"
+				data-test-id="search-workspace-input"
+			/>
+		{/snippet}
+		{#snippet trailing()}
+			<Button
+				variant="primary"
+				onclick={openCreateModal}
+				data-test-id="create-workspace-button"
+			>
+				<Icon name="plus" size="sm" />
+				{t('workspaces.create', language.current)}
+			</Button>
+		{/snippet}
+	</FloatingActionBar>
 </div>
 
+<!-- Create Modal -->
 <Modal
 	isOpen={showCreateModal}
 	title={t('workspaces.create', language.current)}
 	onClose={() => (showCreateModal = false)}
 	data-test-id="create-workspace-modal"
 >
-	<form onsubmit={handleCreateWorkspace} class="space-y-6">
+	<form onsubmit={handleCreateWorkspace} class="modal-form">
 		<Input
 			label={t('workspaces.name', language.current)}
 			bind:value={createForm.name}
@@ -310,48 +248,38 @@
 			type="number"
 			bind:value={createForm.maxCertificates}
 			error={errors.maxCertificates}
-			min="1"
-			max="10000"
 			data-test-id="create-workspace-max-certs-input"
 		/>
 
-		<div class="form-control">
-			<label class="label cursor-pointer justify-start gap-4">
-				<input
-					type="checkbox"
-					class="checkbox checkbox-primary"
-					bind:checked={createForm.isPublic}
-					data-test-id="create-workspace-public-checkbox"
-				/>
-				<span class="label-text font-medium">{t('workspaces.isPublic', language.current)}</span>
-			</label>
-		</div>
+		<label class="checkbox-field">
+			<input
+				type="checkbox"
+				bind:checked={createForm.isPublic}
+				data-test-id="create-workspace-public-checkbox"
+			/>
+			<span>{t('workspaces.isPublic', language.current)}</span>
+		</label>
 
-		<div class="form-control">
-			<label class="label cursor-pointer justify-start gap-4">
-				<input
-					type="checkbox"
-					class="checkbox checkbox-primary"
-					bind:checked={createForm.allowMemberInvites}
-					data-test-id="create-workspace-invites-checkbox"
-				/>
-				<span class="label-text font-medium"
-					>{t('workspaces.allowMemberInvites', language.current)}</span
-				>
-			</label>
-		</div>
+		<label class="checkbox-field">
+			<input
+				type="checkbox"
+				bind:checked={createForm.allowMemberInvites}
+				data-test-id="create-workspace-invites-checkbox"
+			/>
+			<span>{t('workspaces.allowMemberInvites', language.current)}</span>
+		</label>
 
 		{#if errors.general}
-			<div class="alert alert-error text-sm shadow-lg">
-				<Icon name="alert" class="h-5 w-5" />
+			<div class="form-error">
+				<Icon name="alert" size="sm" />
 				<span>{errors.general}</span>
 			</div>
 		{/if}
 
-		<div class="flex justify-end gap-3 pt-4">
+		<div class="modal-form__actions">
 			<Button
 				variant="ghost"
-				onclick={() => (showCreateModal = false)}
+				onclick={() => { showCreateModal = false; }}
 				disabled={isCreating}
 				data-test-id="create-workspace-cancel-button"
 			>
@@ -368,3 +296,237 @@
 		</div>
 	</form>
 </Modal>
+
+<style>
+	.page {
+		animation: fadeIn 0.5s ease-out;
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	.page__loading {
+		display: flex;
+		justify-content: center;
+		padding: var(--space-12);
+	}
+
+	/* Workspace Grid */
+	.workspace-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-6);
+	}
+
+	@media (min-width: 768px) {
+		.workspace-grid { grid-template-columns: repeat(2, 1fr); }
+	}
+
+	@media (min-width: 1024px) {
+		.workspace-grid { grid-template-columns: repeat(3, 1fr); }
+	}
+
+	/* Workspace Card */
+	.workspace-card {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+	}
+
+	.workspace-card__header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--space-3);
+		margin-bottom: var(--space-4);
+	}
+
+	.workspace-card__title {
+		font-family: var(--font-display);
+		font-size: var(--text-lg);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		color: var(--color-text);
+		margin: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.workspace-card__badge {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+		padding: var(--space-1) var(--space-2);
+		font-size: var(--text-xs);
+		border-radius: var(--radius-full);
+		white-space: nowrap;
+	}
+
+	.workspace-card__badge--public {
+		background-color: var(--color-primary-light);
+		color: var(--color-primary);
+	}
+
+	.workspace-card__badge--private {
+		background-color: var(--color-surface-hover);
+		color: var(--color-text-muted);
+	}
+
+	.workspace-card__desc {
+		color: var(--color-text-secondary);
+		font-size: var(--text-sm);
+		margin: 0 0 var(--space-6) 0;
+		flex-grow: 1;
+		display: -webkit-box;
+		line-clamp: 2;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.workspace-card__stats {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-4);
+		margin-bottom: var(--space-4);
+	}
+
+	.workspace-stat {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+		padding: var(--space-2);
+		background-color: var(--color-surface-hover);
+		border-radius: var(--radius-lg);
+	}
+
+	.workspace-stat__label {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	.workspace-stat__value {
+		font-weight: var(--font-semibold);
+		color: var(--color-text);
+	}
+
+	.workspace-stat__max {
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	.workspace-card__footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding-top: var(--space-4);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.workspace-card__status {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	.status-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: var(--radius-full);
+	}
+
+	.status-dot--active { background-color: var(--color-success); }
+	.status-dot--inactive { background-color: var(--color-border); }
+
+	/* Empty State */
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: var(--space-16) var(--space-6);
+		background-color: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+	}
+
+	.empty-state__icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 56px;
+		height: 56px;
+		border-radius: var(--radius-full);
+		background-color: var(--color-surface-inset);
+		color: var(--color-text-secondary);
+		margin-bottom: var(--space-5);
+	}
+
+	.empty-state__title {
+		font-family: var(--font-display);
+		font-size: var(--text-xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		color: var(--color-text);
+		margin: 0 0 var(--space-2) 0;
+	}
+
+	.empty-state__text {
+		color: var(--color-text-secondary);
+		margin: 0 0 var(--space-6) 0;
+		max-width: 48ch;
+	}
+
+	/* Modal Form */
+	.modal-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.checkbox-field {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		cursor: pointer;
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		color: var(--color-text);
+	}
+
+	.checkbox-field input {
+		width: 18px;
+		height: 18px;
+		accent-color: var(--color-primary);
+	}
+
+	.form-error {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-3) var(--space-4);
+		background-color: var(--color-error-light);
+		border: 1px solid var(--color-error);
+		border-radius: var(--radius-md);
+		color: var(--color-error);
+		font-size: var(--text-sm);
+	}
+
+	.modal-form__actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-3);
+		padding-top: var(--space-4);
+		border-top: 1px solid var(--color-border);
+		margin-top: var(--space-2);
+	}
+</style>

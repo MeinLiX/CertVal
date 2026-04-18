@@ -1,99 +1,56 @@
 <script lang="ts">
-	import { icons, type IconName } from '$lib/icons';
+	import type { IconName } from '$lib/icons';
+	import Icon from './Icon.svelte';
 
 	interface Option {
 		value: string | number;
 		label: string;
 	}
 
-	type SelectSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+	interface Props {
+		value?: string | number;
+		label?: string;
+		name?: string;
+		id?: string;
+		error?: string;
+		disabled?: boolean;
+		required?: boolean;
+		options?: Option[];
+		icon?: IconName;
+		class?: string;
+		onchange?: (event: Event) => void;
+		'data-test-id'?: string;
+	}
 
 	let {
 		value = $bindable(''),
 		label = '',
 		name = '',
+		id = '',
 		error = '',
 		disabled = false,
 		required = false,
-		id = '',
 		options = [],
-		size = 'md',
 		icon,
-		iconPosition = 'left',
 		class: className = '',
 		onchange,
 		'data-test-id': testId
-	}: {
-		value?: string | number;
-		label?: string;
-		name?: string;
-		error?: string;
-		disabled?: boolean;
-		required?: boolean;
-		id?: string;
-		options: Option[];
-		size?: SelectSize;
-		icon?: IconName;
-		iconPosition?: 'left' | 'right';
-		class?: string;
-		onchange?: (event: Event) => void;
-		'data-test-id'?: string;
-	} = $props();
+	}: Props = $props();
 
 	const selectId = $derived(id || `select-${Math.random().toString(36).substring(2, 9)}`);
-
-	const sizeClasses = $derived(() => {
-		const classes = {
-			xs: 'select-xs text-xs h-8 min-h-[2rem]',
-			sm: 'select-sm text-sm h-10 min-h-[2.5rem]',
-			md: 'select-md text-base h-12 min-h-[3rem]',
-			lg: 'select-lg text-lg h-14 min-h-[3.5rem]',
-			xl: 'select-xl text-xl h-16 min-h-[4rem]'
-		};
-		return classes[size];
-	});
-
-	const iconPaddingClasses = $derived(() => {
-		if (!icon) return '';
-		return iconPosition === 'left' ? 'pl-10' : 'pr-10';
-	});
-
-	const selectClasses = $derived(
-		`
-    select select-bordered w-full transition-all duration-300 ease-out
-    border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20
-    ${sizeClasses()}
-    ${iconPaddingClasses()}
-    ${error ? 'select-error focus:ring-error/20' : ''}
-    ${disabled ? 'select-disabled' : ''}
-    ${className}
-  `
-			.trim()
-			.replace(/\s+/g, ' ')
-	);
 </script>
 
-<div class="form-control w-full">
+<div class="select-group {className}">
 	{#if label}
-		<label for={selectId} class="label">
-			<span class="label-text"
-				>{label}{#if required}<span class="text-error ml-1">*</span>{/if}</span
-			>
+		<label class="select-label" class:select-label--required={required} for={selectId}>
+			{label}
 		</label>
 	{/if}
 
-	<div class="relative">
-		{#if icon && iconPosition === 'left'}
-			<span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-3">
-				<svg
-					class="text-base-content/50 h-5 w-5"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" d={icons[icon]} />
-				</svg>
+	<div class="select-wrapper" class:select-wrapper--icon={icon}>
+		{#if icon}
+			<span class="select-icon">
+				<Icon name={icon} />
 			</span>
 		{/if}
 
@@ -102,7 +59,8 @@
 			{disabled}
 			{required}
 			id={selectId}
-			class={selectClasses}
+			class="select"
+			class:select--error={error}
 			bind:value
 			{onchange}
 			aria-invalid={!!error}
@@ -112,25 +70,95 @@
 				<option value={option.value}>{option.label}</option>
 			{/each}
 		</select>
-
-		{#if icon && iconPosition === 'right'}
-			<span class="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-8">
-				<svg
-					class="text-base-content/50 h-5 w-5"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" d={icons[icon]} />
-				</svg>
-			</span>
-		{/if}
 	</div>
 
 	{#if error}
-		<label class="label" for={selectId}>
-			<span class="label-text-alt text-error">{error}</span>
-		</label>
+		<span class="select-error">{error}</span>
 	{/if}
 </div>
+
+<style>
+	.select-group {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.select-label {
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		color: var(--color-text);
+	}
+
+	.select-label--required::after {
+		content: ' *';
+		color: var(--color-error);
+	}
+
+	.select-wrapper {
+		position: relative;
+		display: flex;
+	}
+
+	.select-wrapper--icon .select {
+		padding-left: var(--space-10);
+	}
+
+	.select-icon {
+		position: absolute;
+		left: var(--space-3);
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--color-text-muted);
+		pointer-events: none;
+		display: flex;
+	}
+
+	.select {
+		width: 100%;
+		padding: 0 var(--space-10) 0 var(--space-3);
+		height: 38px;
+		font-size: var(--text-sm);
+		font-family: var(--font-family);
+		color: var(--color-text);
+		background-color: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+		appearance: none;
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+		background-position: right var(--space-3) center;
+		background-repeat: no-repeat;
+		background-size: 1.25em;
+	}
+
+	.select:hover:not(:disabled) {
+		border-color: var(--color-border-hover);
+	}
+
+	.select:focus {
+		outline: none;
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px var(--color-primary-light);
+	}
+
+	.select:disabled {
+		background-color: var(--color-bg-alt);
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+
+	.select--error {
+		border-color: var(--color-error);
+	}
+
+	.select--error:focus {
+		box-shadow: 0 0 0 3px var(--color-error-light);
+	}
+
+	.select-error {
+		font-size: var(--text-xs);
+		color: var(--color-error);
+	}
+</style>

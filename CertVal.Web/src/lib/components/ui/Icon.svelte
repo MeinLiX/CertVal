@@ -1,27 +1,49 @@
 <script lang="ts">
 	import { icons, type IconName } from '$lib/icons';
 
+	interface Props {
+		name: IconName;
+		size?: 'sm' | 'md' | 'lg';
+		class?: string;
+	}
+
 	let {
 		name,
-		class: className = '',
-		...rest
-	}: {
-		name: IconName;
-		class?: string;
-		[key: string]: any;
-	} = $props();
+		size = 'md',
+		class: className = ''
+	}: Props = $props();
 
 	const path = $derived(icons[name]);
+
+	const sizeMap = {
+		sm: 16,
+		md: 20,
+		lg: 24
+	};
+
+	const iconSize = $derived(sizeMap[size]);
 </script>
 
 <svg
 	xmlns="http://www.w3.org/2000/svg"
-	class="h-5 w-5 {className}"
-	fill="none"
+	width={iconSize}
+	height={iconSize}
 	viewBox="0 0 24 24"
+	fill="none"
 	stroke="currentColor"
 	stroke-width="2"
-	{...rest}
+	stroke-linecap="round"
+	stroke-linejoin="round"
+	class="icon icon--{size} {className}"
+	aria-hidden="true"
 >
-	<path stroke-linecap="round" stroke-linejoin="round" d={path} />
+	<path d={path} />
 </svg>
+
+<style>
+	.icon {
+		display: inline-block;
+		flex-shrink: 0;
+		vertical-align: middle;
+	}
+</style>

@@ -7,11 +7,11 @@
 	import { t } from '$lib/i18n';
 	import { formatDateTime } from '$lib/utils/date';
 	import Button from '$lib/components/ui/Button.svelte';
+	import FloatingActionBar from '$lib/components/layout/FloatingActionBar.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
 	import type { ApiToken, CreateApiTokenRequest, CreateApiTokenResponse } from '$lib/types';
 
 	let tokens = $state<ApiToken[]>([]);
@@ -117,124 +117,84 @@
 	<title>{t('nav.apiTokens', language.current)} - CertVal</title>
 </svelte:head>
 
-<div
-	class="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500"
-	data-test-id="api-tokens-page"
->
-	<div
-		class="border-base-content/10 flex flex-col items-start justify-between gap-4 border-b pb-6 md:flex-row md:items-center"
-	>
-		<div>
-			<h1
-				class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent"
-			>
-				{t('nav.apiTokens', language.current)}
-			</h1>
-			<p class="text-base-content/60 mt-2 text-lg font-light">
-				{t('profile.apiTokensSubtitle', language.current)}
-			</p>
-		</div>
-		<Button
-			onclick={openCreateModal}
-			variant="primary"
-			class="shadow-primary/20 shadow-lg"
-			data-test-id="create-token-button"
-		>
-			<Icon name="plus" class="mr-2 h-5 w-5" />
-			{t('common.create', language.current)}
-		</Button>
-	</div>
-
+<div class="page" data-test-id="api-tokens-page">
 	{#if isLoading}
-		<div class="grid grid-cols-1 gap-4">
+		<div class="skeleton-list">
 			{#each { length: 3 } as _}
-				<div class="skeleton bg-base-200/50 h-24 w-full rounded-xl"></div>
+				<div class="skeleton skeleton--card"></div>
 			{/each}
 		</div>
 	{:else if tokens.length === 0}
-		<div
-			class="bg-base-100/30 border-base-content/5 flex flex-col items-center justify-center rounded-3xl border py-20 text-center backdrop-blur-sm"
-		>
-			<div class="bg-base-200/50 mb-6 rounded-full p-6">
-				<Icon name="key" class="text-base-content/20 h-16 w-16" />
+		<div class="empty-state">
+			<div class="empty-state__icon">
+				<Icon name="key" />
 			</div>
-			<h3 class="mb-2 text-xl font-bold">{t('common.noTokens', language.current)}</h3>
-			<p class="text-base-content/60 mb-8 max-w-md">
+			<h3 class="empty-state__title">{t('common.noTokens', language.current)}</h3>
+			<p class="empty-state__description">
 				Create a token to access the API programmatically. Tokens allow you to authenticate with the
 				API without using your password.
 			</p>
-			<Button onclick={openCreateModal} variant="outline" class="shadow-sm">
+			<Button onclick={openCreateModal} variant="outline">
 				Create your first token
 			</Button>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 gap-4">
+		<div class="tokens-list">
 			{#each tokens as token}
-				<div
-					class="border-base-content/10 bg-base-100/50 hover:bg-base-100 hover:border-primary/20 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
-					data-test-id={`token-item-${token.id}`}
-				>
-					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-						<div class="flex items-start gap-4">
-							<div
-								class="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content rounded-xl p-3 transition-colors"
-							>
-								<Icon name="key" class="h-6 w-6" />
-							</div>
-							<div>
-								<div class="flex flex-wrap items-center gap-3">
-									<h3 class="text-lg font-bold">{token.name}</h3>
-									{#if token.isActive}
-										<span class="badge badge-success gap-1.5 shadow-sm">
-											<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-white"></span>
-											{t('common.active', language.current)}
-										</span>
-									{:else}
-										<span class="badge badge-error gap-1.5 shadow-sm">
-											<span class="h-1.5 w-1.5 rounded-full bg-white"></span>
-											{t('common.revoked', language.current)}
-										</span>
-									{/if}
-								</div>
-								<div
-									class="text-base-content/60 mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"
-								>
-									<span
-										class="bg-base-200/80 border-base-content/5 rounded-md border px-2 py-1 font-mono text-xs"
-										>{token.tokenPrefix}...</span
-									>
-									<span class="bg-base-content/30 h-1 w-1 rounded-full"></span>
-									<span class="flex items-center gap-1">
-										<Icon name="lock" class="h-3 w-3" />
-										{t(
-											`common.scopes.${token.scope.charAt(0).toLowerCase() + token.scope.slice(1)}`,
-											language.current
-										)}
-									</span>
-									<span class="bg-base-content/30 h-1 w-1 rounded-full"></span>
-									<span>Created {formatDateTime(token.createdAt)}</span>
-								</div>
-							</div>
+				<div class="token-card" data-test-id={`token-item-${token.id}`}>
+					<div class="token-card__icon">
+						<Icon name="key" />
+					</div>
+					<div class="token-card__content">
+						<div class="token-card__header">
+							<h3 class="token-card__name">{token.name}</h3>
+							{#if token.isActive}
+								<span class="badge badge--success">
+									<span class="badge__indicator"></span>
+									{t('common.active', language.current)}
+								</span>
+							{:else}
+								<span class="badge badge--error">
+									{t('common.revoked', language.current)}
+								</span>
+							{/if}
 						</div>
-
-						<div class="flex items-center gap-2 self-end sm:self-center">
-							<Button
-								size="sm"
-								variant="ghost"
-								class="text-error hover:bg-error/10 hover:text-error"
-								onclick={() => openRevokeModal(token)}
-								disabled={!token.isActive}
-								data-test-id={`revoke-token-button-${token.id}`}
-							>
-								<Icon name="trash" class="mr-2 h-4 w-4" />
-								{t('common.revoke', language.current)}
-							</Button>
+						<div class="token-card__meta">
+							<span class="token-card__prefix">{token.tokenPrefix}...</span>
+							<span class="token-card__separator"></span>
+							<span class="token-card__scope">
+								<Icon name="lock" />
+								{t(`common.scopes.${token.scope.charAt(0).toLowerCase() + token.scope.slice(1)}`, language.current)}
+							</span>
+							<span class="token-card__separator"></span>
+							<span>Created {formatDateTime(token.createdAt)}</span>
 						</div>
+					</div>
+					<div class="token-card__actions">
+						<Button
+							size="sm"
+							variant="ghost"
+							onclick={() => openRevokeModal(token)}
+							disabled={!token.isActive}
+							data-test-id={`revoke-token-button-${token.id}`}
+						>
+							<Icon name="trash" />
+							{t('common.revoke', language.current)}
+						</Button>
 					</div>
 				</div>
 			{/each}
 		</div>
 	{/if}
+
+	<FloatingActionBar label={t('nav.apiTokens', language.current)}>
+		{#snippet trailing()}
+			<Button onclick={openCreateModal} variant="primary" data-test-id="create-token-button">
+				<Icon name="plus" />
+				{t('common.create', language.current)}
+			</Button>
+		{/snippet}
+	</FloatingActionBar>
 </div>
 
 <Modal
@@ -243,10 +203,10 @@
 	onClose={() => (showCreateModal = false)}
 	data-test-id="create-token-modal"
 >
-	<form onsubmit={handleCreateToken} class="space-y-6">
+	<form onsubmit={handleCreateToken} class="modal-form">
 		{#if errors.create}
-			<div role="alert" class="alert alert-error bg-error/10 border-error/20 text-sm shadow-sm">
-				<Icon name="error" class="text-error h-5 w-5" />
+			<div class="alert alert--error">
+				<Icon name="error" />
 				<span>{errors.create}</span>
 			</div>
 		{/if}
@@ -255,7 +215,6 @@
 			bind:value={createForm.name}
 			required
 			placeholder="e.g. CI/CD Pipeline"
-			class="bg-base-100/50"
 			data-test-id="token-name-input"
 		/>
 		<Select
@@ -265,21 +224,19 @@
 				{ value: 'ReadOnly', label: t('common.scopes.readOnly', language.current) },
 				{ value: 'ReadWrite', label: t('common.scopes.readWrite', language.current) }
 			]}
-			class="bg-base-100"
 			data-test-id="token-scope-select"
 		/>
-		<div class="modal-action pt-4">
-			<Button type="button" variant="ghost" onclick={() => (showCreateModal = false)}
-				>{t('common.cancel', language.current)}</Button
-			>
+		<div class="modal-form__actions">
+			<Button type="button" variant="ghost" onclick={() => { showCreateModal = false; }}>
+				{t('common.cancel', language.current)}
+			</Button>
 			<Button
 				type="submit"
 				variant="primary"
 				loading={isProcessing}
-				class="shadow-primary/20 shadow-lg"
 				data-test-id="token-submit-button"
 			>
-				<Icon name="plus" class="mr-2 h-4 w-4" />
+				<Icon name="plus" />
 				{t('common.create', language.current)}
 			</Button>
 		</div>
@@ -293,45 +250,42 @@
 	data-test-id="new-token-modal"
 >
 	{#if newTokenResponse}
-		<div class="space-y-6">
-			<div class="alert alert-warning bg-warning/10 border-warning/20 text-sm shadow-sm">
-				<Icon name="warning" class="text-warning h-5 w-5" />
+		<div class="modal-form">
+			<div class="alert alert--warning">
+				<Icon name="warning" />
 				<span>{t('common.copyTokenWarning', language.current)}</span>
 			</div>
 
-			<div class="form-control">
-				<label class="label" for="new-token">
-					<span class="label-text font-medium">Your API Token</span>
-				</label>
-				<div class="join w-full shadow-sm">
+			<div class="token-display">
+				<label class="form-label" for="new-token">Your API Token</label>
+				<div class="token-display__row">
 					<input
 						id="new-token"
 						type="text"
 						readonly
 						value={newTokenResponse.token}
-						class="input input-bordered join-item bg-base-200/50 w-full font-mono text-sm focus:outline-none"
+						class="token-display__input"
 						data-test-id="new-token-input"
 					/>
 					<Button
 						variant="primary"
-						class="join-item"
 						disabled={isCopied}
 						onclick={() => copyToClipboard(newTokenResponse?.token ?? '')}
 						data-test-id="copy-token-button"
 					>
 						{#if isCopied}
-							<Icon name="check" class="h-5 w-5" />
+							<Icon name="check" />
 						{:else}
-							<Icon name="document" class="h-5 w-5" />
+							<Icon name="document" />
 						{/if}
 					</Button>
 				</div>
 			</div>
 
-			<div class="modal-action">
-				<Button onclick={() => (showTokenModal = false)} variant="ghost"
-					>{t('common.close', language.current)}</Button
-				>
+			<div class="modal-form__actions">
+				<Button onclick={() => { showTokenModal = false; }} variant="ghost">
+					{t('common.close', language.current)}
+				</Button>
 			</div>
 		</div>
 	{/if}
@@ -340,41 +294,337 @@
 <Modal
 	isOpen={showRevokeModal}
 	title={t('common.revokeTokenTitle', language.current)}
-	onClose={() => (showRevokeModal = false)}
+	onClose={() => { showRevokeModal = false; }}
 	data-test-id="revoke-token-modal"
 >
 	{#if tokenToRevoke}
-		<div class="space-y-6">
-			<div class="bg-error/10 border-error/20 flex items-start gap-4 rounded-xl border p-4">
-				<div class="bg-error/20 text-error rounded-full p-2">
-					<Icon name="alert" class="h-6 w-6" />
+		<div class="modal-form">
+			<div class="warning-box">
+				<div class="warning-box__icon">
+					<Icon name="alert" />
 				</div>
-				<div>
-					<h4 class="text-error mb-1 font-bold">Warning</h4>
-					<p class="text-base-content/80 text-sm">
-						Are you sure you want to revoke the token <span class="text-base-content font-bold"
-							>{tokenToRevoke.name}</span
-						>? This action cannot be undone and any applications using this token will stop working
-						immediately.
+				<div class="warning-box__content">
+					<h4 class="warning-box__title">Warning</h4>
+					<p class="warning-box__text">
+						Are you sure you want to revoke the token <strong>{tokenToRevoke.name}</strong>?
+						This action cannot be undone and any applications using this token will stop working immediately.
 					</p>
 				</div>
 			</div>
 
-			<div class="modal-action">
-				<Button variant="ghost" onclick={() => (showRevokeModal = false)}
-					>{t('common.cancel', language.current)}</Button
-				>
+			<div class="modal-form__actions">
+				<Button variant="ghost" onclick={() => { showRevokeModal = false; }}>
+					{t('common.cancel', language.current)}
+				</Button>
 				<Button
 					variant="danger"
 					loading={isProcessing}
 					onclick={handleRevokeToken}
-					class="shadow-error/20 shadow-lg"
 					data-test-id="revoke-token-confirm-button"
 				>
-					<Icon name="trash" class="mr-2 h-4 w-4" />
+					<Icon name="trash" />
 					{t('common.revoke', language.current)}
 				</Button>
 			</div>
 		</div>
 	{/if}
 </Modal>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-8);
+	}
+
+	.skeleton-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.skeleton {
+		background: linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-surface) 50%, var(--color-bg-secondary) 75%);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s infinite;
+		border-radius: var(--radius-lg);
+	}
+
+	.skeleton--card {
+		height: 96px;
+	}
+
+	@keyframes shimmer {
+		0% { background-position: 200% 0; }
+		100% { background-position: -200% 0; }
+	}
+
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-16) var(--space-8);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		text-align: center;
+	}
+
+	.empty-state__icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 80px;
+		height: 80px;
+		margin-bottom: var(--space-6);
+		background: var(--color-surface);
+		border-radius: 50%;
+		color: var(--color-text-muted);
+	}
+
+	.empty-state__title {
+		font-family: var(--font-display);
+		font-size: var(--text-xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		color: var(--color-text);
+		margin-bottom: var(--space-2);
+	}
+
+	.empty-state__description {
+		font-size: var(--text-base);
+		color: var(--color-text-secondary);
+		max-width: 400px;
+		margin-bottom: var(--space-6);
+	}
+
+	.tokens-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.token-card {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		padding: var(--space-6);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		transition: border-color var(--transition-fast);
+	}
+
+	@media (min-width: 640px) {
+		.token-card {
+			flex-direction: row;
+			align-items: center;
+		}
+	}
+
+	.token-card:hover {
+		border-color: var(--color-border-strong);
+	}
+
+	.token-card__icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		height: 48px;
+		background: var(--color-primary-bg);
+		color: var(--color-primary);
+		border-radius: var(--radius-lg);
+		flex-shrink: 0;
+	}
+
+	.token-card__content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.token-card__header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		margin-bottom: var(--space-2);
+	}
+
+	.token-card__name {
+		font-size: var(--text-md);
+		font-weight: var(--font-semibold);
+		color: var(--color-text);
+	}
+
+	.token-card__meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		font-size: var(--text-sm);
+		color: var(--color-text-secondary);
+	}
+
+	.token-card__prefix {
+		padding: var(--space-1) var(--space-2);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+	}
+
+	.token-card__separator {
+		width: 4px;
+		height: 4px;
+		background: var(--color-border);
+		border-radius: 50%;
+	}
+
+	.token-card__scope {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+	}
+
+	.token-card__actions {
+		flex-shrink: 0;
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-1) var(--space-3);
+		border-radius: var(--radius-full);
+		font-size: var(--text-xs);
+		font-weight: 500;
+	}
+
+	.badge--success {
+		background: var(--color-success-bg);
+		color: var(--color-success);
+	}
+
+	.badge--error {
+		background: var(--color-error-bg);
+		color: var(--color-error);
+	}
+
+	.badge__indicator {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: currentColor;
+		animation: pulse 2s infinite;
+	}
+
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
+	}
+
+	.modal-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-6);
+	}
+
+	.modal-form__actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-3);
+		padding-top: var(--space-4);
+	}
+
+	.alert {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-4);
+		border-radius: var(--radius-lg);
+		font-size: var(--text-sm);
+	}
+
+	.alert--error {
+		background: var(--color-error-bg);
+		color: var(--color-error);
+		border: 1px solid var(--color-error);
+	}
+
+	.alert--warning {
+		background: var(--color-warning-bg);
+		color: var(--color-warning);
+		border: 1px solid var(--color-warning);
+	}
+
+	.form-label {
+		display: block;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text-primary);
+		margin-bottom: var(--space-2);
+	}
+
+	.token-display {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.token-display__row {
+		display: flex;
+		gap: var(--space-2);
+	}
+
+	.token-display__input {
+		flex: 1;
+		padding: var(--space-3) var(--space-4);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		color: var(--color-text-primary);
+	}
+
+	.warning-box {
+		display: flex;
+		gap: var(--space-4);
+		padding: var(--space-4);
+		background: var(--color-error-bg);
+		border: 1px solid var(--color-error);
+		border-radius: var(--radius-lg);
+	}
+
+	.warning-box__icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		background: var(--color-error);
+		color: white;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.warning-box__content {
+		flex: 1;
+	}
+
+	.warning-box__title {
+		font-size: var(--text-base);
+		font-weight: var(--font-semibold);
+		color: var(--color-error);
+		margin-bottom: var(--space-1);
+	}
+
+	.warning-box__text {
+		font-size: var(--text-sm);
+		color: var(--color-text-primary);
+		line-height: 1.5;
+	}
+</style>

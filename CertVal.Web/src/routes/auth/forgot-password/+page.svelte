@@ -36,66 +36,158 @@
 	<title>{t('auth.forgot.title', language.current)} - CertVal</title>
 </svelte:head>
 
-<div
-	class="card bg-base-100/20 w-full max-w-md shrink-0 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
-	data-test-id="forgot-password-card"
->
-	<form class="card-body gap-6 p-8" onsubmit={handleSubmit}>
-		<div class="mb-2 text-center">
-			<h2
-				class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent"
-			>
-				{t('auth.forgot.title', language.current)}
-			</h2>
-			<p class="text-base-content/60 mt-2 text-sm">
-				{t('auth.forgot.subtitle', language.current)}
-			</p>
+<div class="auth-card" data-test-id="forgot-password-card">
+	<div class="auth-card__inner">
+		<div class="auth-card__header">
+			<h1 class="auth-card__title">{t('auth.forgot.title', language.current)}</h1>
+			<p class="auth-card__subtitle">{t('auth.forgot.subtitle', language.current)}</p>
 		</div>
 
-		{#if successMessage}
-			<div role="alert" class="alert alert-success text-sm">
-				<span>{successMessage}</span>
-			</div>
-		{/if}
+		<form onsubmit={handleSubmit} class="auth-form">
+			{#if successMessage}
+				<div class="auth-success">
+					<span>{successMessage}</span>
+				</div>
+			{/if}
 
-		{#if errors.general}
-			<div role="alert" class="alert alert-error text-sm">
-				<span>{errors.general}</span>
-			</div>
-		{/if}
+			{#if errors.general}
+				<div class="auth-error">
+					<span>{errors.general}</span>
+				</div>
+			{/if}
 
-		<FloatingInput
-			id="email"
-			label={t('auth.login.email', language.current)}
-			type="email"
-			bind:value={email}
-			required
-			data-test-id="forgot-password-email-input"
-		/>
+			<FloatingInput
+				id="email"
+				label={t('auth.login.email', language.current)}
+				type="email"
+				bind:value={email}
+				required
+				data-test-id="forgot-password-email-input"
+			/>
 
-		<div class="form-control mt-2">
 			<Button
 				type="submit"
 				variant="primary"
 				loading={isLoading}
-				class="w-full"
 				data-test-id="forgot-password-submit-button"
 			>
 				{t('auth.forgot.submit', language.current)}
 			</Button>
+		</form>
+
+		<div class="auth-divider">
+			<span>{t('common.or', language.current)}</span>
 		</div>
 
-		<div class="divider text-base-content/40 text-xs"></div>
-
-		<div class="text-center text-sm">
+		<div class="auth-footer">
 			<button
 				type="button"
 				onclick={() => goto('/auth/login')}
-				class="link link-primary font-semibold no-underline hover:underline"
+				class="auth-link"
 				data-test-id="forgot-password-back-button"
 			>
 				{t('auth.forgot.backToLogin', language.current)}
 			</button>
 		</div>
-	</form>
+	</div>
 </div>
+
+<style>
+	.auth-card {
+		width: 100%;
+		max-width: 420px;
+	}
+
+	.auth-card__inner {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-8);
+	}
+
+	.auth-card__header {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.auth-card__title {
+		font-family: var(--font-display);
+		font-size: var(--text-3xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+		margin: 0;
+	}
+
+	.auth-card__subtitle {
+		margin: 0;
+		font-size: var(--text-sm);
+		color: var(--color-text-secondary);
+	}
+
+	.auth-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.auth-success {
+		padding: var(--space-3) var(--space-4);
+		background-color: var(--color-success-light);
+		border: 1px solid var(--color-success);
+		border-radius: var(--radius-md);
+		color: var(--color-success);
+		font-size: var(--text-sm);
+	}
+
+	.auth-error {
+		padding: var(--space-3) var(--space-4);
+		background-color: var(--color-error-light);
+		border: 1px solid var(--color-error);
+		border-radius: var(--radius-md);
+		color: var(--color-error);
+		font-size: var(--text-sm);
+	}
+
+	.auth-divider {
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+		color: var(--color-text-muted);
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+	}
+
+	.auth-divider::before,
+	.auth-divider::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background-color: var(--color-border);
+	}
+
+	.auth-footer {
+		text-align: center;
+		font-size: var(--text-sm);
+		color: var(--color-text-secondary);
+	}
+
+	.auth-link {
+		color: var(--color-text);
+		font-weight: var(--font-medium);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		background: none;
+		border: 0;
+		padding: 0;
+		cursor: pointer;
+		font-size: inherit;
+		transition: color var(--transition-fast);
+	}
+
+	.auth-link:hover {
+		color: var(--color-primary);
+	}
+</style>

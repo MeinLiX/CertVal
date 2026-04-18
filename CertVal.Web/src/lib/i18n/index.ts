@@ -83,7 +83,9 @@ export const translations = {
             noDescription: 'Опис відсутній',
             allStatus: 'Всі статуси',
             select: 'Оберіть',
-            skipped: 'Пропущено'
+            skipped: 'Пропущено',
+            noResults: 'Нічого не знайдено',
+            or: 'або'
         },
         nav: {
             dashboard: 'Панель керування',
@@ -175,6 +177,9 @@ export const translations = {
             expiringCertificates: 'Сертифікати, що закінчуються',
             expiringSoon: 'Закінчуються незабаром',
             quickActions: 'Швидкі дії',
+            quickActionsHint: 'Швидкі дії',
+            heroSubtitle: 'Ось стислий огляд стану ваших сертифікатів і робочих просторів.',
+            portfolioHealth: 'Стан портфелю',
             viewAll: 'Переглянути всі',
             noExpiring: 'Немає сертифікатів, що закінчуються',
             allGood: 'Все добре!'
@@ -192,6 +197,7 @@ export const translations = {
             members: 'учасників',
             settings: 'Налаштування',
             empty: 'Робочих просторів не знайдено',
+            workspace: 'Робочий простір',
             createFirst: 'Створіть свій перший робочий простір',
             maxCertificates: 'Максимум сертифікатів',
             isPublic: 'Публічний простір',
@@ -266,6 +272,7 @@ export const translations = {
         certificates: {
             title: 'Сертифікати',
             subtitle: 'Моніторинг та управління SSL/TLS сертифікатами',
+            description: 'Моніторинг та управління SSL/TLS сертифікатами',
             upload: 'Завантажити сертифікат',
             subject: "Суб'єкт",
             issuer: 'Видавець',
@@ -275,10 +282,7 @@ export const translations = {
             expiring: 'Закінчується',
             valid: 'Дійсний',
             days: 'днів',
-            empty: {
-                title: 'Немає сертифікатів',
-                description: 'Завантажте ваш перший сертифікат, щоб почати моніторинг.'
-            },
+            empty: 'Немає сертифікатів',
             uploadFirst: 'Завантажте ваш перший сертифікат',
             fileFormat: 'Формат файлу',
             fileSize: 'Розмір файлу',
@@ -376,7 +380,16 @@ export const translations = {
             monitoringSkippedDescription: 'Цей сертифікат ігнорується системою моніторингу.',
             cannotEnableMonitoring: 'Неможливо увімкнути моніторинг, оскільки існує новіша версія.',
             monitor: 'Моніторити',
-            ignored: 'Ігнорується'
+            ignored: 'Ігнорується',
+            dropFiles: 'Перетягніть файли сюди або натисніть, щоб обрати',
+            files: 'Файли',
+            filesSelected: 'Файлів обрано',
+            noResults: 'Нічого не знайдено',
+            success: 'Успішно',
+            failed: 'Не вдалося',
+            expiresIn: 'Закінчується через',
+            emptyDescription: 'Поки немає жодного сертифіката. Завантажте перший, щоб почати.',
+            emptyFiltered: 'Немає сертифікатів за поточними фільтрами.'
         },
         notifications: {
             title: 'Сповіщення',
@@ -574,7 +587,9 @@ export const translations = {
             noDescription: 'No description',
             allStatus: 'All Statuses',
             select: 'Select',
-            skipped: 'Skipped'
+            skipped: 'Skipped',
+            noResults: 'No results',
+            or: 'or'
         },
         nav: {
             dashboard: 'Dashboard',
@@ -596,6 +611,7 @@ export const translations = {
                 password: 'Password',
                 submit: 'Sign In',
                 forgot: 'Forgot password?',
+                forgotPassword: 'Forgot password?',
                 noAccount: "Don't have an account?",
                 signup: 'Sign up',
                 registerLink: 'Sign up',
@@ -615,6 +631,7 @@ export const translations = {
                 confirmPassword: 'Confirm Password',
                 submit: 'Sign Up',
                 hasAccount: 'Already have an account?',
+                haveAccount: 'Already have an account?',
                 loginLink: 'Sign in',
                 terms: 'Terms of Service',
                 privacy: 'Privacy Policy',
@@ -664,6 +681,9 @@ export const translations = {
             expiringCertificates: 'Expiring Certificates',
             expiringSoon: 'Expiring Soon',
             quickActions: 'Quick Actions',
+            quickActionsHint: 'Quick actions',
+            heroSubtitle: 'Here is a concise overview of your certificate and workspace health.',
+            portfolioHealth: 'Portfolio Health',
             viewAll: 'View All',
             noExpiring: 'No expiring certificates',
             allGood: 'All good!'
@@ -681,6 +701,7 @@ export const translations = {
             members: 'members',
             settings: 'Settings',
             empty: 'No workspaces',
+            workspace: 'Workspace',
             createFirst: 'Create your first workspace',
             maxCertificates: 'Max Certificates',
             isPublic: 'Public workspace',
@@ -755,6 +776,7 @@ export const translations = {
         certificates: {
             title: 'Certificates',
             subtitle: 'Monitor and manage your SSL/TLS certificates',
+            description: 'Monitor and manage your SSL/TLS certificates',
             upload: 'Upload Certificate',
             subject: 'Subject',
             issuer: 'Issuer',
@@ -764,10 +786,7 @@ export const translations = {
             expiring: 'Expiring Soon',
             valid: 'Valid',
             days: 'days',
-            empty: {
-                title: 'No certificates',
-                description: 'Upload your first certificate to start monitoring.'
-            },
+            empty: 'No certificates',
             uploadFirst: 'Upload your first certificate',
             fileFormat: 'File Format',
             fileSize: 'File Size',
@@ -865,7 +884,16 @@ export const translations = {
             issuerPlaceholder: 'Search by issuer...',
             selectFiles: 'Select files',
             skipped: 'Skipped',
-            errors: 'Errors'
+            errors: 'Errors',
+            dropFiles: 'Drop files here or click to select',
+            files: 'Files',
+            filesSelected: 'files selected',
+            noResults: 'No results',
+            success: 'Success',
+            failed: 'Failed',
+            expiresIn: 'Expires in',
+            emptyDescription: 'No certificates yet. Upload your first one to start monitoring.',
+            emptyFiltered: 'No certificates match the current filters.'
         },
         notifications: {
             title: 'Notifications',

@@ -66,7 +66,6 @@
 		}
 
 		if (!window.google?.accounts?.id || !container) {
-			// If google is missing, we wait.
 			return;
 		}
 
@@ -106,9 +105,30 @@
 	}
 </script>
 
-<div class="flex min-h-[40px] w-full flex-col items-center justify-center" data-test-id={testId}>
+<div class="google-signin" data-test-id={testId}>
 	{#if isLoading}
-		<GlobalLoader variant="inline" size="sm" />
+		<GlobalLoader variant="inline" />
 	{/if}
-	<div bind:this={container} class:hidden={isLoading}></div>
+	<div bind:this={container} class="google-signin__container" class:google-signin__container--hidden={isLoading}></div>
 </div>
+
+<style>
+	.google-signin {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 40px;
+		width: 100%;
+	}
+
+	.google-signin__container {
+		display: flex;
+		justify-content: center;
+		width: 100%;
+	}
+
+	.google-signin__container--hidden {
+		display: none;
+	}
+</style>

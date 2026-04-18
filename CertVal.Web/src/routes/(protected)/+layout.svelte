@@ -1,28 +1,28 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { auth } from '$lib/stores/auth';
+	import { userSession } from '$lib/stores/userSession.svelte';
 	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 
 	let { children } = $props();
 
+	const isAuthenticated = $derived(userSession.isAuthenticated);
+
 	onMount(() => {
-		if (!$auth.isAuthenticated) {
+		if (!userSession.isAuthenticated) {
 			goto('/auth/login');
 		}
 	});
 
 	$effect(() => {
-		if (!$auth.isAuthenticated && typeof window !== 'undefined') {
+		if (!userSession.isAuthenticated && typeof window !== 'undefined') {
 			goto('/auth/login');
 		}
 	});
-
-	const isAuthenticated = $derived($auth.isAuthenticated);
 </script>
 
 {#if isAuthenticated}
 	{@render children?.()}
 {:else}
-	<GlobalLoader />
+	<GlobalLoader variant="fullscreen" />
 {/if}

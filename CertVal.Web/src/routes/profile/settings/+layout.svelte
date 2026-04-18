@@ -50,7 +50,6 @@
 
 	onMount(() => {
 		updateUnderline();
-
 		resizeHandler = () => updateUnderline();
 		window.addEventListener('resize', resizeHandler);
 	});
@@ -66,47 +65,78 @@
 	});
 </script>
 
-<div class="space-y-8">
-	<div class="relative">
+<div class="settings-layout">
+	<div class="tabs-nav" bind:this={tabsContainer} role="tablist" aria-label="Settings sections">
+		{#each tabs as tab}
+			<a
+				href={tab.href}
+				role="tab"
+				aria-selected={currentPath.startsWith(tab.href)}
+				class="tab"
+				class:tab--active={currentPath.startsWith(tab.href)}
+			>
+				<Icon name={tab.icon} />
+				<span>{t(tab.label, language.current)}</span>
+			</a>
+		{/each}
+		
 		<div
-			bind:this={tabsContainer}
-			role="tablist"
-			aria-label="Settings sections"
-			class="border-base-content/10 relative flex gap-8 overflow-x-auto border-b pb-px"
-		>
-			{#each tabs as tab}
-				<a
-					href={tab.href}
-					role="tab"
-					aria-selected={currentPath.startsWith(tab.href)}
-					class="hover:text-primary group relative flex items-center gap-2 whitespace-nowrap py-4 text-sm font-medium transition-colors focus:outline-none {currentPath.startsWith(
-						tab.href
-					)
-						? 'text-primary'
-						: 'text-base-content/60'}"
-				>
-					<Icon
-						name={tab.icon}
-						class="group-hover:text-primary h-4 w-4 shrink-0 transition-colors {currentPath.startsWith(
-							tab.href
-						)
-							? 'text-primary'
-							: 'text-base-content/40'}"
-					/>
-					<span>{t(tab.label, language.current)}</span>
-				</a>
-			{/each}
-
-			<div
-				class="bg-primary absolute bottom-0 h-0.5 transition-all duration-300 ease-out"
-				style="left: {underlineLeft}px; width: {underlineWidth}px; opacity: {isUnderlineVisible
-					? 1
-					: 0};"
-			></div>
-		</div>
+			class="tabs-underline"
+			style="left: {underlineLeft}px; width: {underlineWidth}px; opacity: {isUnderlineVisible ? 1 : 0};"
+		></div>
 	</div>
 
-	<div class="min-h-[400px]">
+	<div class="settings-content">
 		{@render children?.()}
 	</div>
 </div>
+
+<style>
+	.settings-layout {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-8);
+	}
+
+	.tabs-nav {
+		position: relative;
+		display: flex;
+		gap: var(--space-6);
+		overflow-x: auto;
+		border-bottom: 1px solid var(--color-border);
+		padding-bottom: 1px;
+	}
+
+	.tab {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-4) 0;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text-secondary);
+		text-decoration: none;
+		white-space: nowrap;
+		transition: color 0.2s;
+	}
+
+	.tab:hover {
+		color: var(--color-primary);
+	}
+
+	.tab--active {
+		color: var(--color-primary);
+	}
+
+	.tabs-underline {
+		position: absolute;
+		bottom: 0;
+		height: 2px;
+		background: var(--color-primary);
+		transition: all 0.3s ease-out;
+	}
+
+	.settings-content {
+		min-height: 400px;
+	}
+</style>
