@@ -4,7 +4,6 @@
 	import { language } from '$lib/stores/language.svelte';
 	import { UserService } from '$lib/services/UserService';
 	import { t } from '$lib/i18n';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
@@ -116,211 +115,405 @@
 	}
 </script>
 
-<div
-	class="animate-in fade-in slide-in-from-bottom-4 space-y-12 duration-500"
-	data-test-id="personal-settings-page"
->
-	<div class="space-y-8">
-		<div
-			class="border-base-content/10 flex flex-col items-start justify-between gap-4 border-b pb-6 md:flex-row md:items-center"
-		>
-			<div>
-				<h1
-					class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent"
-				>
-					{t('profile.personalInfo', language.current)}
-				</h1>
-				<p class="text-base-content/60 mt-2 text-lg font-light">
-					{t('profile.personalInfoSubtitle', language.current)}
-				</p>
+<div class="page" data-test-id="personal-settings-page">
+	<section class="section">
+		<header class="section__header">
+			<div class="section__header-content">
+				<h2 class="section__title">{t('profile.personalInfo', language.current)}</h2>
+				<p class="section__subtitle">{t('profile.personalInfoSubtitle', language.current)}</p>
 			</div>
 			<Button
 				type="submit"
 				form="profile-form"
 				variant="primary"
 				loading={isSavingProfile}
-				class="shadow-primary/20 min-w-[150px] shadow-lg"
 				data-test-id="save-profile-button"
 			>
-				<Icon name="save" class="mr-2 h-5 w-5" />
+				<Icon name="save" />
 				{t('common.save', language.current)}
 			</Button>
-		</div>
+		</header>
 
-		<form id="profile-form" onsubmit={handleUpdateProfile} class="space-y-8">
+		<form id="profile-form" onsubmit={handleUpdateProfile} class="form">
 			{#if successMessage && !isChangingPassword}
-				<div role="alert" class="alert alert-success border-success/20 bg-success/10 shadow-lg">
-					<Icon name="checkCircle" class="text-success h-6 w-6" />
+				<div class="alert alert--success">
+					<Icon name="checkCircle" />
 					<span>{successMessage}</span>
 				</div>
 			{/if}
 			{#if errors.profile}
-				<div role="alert" class="alert alert-error border-error/20 bg-error/10 shadow-lg">
-					<Icon name="error" class="text-error h-6 w-6" />
+				<div class="alert alert--error">
+					<Icon name="error" />
 					<span>{errors.profile}</span>
 				</div>
 			{/if}
 
-			<div class="grid grid-cols-1 gap-12 lg:grid-cols-2">
-				<div class="space-y-6">
-					<h3 class="flex items-center gap-2 text-xl font-semibold">
-						<div class="bg-primary/10 text-primary rounded-lg p-2">
-							<Icon name="profile" class="h-5 w-5" />
+			<div class="form__grid">
+				<div class="form__column">
+					<div class="form__section-header">
+						<div class="form__section-icon">
+							<Icon name="profile" />
 						</div>
-						{t('profile.basicInformation', language.current)}
-					</h3>
+						<h3 class="form__section-title">{t('profile.basicInformation', language.current)}</h3>
+					</div>
 
-					<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+					<div class="form__row">
 						<Input
 							label={t('auth.register.firstName', language.current)}
 							bind:value={profileForm.firstName}
 							required
-							class="bg-base-100/50"
 							data-test-id="profile-firstname-input"
 						/>
 						<Input
 							label={t('auth.register.lastName', language.current)}
 							bind:value={profileForm.lastName}
 							required
-							class="bg-base-100/50"
 							data-test-id="profile-lastname-input"
 						/>
 					</div>
 
-					<div class="form-control w-full">
-						<label class="label" for="email">
-							<span class="label-text font-medium">{t('auth.login.email', language.current)}</span>
-						</label>
+					<div class="form-group">
+						<label class="form-label" for="email">{t('auth.login.email', language.current)}</label>
 						<input
+							id="email"
 							type="email"
 							value={user?.email}
 							disabled
-							class="input input-bordered bg-base-200/50 text-base-content/60 w-full cursor-not-allowed"
+							class="form-input form-input--disabled"
 							data-test-id="profile-email-input"
 						/>
-						<label class="label" for="email">
-							<span class="label-text-alt text-base-content/40"
-								>{t('profile.emailCannotBeChanged', language.current)}</span
-							>
-						</label>
+						<span class="form-hint">{t('profile.emailCannotBeChanged', language.current)}</span>
 					</div>
 				</div>
 
-				<div class="space-y-6">
-					<h3 class="flex items-center gap-2 text-xl font-semibold">
-						<div class="bg-secondary/10 text-secondary rounded-lg p-2">
-							<Icon name="settings" class="h-5 w-5" />
+				<div class="form__column">
+					<div class="form__section-header">
+						<div class="form__section-icon form__section-icon--secondary">
+							<Icon name="settings" />
 						</div>
-						{t('profile.preferences', language.current)}
-					</h3>
+						<h3 class="form__section-title">{t('profile.preferences', language.current)}</h3>
+					</div>
 
-					<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+					<div class="form__row">
 						<Select
 							label={t('profile.language', language.current)}
 							bind:value={profileForm.language}
 							options={languages}
-							class="bg-base-100/50"
 							data-test-id="profile-language-select"
 						/>
 						<Select
 							label={t('profile.timezone', language.current)}
 							bind:value={profileForm.timeZone}
 							options={timezones}
-							class="bg-base-100/50"
 							data-test-id="profile-timezone-select"
 						/>
 					</div>
 
-					<div class="form-control">
-						<label
-							class="label border-base-content/10 bg-base-100/30 hover:bg-base-100/50 cursor-pointer justify-start gap-4 rounded-xl border p-4 transition-colors"
-						>
-							<input
-								type="checkbox"
-								class="checkbox checkbox-primary"
-								bind:checked={profileForm.emailNotificationsEnabled}
-								data-test-id="profile-notifications-checkbox"
-							/>
-							<div class="flex flex-col">
-								<span class="label-text text-base font-medium"
-									>{t('profile.emailNotifications', language.current)}</span
-								>
-								<span class="label-text-alt text-base-content/60"
-									>Receive updates about your certificates and account</span
-								>
-							</div>
-						</label>
-					</div>
+					<label class="checkbox-card">
+						<input
+							type="checkbox"
+							class="checkbox"
+							bind:checked={profileForm.emailNotificationsEnabled}
+							data-test-id="profile-notifications-checkbox"
+						/>
+						<div class="checkbox-card__content">
+							<span class="checkbox-card__title">{t('profile.emailNotifications', language.current)}</span>
+							<span class="checkbox-card__description">Receive updates about your certificates and account</span>
+						</div>
+					</label>
 				</div>
 			</div>
 		</form>
-	</div>
+	</section>
 
-	<div class="border-base-content/10 space-y-8 border-t pt-8">
-		<form id="security-form" onsubmit={handleChangePassword} class="space-y-8">
+	<section class="section section--bordered">
+		<form id="security-form" onsubmit={handleChangePassword} class="form">
 			{#if successMessage && isChangingPassword}
-				<div role="alert" class="alert alert-success border-success/20 bg-success/10 shadow-lg">
-					<Icon name="checkCircle" class="text-success h-6 w-6" />
+				<div class="alert alert--success">
+					<Icon name="checkCircle" />
 					<span>{successMessage}</span>
 				</div>
 			{/if}
 			{#if errors.password}
-				<div role="alert" class="alert alert-error border-error/20 bg-error/10 shadow-lg">
-					<Icon name="error" class="text-error h-6 w-6" />
+				<div class="alert alert--error">
+					<Icon name="error" />
 					<span>{errors.password}</span>
 				</div>
 			{/if}
 
-			<div class="space-y-6">
-				<div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-					<h3 class="flex items-center gap-2 text-xl font-semibold">
-						<div class="bg-primary/10 text-primary rounded-lg p-2">
-							<Icon name="lock" class="h-5 w-5" />
-						</div>
-						{t('profile.security', language.current)}: {t(
-							'profile.changePassword',
-							language.current
-						).toLowerCase()}
+			<header class="section__header">
+				<div class="form__section-header">
+					<div class="form__section-icon">
+						<Icon name="lock" />
+					</div>
+					<h3 class="form__section-title">
+						{t('profile.security', language.current)}: {t('profile.changePassword', language.current).toLowerCase()}
 					</h3>
-					<Button
-						type="submit"
-						variant="primary"
-						loading={isChangingPassword}
-						class="shadow-primary/20 min-w-[150px] shadow-lg"
-						data-test-id="change-password-button"
-					>
-						<Icon name="lock" class="mr-2 h-5 w-5" />
-						{t('profile.changePassword', language.current)}
-					</Button>
 				</div>
+				<Button
+					type="submit"
+					variant="primary"
+					loading={isChangingPassword}
+					data-test-id="change-password-button"
+				>
+					<Icon name="lock" />
+					{t('profile.changePassword', language.current)}
+				</Button>
+			</header>
 
-				<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-					<Input
-						label={t('profile.currentPassword', language.current)}
-						type="password"
-						bind:value={passwordForm.currentPassword}
-						required
-						class="bg-base-100/50"
-						data-test-id="current-password-input"
-					/>
-					<Input
-						label={t('profile.newPassword', language.current)}
-						type="password"
-						bind:value={passwordForm.newPassword}
-						required
-						class="bg-base-100/50"
-						data-test-id="new-password-input"
-					/>
-					<Input
-						label={t('profile.confirmNewPassword', language.current)}
-						type="password"
-						bind:value={passwordForm.confirmNewPassword}
-						required
-						class="bg-base-100/50"
-						data-test-id="confirm-new-password-input"
-					/>
-				</div>
+			<div class="form__row form__row--three">
+				<Input
+					label={t('profile.currentPassword', language.current)}
+					type="password"
+					bind:value={passwordForm.currentPassword}
+					required
+					data-test-id="current-password-input"
+				/>
+				<Input
+					label={t('profile.newPassword', language.current)}
+					type="password"
+					bind:value={passwordForm.newPassword}
+					required
+					data-test-id="new-password-input"
+				/>
+				<Input
+					label={t('profile.confirmNewPassword', language.current)}
+					type="password"
+					bind:value={passwordForm.confirmNewPassword}
+					required
+					data-test-id="confirm-new-password-input"
+				/>
 			</div>
 		</form>
-	</div>
+	</section>
 </div>
+
+<style>
+	.page {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-12);
+	}
+
+	.section {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-8);
+	}
+
+	.section--bordered {
+		padding-top: var(--space-8);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.section__header {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		padding-bottom: var(--space-6);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	@media (min-width: 768px) {
+		.section__header {
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: flex-start;
+		}
+	}
+
+	.section__header-content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.section__title {
+		font-family: var(--font-display);
+		font-size: var(--text-3xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+	}
+
+	.section__subtitle {
+		font-size: var(--text-md);
+		color: var(--color-text-secondary);
+	}
+
+	.form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-8);
+	}
+
+	.form__grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-12);
+	}
+
+	@media (min-width: 1024px) {
+		.form__grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	.form__column {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-6);
+	}
+
+	.form__section-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.form__section-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		background: var(--color-primary-bg);
+		color: var(--color-primary);
+		border-radius: var(--radius-md);
+	}
+
+	.form__section-icon--secondary {
+		background: var(--color-bg-secondary);
+		color: var(--color-text-secondary);
+	}
+
+	.form__section-title {
+		font-size: var(--text-xl);
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.form__row {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-4);
+	}
+
+	@media (min-width: 640px) {
+		.form__row {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	.form__row--three {
+		grid-template-columns: 1fr;
+	}
+
+	@media (min-width: 768px) {
+		.form__row--three {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.form-label {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text-primary);
+	}
+
+	.form-input {
+		width: 100%;
+		padding: var(--space-3) var(--space-4);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		font-size: var(--text-base);
+		color: var(--color-text-primary);
+		background: var(--color-surface);
+		transition: border-color 0.2s, box-shadow 0.2s;
+	}
+
+	.form-input:focus {
+		outline: none;
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px var(--color-primary-bg);
+	}
+
+	.form-input--disabled {
+		background: var(--color-bg-secondary);
+		color: var(--color-text-muted);
+		cursor: not-allowed;
+	}
+
+	.form-hint {
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	.checkbox-card {
+		display: flex;
+		align-items: flex-start;
+		gap: var(--space-4);
+		padding: var(--space-4);
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+
+	.checkbox-card:hover {
+		background: var(--color-surface);
+	}
+
+	.checkbox {
+		width: 20px;
+		height: 20px;
+		accent-color: var(--color-primary);
+		cursor: pointer;
+	}
+
+	.checkbox-card__content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+
+	.checkbox-card__title {
+		font-size: var(--text-base);
+		font-weight: 500;
+		color: var(--color-text-primary);
+	}
+
+	.checkbox-card__description {
+		font-size: var(--text-sm);
+		color: var(--color-text-secondary);
+	}
+
+	.alert {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-4);
+		border-radius: var(--radius-lg);
+		font-size: var(--text-sm);
+	}
+
+	.alert--success {
+		background: var(--color-success-bg);
+		color: var(--color-success);
+		border: 1px solid var(--color-success);
+	}
+
+	.alert--error {
+		background: var(--color-error-bg);
+		color: var(--color-error);
+		border: 1px solid var(--color-error);
+	}
+</style>

@@ -51,54 +51,100 @@
 	<title>{t('auth.confirm.title', language.current)} - CertVal</title>
 </svelte:head>
 
-<div
-	class="card bg-base-100/20 w-full max-w-md shrink-0 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
-	data-test-id="confirm-email-card"
->
-	<div class="card-body items-center gap-6 p-8 text-center">
-		<div class="mb-2">
-			<h2
-				class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent"
-			>
-				{t('auth.confirm.title', language.current)}
-			</h2>
+<div class="auth-card" data-test-id="confirm-email-card">
+	<div class="auth-card__inner">
+		<div class="auth-card__header">
+			<h1 class="auth-card__title">{t('auth.confirm.title', language.current)}</h1>
 		</div>
 
-		<p class="text-base-content/80 text-lg">{message}</p>
+		<p class="auth-message">{message}</p>
 
 		{#if isSuccess}
 			{#if isLoggingIn}
-				<div class="mt-2">
-					<span class="loading loading-spinner loading-md text-primary"></span>
-					<p class="text-base-content/60 mt-2 text-sm">
-						{t('auth.confirm.redirecting', language.current)}
-					</p>
+				<div class="auth-loading">
+					<span class="spinner"></span>
+					<p class="auth-loading__text">{t('auth.confirm.redirecting', language.current)}</p>
 				</div>
 			{:else}
-				<div class="card-actions mt-2 w-full">
-					<Button
-						variant="primary"
-						onclick={() => goto('/dashboard')}
-						class="w-full"
-						data-test-id="confirm-email-continue-button"
-					>
-						{t('auth.confirm.continue', language.current)}
-					</Button>
-				</div>
+				<Button
+					variant="primary"
+					onclick={() => goto('/dashboard')}
+					data-test-id="confirm-email-continue-button"
+				>
+					{t('auth.confirm.continue', language.current)}
+				</Button>
 			{/if}
 		{/if}
 
 		{#if isError}
-			<div class="card-actions mt-4 w-full">
-				<Button
-					variant="primary"
-					onclick={() => goto('/auth/login')}
-					class="w-full"
-					data-test-id="confirm-email-login-button"
-				>
-					{t('auth.confirm.login', language.current)}
-				</Button>
-			</div>
+			<Button
+				variant="primary"
+				onclick={() => goto('/auth/login')}
+				data-test-id="confirm-email-login-button"
+			>
+				{t('auth.confirm.login', language.current)}
+			</Button>
 		{/if}
 	</div>
 </div>
+
+<style>
+	.auth-card {
+		width: 100%;
+		max-width: 420px;
+	}
+
+	.auth-card__inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-6);
+		text-align: center;
+	}
+
+	.auth-card__header {
+		margin-bottom: var(--space-2);
+	}
+
+	.auth-card__title {
+		font-family: var(--font-display);
+		font-size: var(--text-3xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+		margin: 0;
+	}
+
+	.auth-message {
+		font-size: var(--text-lg);
+		color: var(--color-text-secondary);
+	}
+
+	.auth-loading {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.spinner {
+		width: 24px;
+		height: 24px;
+		border: 2px solid var(--color-border);
+		border-top-color: var(--color-primary);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.auth-loading__text {
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+	}
+</style>

@@ -1,335 +1,83 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	type CardVariant = 'default' | 'bordered' | 'glass' | 'compact' | 'side';
-	type CardShadow = 'none' | 'sm' | 'md' | 'lg' | 'xl';
-
-	interface CardProps {
-		title?: string;
-		subtitle?: string;
-		variant?: CardVariant;
-		shadow?: CardShadow;
+	interface Props {
+		variant?: 'default' | 'bordered';
 		hover?: boolean;
 		clickable?: boolean;
 		class?: string;
-		style?: string;
-		onclick?: (event: MouseEvent) => void | Promise<void>;
+		onclick?: (event: MouseEvent) => void;
 		children?: Snippet;
-		header?: Snippet;
-		footer?: Snippet;
-		image?: Snippet;
-		actions?: Snippet;
-		'data-testid'?: string;
 		'data-test-id'?: string;
-		id?: string;
-		'aria-label'?: string;
-		'aria-labelledby'?: string;
-		role?: string;
 	}
 
 	let {
-		title,
-		subtitle,
 		variant = 'default',
-		shadow = 'md',
 		hover = false,
 		clickable = false,
 		class: className = '',
-		style = '',
 		onclick,
 		children,
-		header,
-		footer,
-		image,
-		actions,
-		'data-testid': testId,
-		'data-test-id': testIdAlt,
-		id,
-		'aria-label': ariaLabel,
-		'aria-labelledby': ariaLabelledBy,
-		role
-	}: CardProps = $props();
-	const baseClasses = 'card bg-base-100 transition-all duration-300 ease-out';
+		'data-test-id': testId
+	}: Props = $props();
 
-	const variantClasses = $derived(() => {
-		const classes = {
-			default: 'border border-base-200/50',
-			bordered: 'card-bordered border-2 border-base-200',
-			glass: 'glass bg-opacity-60 backdrop-blur-lg border border-white/10 shadow-glass',
-			compact: 'card-compact border border-base-200/50',
-			side: 'card-side border border-base-200/50'
-		};
-		return classes[variant];
-	});
-	const shadowClasses = $derived(() => {
-		const classes = {
-			none: '',
-			sm: 'shadow-sm',
-			md: 'shadow-md',
-			lg: 'shadow-lg',
-			xl: 'shadow-xl'
-		};
-		return classes[shadow];
-	});
-	const hoverClasses = $derived(() => {
-		if (!hover && !clickable) return '';
-		return 'hover:shadow-xl hover:-translate-y-1 transform';
-	});
-	const clickableClasses = $derived(() => {
-		if (!clickable && !onclick) return '';
-		return 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2';
-	});
-	const computedClasses = $derived(() => {
-		return [
-			baseClasses,
-			variantClasses(),
-			shadowClasses(),
-			hoverClasses(),
-			clickableClasses(),
-			className
-		]
-			.filter(Boolean)
-			.join(' ');
-	});
-
-	let isProcessing = $state(false);
-	async function handleClick(event: MouseEvent) {
-		if (!onclick || isProcessing) return;
-
-		try {
-			isProcessing = true;
-			await onclick(event);
-		} catch (error) {
-			console.error('Card click handler error:', error);
-		} finally {
-			isProcessing = false;
-		}
+	function handleClick(event: MouseEvent) {
+		if (onclick) onclick(event);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (!clickable && !onclick) return;
-
-		if (event.key === 'Enter' || event.key === ' ') {
+		if ((event.key === 'Enter' || event.key === ' ') && onclick) {
 			event.preventDefault();
-			handleClick(event as any);
+			onclick(event as unknown as MouseEvent);
 		}
 	}
-
-	const effectiveRole = $derived(() => {
-		if (role) return role;
-		if (clickable || onclick) return 'button';
-		return undefined;
-	});
-	const roleValue = $derived(() => effectiveRole());
-
-	const cardId = $derived(id || `card-${Math.random().toString(36).substring(2, 9)}`);
-	const titleId = $derived(title ? `${cardId}-title` : undefined);
 </script>
 
-{#if roleValue() === 'button'}
-	<button
-		type="button"
-		{id}
-		class={computedClasses()}
-		{style}
-		aria-label={ariaLabel}
-		aria-labelledby={ariaLabelledBy || titleId}
-		aria-busy={isProcessing}
-		data-testid={testId}
-		data-test-id={testIdAlt ?? testId}
-		onclick={handleClick}
-		onkeydown={handleKeydown}
-	>
-		{#if image}
-			<figure class="card-image">
-				{@render image()}
-			</figure>
-		{/if}
-
-		{#if header}
-			<div class="card-header">
-				{@render header()}
-			</div>
-		{/if}
-
-		<div class="card-body">
-			{#if title || subtitle}
-				<div class="card-header-content">
-					{#if title}
-						<h2 id={titleId} class="card-title text-base-content text-lg font-semibold">
-							{title}
-						</h2>
-					{/if}
-					{#if subtitle}
-						<p class="card-subtitle text-base-content/70 mt-1 text-sm">
-							{subtitle}
-						</p>
-					{/if}
-				</div>
-			{/if}
-
-			{#if children}
-				<div class="card-content">
-					{@render children()}
-				</div>
-			{/if}
-
-			{#if actions}
-				<div class="card-actions mt-4">
-					{@render actions()}
-				</div>
-			{/if}
-		</div>
-
-		{#if footer}
-			<div class="card-footer">
-				{@render footer()}
-			</div>
-		{/if}
-	</button>
+{#if clickable}
+<button
+	class="card card--{variant} card--clickable {className}"
+	onclick={handleClick}
+	data-test-id={testId}
+	type="button"
+>
+	{@render children?.()}
+</button>
 {:else}
-	<div
-		{id}
-		class={computedClasses()}
-		{style}
-		role={roleValue()}
-		aria-label={ariaLabel}
-		aria-labelledby={ariaLabelledBy || titleId}
-		aria-busy={isProcessing}
-		data-testid={testId}
-		data-test-id={testIdAlt ?? testId}
-		onclick={handleClick}
-		onkeydown={handleKeydown}
-	>
-		{#if image}
-			<figure class="card-image">
-				{@render image()}
-			</figure>
-		{/if}
-
-		{#if header}
-			<div class="card-header">
-				{@render header()}
-			</div>
-		{/if}
-
-		<div class="card-body">
-			{#if title || subtitle}
-				<div class="card-header-content">
-					{#if title}
-						<h2 id={titleId} class="card-title text-base-content text-lg font-semibold">
-							{title}
-						</h2>
-					{/if}
-					{#if subtitle}
-						<p class="card-subtitle text-base-content/70 mt-1 text-sm">
-							{subtitle}
-						</p>
-					{/if}
-				</div>
-			{/if}
-
-			{#if children}
-				<div class="card-content">
-					{@render children()}
-				</div>
-			{/if}
-
-			{#if actions}
-				<div class="card-actions mt-4">
-					{@render actions()}
-				</div>
-			{/if}
-		</div>
-
-		{#if footer}
-			<div class="card-footer">
-				{@render footer()}
-			</div>
-		{/if}
-	</div>
+<div
+	class="card card--{variant} {className}"
+	class:card--hover={hover}
+	data-test-id={testId}
+>
+	{@render children?.()}
+</div>
 {/if}
 
 <style>
 	.card {
-		position: relative;
-		overflow: hidden;
+		background-color: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		padding: var(--space-6);
+		transition: border-color var(--transition-fast), background-color var(--transition-fast);
+		text-align: left;
+		font-family: inherit;
+		font-size: inherit;
+		width: 100%;
 	}
 
-	.card:hover {
-		transform: var(--card-hover-transform, translateY(-2px));
+	.card--bordered {
+		border-color: var(--color-border-strong);
 	}
 
-	.card:focus-visible {
-		outline: 2px solid oklch(from var(--color-primary) l c h);
-		outline-offset: 2px;
+	.card--hover:hover {
+		border-color: var(--color-border-hover);
 	}
 
-	.card.glass {
-		background: oklch(from var(--color-base-100) l c h / 0.8);
-		border: 1px solid oklch(from var(--color-base-content) l c h / 0.1);
+	.card--clickable {
+		cursor: pointer;
 	}
 
-	.card-content {
-		flex-grow: 1;
-	}
-
-	.card-actions {
-		justify-self: end;
-		align-self: end;
-	}
-
-	@media (max-width: 768px) {
-		.card.card-side {
-			flex-direction: column;
-		}
-
-		.card.card-side .card-body {
-			padding-top: 0;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.card {
-			--card-hover-transform: none;
-			transition-duration: 0.05s;
-		}
-	}
-
-	@media (prefers-contrast: high) {
-		.card {
-			border-width: 2px;
-		}
-	}
-
-	.card[aria-busy='true'] {
-		pointer-events: none;
-		opacity: 0.7;
-	}
-
-	.card[aria-busy='true']::after {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: linear-gradient(
-			90deg,
-			transparent 0%,
-			oklch(from var(--color-base-content) l c h / 0.1) 50%,
-			transparent 100%
-		);
-		animation: skeleton-loading 1.5s ease-in-out infinite;
-	}
-
-	@keyframes skeleton-loading {
-		0%,
-		100% {
-			transform: translateX(-100%);
-		}
-		50% {
-			transform: translateX(100%);
-		}
+	.card--clickable:hover {
+		border-color: var(--color-border-strong);
 	}
 </style>

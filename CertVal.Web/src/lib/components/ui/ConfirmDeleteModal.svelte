@@ -3,19 +3,22 @@
 	import Button from './Button.svelte';
 	import { t } from '$lib/i18n';
 	import { language } from '$lib/stores/language.svelte';
+
+	interface Props {
+		isOpen?: boolean;
+		itemName?: string;
+		onConfirm?: () => Promise<void> | void;
+		onClose?: () => void;
+		'data-test-id'?: string;
+	}
+
 	let {
 		isOpen = false,
 		itemName = '',
 		onConfirm,
 		onClose,
 		'data-test-id': testId
-	}: {
-		isOpen?: boolean;
-		itemName?: string;
-		onConfirm?: () => Promise<void> | void;
-		onClose?: () => void;
-		'data-test-id'?: string;
-	} = $props();
+	}: Props = $props();
 
 	let isProcessing = $state(false);
 
@@ -34,31 +37,45 @@
 </script>
 
 <Modal {isOpen} title={t('common.confirmDelete', language.current)} {onClose} data-test-id={testId}>
-	<div class="space-y-4">
-		<p class="text-base-content/80">
+	<div class="confirm-delete">
+		<p class="confirm-delete__message">
 			{t('common.confirmDeleteMessage', language.current, { name: itemName })}
 		</p>
-		<div class="flex justify-end gap-2">
+		<div class="confirm-delete__actions">
 			<Button
-				variant="ghost"
+				variant="secondary"
 				onclick={onClose}
 				disabled={isProcessing}
 				data-test-id={testId ? `${testId}-cancel` : undefined}
 			>
-				{t('common.cancel')}
+				{t('common.cancel', language.current)}
 			</Button>
 			<Button
-				variant="error"
+				variant="danger"
 				onclick={handleConfirm}
 				loading={isProcessing}
 				data-test-id={testId ? `${testId}-confirm` : undefined}
 			>
-				{t('common.delete')}
+				{t('common.delete', language.current)}
 			</Button>
 		</div>
 	</div>
 </Modal>
 
 <style>
-	/* small adjustments if needed */
+	.confirm-delete {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-6);
+	}
+
+	.confirm-delete__message {
+		color: var(--color-text-secondary);
+	}
+
+	.confirm-delete__actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-3);
+	}
 </style>
