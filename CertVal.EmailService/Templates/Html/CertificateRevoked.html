@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
-    <title>Certificates expiring — {{CompanyName}}</title>
+    <title>Certificate revoked — {{CompanyName}}</title>
     <style>
         body {
             margin: 0;
@@ -24,7 +24,7 @@
         }
 
         .card {
-            max-width: 640px;
+            max-width: 560px;
             margin: 0 auto;
             background: #ffffff;
             border: 1px solid #e5e7eb;
@@ -42,38 +42,45 @@
             font-size: 11px;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: #d97706;
+            color: #dc2626;
             font-weight: 600;
         }
 
         .brand__title {
             margin: 6px 0 0;
             font-family: Georgia, 'Times New Roman', serif;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 600;
             color: #0f172a;
             letter-spacing: -0.01em;
         }
 
         .content {
-            padding: 28px 40px;
+            padding: 32px 40px;
         }
 
             .content p {
-                margin: 0 0 14px;
+                margin: 0 0 16px;
                 color: #334155;
                 font-size: 15px;
             }
 
+            .content h2 {
+                font-size: 18px;
+                font-weight: 600;
+                color: #0f172a;
+                margin: 0 0 16px;
+            }
+
         .btn-row {
             text-align: center;
-            margin: 24px 0;
+            margin: 28px 0;
         }
 
         .btn {
             display: inline-block;
             padding: 12px 24px;
-            background-color: #4f46ff;
+            background-color: #dc2626;
             color: #ffffff !important;
             text-decoration: none;
             border-radius: 8px;
@@ -81,55 +88,48 @@
             font-size: 15px;
         }
 
-        .summary {
-            border-left: 3px solid #d97706;
-            background: #fffbeb;
+        .alert {
+            border-left: 3px solid #dc2626;
+            background: #fef2f2;
             padding: 12px 16px;
-            margin: 18px 0;
+            margin: 20px 0;
             border-radius: 4px;
             font-size: 14px;
-            color: #78350f;
+            color: #7f1d1d;
         }
 
-        table.certs {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            margin: 16px 0;
+        .details {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px 18px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #334155;
         }
 
-            table.certs th,
-            table.certs td {
-                text-align: left;
-                padding: 8px 10px;
-                border-bottom: 1px solid #e5e7eb;
-                vertical-align: top;
+            .details dl {
+                margin: 0;
             }
 
-            table.certs th {
-                background: #f8fafc;
-                color: #475569;
-                font-weight: 600;
-                text-transform: uppercase;
+            .details dt {
                 font-size: 11px;
-                letter-spacing: 0.06em;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: #64748b;
+                font-weight: 600;
+                margin-top: 10px;
             }
 
-        .status-expired {
-            color: #b91c1c;
-            font-weight: 600;
-        }
+                .details dt:first-child {
+                    margin-top: 0;
+                }
 
-        .status-soon {
-            color: #b45309;
-            font-weight: 600;
-        }
-
-        .more {
-            font-size: 13px;
-            color: #64748b;
-            margin-top: 10px;
-        }
+            .details dd {
+                margin: 2px 0 0;
+                color: #0f172a;
+                word-break: break-word;
+            }
 
         .footer {
             padding: 20px 40px 28px;
@@ -152,42 +152,39 @@
     <div class="wrapper">
         <div class="card">
             <div class="brand">
-                <span class="brand__mark">Certificate status digest</span>
-                <h1 class="brand__title">Certificates require attention</h1>
+                <span class="brand__mark">Certificate status</span>
+                <h1 class="brand__title">Certificate revoked.</h1>
             </div>
             <div class="content">
-                <p>Workspace <strong>{{WorkspaceName}}</strong> has {{TotalCount}} certificate(s) that require your attention.</p>
+                <p>An OCSP responder has reported that one of your certificates has been revoked by the issuing authority.</p>
 
-                <div class="summary">{{SummaryLine}}</div>
+                <div class="alert">
+                    <strong>Critical.</strong> This certificate was revoked on {{RevokedAt}}. Any service still using it should be reconfigured immediately.
+                </div>
 
-                <table class="certs">
-                    <thead>
-                        <tr>
-                            <th>Subject</th>
-                            <th>Issuer</th>
-                            <th>Expiry</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in Items %}
-                        <tr>
-                            <td>{{ item.Subject }}</td>
-                            <td>{{ item.Issuer }}</td>
-                            <td>{{ item.ExpiryDate }}</td>
-                            <td class="{{ item.StatusClass }}">{{ item.StatusLabel }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="details">
+                    <dl>
+                        <dt>Subject</dt>
+                        <dd>{{CertificateSubject}}</dd>
+                        <dt>Issuer</dt>
+                        <dd>{{CertificateIssuer}}</dd>
+                        <dt>Serial number</dt>
+                        <dd>{{SerialNumber}}</dd>
+                        <dt>Workspace</dt>
+                        <dd>{{WorkspaceName}}</dd>
+                        <dt>Revoked at</dt>
+                        <dd>{{RevokedAt}}</dd>
+                        <dt>Reason</dt>
+                        <dd>{{RevocationReason}}</dd>
+                    </dl>
+                </div>
 
-                <p class="more">{{RemainingLine}}</p>
+                <p>Replace this certificate as soon as possible to restore trust and avoid service disruption.</p>
 
                 <div class="btn-row">
                     <a href="{{DashboardUrl}}" class="btn">Open dashboard</a>
                 </div>
 
-                <p>Renew affected certificates to avoid service interruptions.</p>
                 <p>Need help? Contact <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>.</p>
                 <p>— The {{CompanyName}} team</p>
             </div>

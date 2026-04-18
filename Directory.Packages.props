@@ -12,6 +12,7 @@
     <PackageVersion Include="Aspire.Hosting.SqlServer" Version="9.4.2" />
     <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.5.2" />
     <PackageVersion Include="Aspire.RabbitMQ.Client" Version="13.0.0" />
+    <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.1" />
     <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.0.0" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Minio" Version="9.9.0" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.NodeJS.Extensions" Version="9.9.0" />

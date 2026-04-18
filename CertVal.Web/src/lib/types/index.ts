@@ -58,10 +58,22 @@ export interface Certificate {
     status: string;
     isExpired: boolean;
     daysUntilExpiry: number;
+    ocspStatus: OcspStatus;
+    ocspLastCheckedAt?: string;
+    ocspResponderUrl?: string;
+    ocspRevocationReason?: string;
+    ocspRevokedAt?: string;
     childCertificates: Certificate[];
     createdAt: string;
     updatedAt: string;
 }
+
+export type OcspStatus =
+    | 'NotChecked'
+    | 'NotConfigured'
+    | 'CheckFailed'
+    | 'Good'
+    | 'Revoked';
 
 export interface ApiResponse<T> {
     data?: T;

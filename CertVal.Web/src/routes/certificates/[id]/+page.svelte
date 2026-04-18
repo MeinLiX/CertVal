@@ -11,6 +11,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
+	import OcspBadge from '$lib/components/certificates/OcspBadge.svelte';
 	import type { Certificate } from '$lib/types';
 
 	let certificate = $state<Certificate | null>(null);
@@ -278,6 +279,20 @@
 
 		<div class="content-grid">
 			<div class="content-main">
+				<section class="card">
+					<div class="card__title-row">
+						<h2 class="card__title">{t('ocsp.title', language.current)}</h2>
+						<OcspBadge
+							status={certificate.ocspStatus}
+							lastCheckedAt={certificate.ocspLastCheckedAt}
+							revokedAt={certificate.ocspRevokedAt}
+							revocationReason={certificate.ocspRevocationReason}
+							size="sm"
+						/>
+					</div>
+					<p class="card__hint">{t('ocsp.description', language.current)}</p>
+				</section>
+
 				<section class="card">
 					<h2 class="card__title">{t('certificates.details', language.current)}</h2>
 					<div class="details-grid">
@@ -687,6 +702,28 @@
 		margin: 0 0 var(--space-4);
 		padding-bottom: var(--space-3);
 		border-bottom: 1px solid var(--color-border);
+	}
+
+	.card__title-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		margin: 0 0 var(--space-4);
+		padding-bottom: var(--space-3);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.card__title-row .card__title {
+		margin: 0;
+		padding: 0;
+		border: none;
+	}
+
+	.card__hint {
+		margin: 0 0 var(--space-3);
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
 	}
 
 	.details-grid {

@@ -393,6 +393,19 @@ export const translations = {
             emptyDescription: 'Поки немає жодного сертифіката. Завантажте перший, щоб почати.',
             emptyFiltered: 'Немає сертифікатів за поточними фільтрами.'
         },
+        ocsp: {
+            title: 'OCSP перевірка відкликання',
+            description: 'Стан сертифіката за результатами останньої перевірки в OCSP-респондера видавця.',
+            notChecked: 'Не перевірявся',
+            notConfigured: 'Не задано OCSP',
+            checkFailed: 'Не вдалось перевірити',
+            good: 'Перевірено',
+            revoked: 'Відкликано',
+            lastChecked: 'Остання перевірка',
+            revokedAt: 'Відкликано',
+            reason: 'Причина',
+            responder: 'OCSP респондер'
+        },
         notifications: {
             title: 'Сповіщення',
             subtitle: 'Керуйте правилами для сповіщень про закінчення терміну дії сертифікатів.',
@@ -898,6 +911,19 @@ export const translations = {
             expiresIn: 'Expires in',
             emptyDescription: 'No certificates yet. Upload your first one to start monitoring.',
             emptyFiltered: 'No certificates match the current filters.'
+        },
+        ocsp: {
+            title: 'OCSP revocation check',
+            description: 'Certificate state from the most recent check against the issuer\'s OCSP responder.',
+            notChecked: 'Not checked',
+            notConfigured: 'Not configured',
+            checkFailed: 'Check failed',
+            good: 'Good',
+            revoked: 'Revoked',
+            lastChecked: 'Last checked',
+            revokedAt: 'Revoked at',
+            reason: 'Reason',
+            responder: 'OCSP responder'
         },
         notifications: {
             title: 'Notifications',

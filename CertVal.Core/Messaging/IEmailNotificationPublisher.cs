@@ -17,4 +17,18 @@ public interface IEmailNotificationPublisher : IAsyncDisposable
         string certificateIssuer, DateTime expiryDate, int daysUntilExpiry,
         CancellationToken cancellationToken = default);
     Task PublishCertificateExpiryDigestAsync(CertificateExpiryDigestMessage digest, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Publishes a notification that a certificate was reported as revoked
+    /// by an OCSP responder. Sends to all supplied recipients in a single message.
+    /// </summary>
+    Task PublishCertificateRevokedAsync(
+        IEnumerable<string> recipients,
+        string workspaceName,
+        string certificateSubject,
+        string certificateIssuer,
+        string? serialNumber,
+        DateTime revokedAt,
+        string? revocationReason,
+        CancellationToken cancellationToken = default);
 }

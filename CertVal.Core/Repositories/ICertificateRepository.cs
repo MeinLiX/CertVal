@@ -14,4 +14,5 @@ public interface ICertificateRepository : IRepository<Certificate>
     Task<int> GetWorkspaceCertificateCountAsync(Guid workspaceId, CancellationToken cancellationToken = default);
     Task<Certificate?> GetNextVersionAsync(Guid previousCertificateId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Certificate>> GetExpiringByWorkspacesAsync(IEnumerable<Guid> workspaceIds, int daysAhead, int limit, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Certificate>> GetForOcspCheckAsync(int batchSize, TimeSpan minCheckInterval, CancellationToken cancellationToken = default);
 }
