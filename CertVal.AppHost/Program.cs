@@ -10,7 +10,7 @@ var minioUserPassword = builder.AddParameter("minio-user-password", secret: true
 var db = builder.AddPostgres("CertVal-sql-server", password: sqlpwd)
     .WithImageTag("18") //sync version with docker compose
     .WithLifetime(ContainerLifetime.Persistent)
-    .WithVolume("certval-sql-data", "/var/lib/postgresql/data")
+    .WithVolume("certval-sql-data", "/var/lib/postgresql")
     .AddDatabase("CertVal-database");
 
 var rabbitmq = builder.AddRabbitMQ("CertVal-rabbitmq")
