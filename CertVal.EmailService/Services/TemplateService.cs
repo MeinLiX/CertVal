@@ -97,6 +97,7 @@ public class TemplateService : ITemplateService
         EmailNotificationType.WorkspaceInvitation => "WorkspaceInvitation",
         EmailNotificationType.CertificateExpiring => "CertificateExpiring",
         EmailNotificationType.CertificateExpired => "CertificateExpired",
+        EmailNotificationType.CertificateExpiryDigest => "CertificateExpiryDigest",
         _ => throw new ArgumentException($"Unknown email notification type: {type}")
     };
 
@@ -108,6 +109,7 @@ public class TemplateService : ITemplateService
         EmailNotificationType.WorkspaceInvitation => $"Workspace invitation - {_config.CompanyName}",
         EmailNotificationType.CertificateExpiring => $"Certificate expiring soon - {_config.CompanyName}",
         EmailNotificationType.CertificateExpired => $"Certificate expired - {_config.CompanyName}",
+        EmailNotificationType.CertificateExpiryDigest => $"Certificates expiring - {_config.CompanyName}",
         _ => $"Notification - {_config.CompanyName}"
     };
 

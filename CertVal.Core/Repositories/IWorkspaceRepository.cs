@@ -8,4 +8,5 @@ public interface IWorkspaceRepository : IRepository<Workspace>
     Task<Workspace?> GetWithMembersAsync(Guid workspaceId, CancellationToken cancellationToken = default);
     Task<bool> IsUserMemberAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken = default);
     Task<bool> CanUserAccessAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken = default);
+    Task<bool> CanUserViewAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken = default);
 }

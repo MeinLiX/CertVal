@@ -55,6 +55,18 @@ public class CertificateRepository : BaseRepository<Certificate>, ICertificateRe
             .FirstOrDefaultAsync(c => c.Thumbprint == thumbprint && c.WorkspaceId == workspaceId, cancellationToken);
     }
 
+    public async Task<bool> ExistsByIssuerAndSerialAsync(Guid workspaceId, string issuer, string? serialNumber, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(serialNumber))
+            return false;
+
+        return await DbSet.AnyAsync(c =>
+            c.WorkspaceId == workspaceId &&
+            c.Issuer == issuer &&
+            c.SerialNumber == serialNumber,
+            cancellationToken);
+    }
+
     public async Task<IEnumerable<Certificate>> GetBundleContentsAsync(Guid parentCertificateId, CancellationToken cancellationToken = default)
     {
         return await DbSet

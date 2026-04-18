@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>Certificates expiring — {{CompanyName}}</title>
+    <style>
+        body { margin:0; padding:0; background:#f5f5f7; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#0f172a; line-height:1.55; }
+        .wrapper { width:100%; background:#f5f5f7; padding:32px 16px; }
+        .card { max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
+        .brand { padding:28px 40px; border-bottom:1px solid #f1f5f9; }
+        .brand__mark { display:inline-block; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#d97706; font-weight:600; }
+        .brand__title { margin:6px 0 0; font-family:Georgia,'Times New Roman',serif; font-size:24px; font-weight:600; color:#0f172a; letter-spacing:-0.01em; }
+        .content { padding:28px 40px; }
+        .content p { margin:0 0 14px; color:#334155; font-size:15px; }
+        .btn-row { text-align:center; margin:24px 0; }
+        .btn { display:inline-block; padding:12px 24px; background-color:#4f46ff; color:#ffffff !important; text-decoration:none; border-radius:8px; font-weight:600; font-size:15px; }
+        .summary { background:#fffbeb; border-left:3px solid #d97706; padding:12px 16px; margin:18px 0; border-radius:4px; font-size:14px; color:#78350f; }
+        table.certs { width:100%; border-collapse:collapse; font-size:13px; margin:16px 0; }
+        table.certs th, table.certs td { text-align:left; padding:8px 10px; border-bottom:1px solid #e5e7eb; vertical-align:top; }
+        table.certs th { background:#f8fafc; color:#475569; font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:0.06em; }
+        .status-expired { color:#b91c1c; font-weight:600; }
+        .status-soon { color:#b45309; font-weight:600; }
+        .more { font-size:13px; color:#64748b; margin-top:10px; }
+        .footer { padding:20px 40px 28px; border-top:1px solid #f1f5f9; font-size:12px; color:#64748b; text-align:center; }
+        a { color:#4f46ff; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="card">
+            <div class="brand">
+                <span class="brand__mark">Certificate status digest</span>
+                <h1 class="brand__title">Certificates require attention</h1>
+            </div>
+            <div class="content">
+                <p>Workspace <strong>{{WorkspaceName}}</strong> has {{TotalCount}} certificate(s) that require your attention.</p>
+
+                <div class="summary">{{SummaryLine}}</div>
+
+                <table class="certs">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Issuer</th>
+                            <th>Expiry</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in Items %}
+                        <tr>
+                            <td>{{ item.Subject }}</td>
+                            <td>{{ item.Issuer }}</td>
+                            <td>{{ item.ExpiryDate }}</td>
+                            <td class="{{ item.StatusClass }}">{{ item.StatusLabel }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <p class="more">{{RemainingLine}}</p>
+
+                <div class="btn-row">
+                    <a href="{{DashboardUrl}}" class="btn">Open dashboard</a>
+                </div>
+
+                <p>Renew affected certificates to avoid service interruptions.</p>
+                <p>Need help? Contact <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>.</p>
+                <p>— The {{CompanyName}} team</p>
+            </div>
+            <div class="footer">
+                <p>&copy; {{CompanyName}}. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

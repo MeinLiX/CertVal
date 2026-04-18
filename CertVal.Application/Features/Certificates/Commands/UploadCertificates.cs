@@ -92,7 +92,23 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
 
         var existingCertificates = await _unitOfWork.Certificates.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken);
         var existingThumbprints = existingCertificates.Select(c => c.Thumbprint).ToHashSet();
+        var existingIssuerSerials = existingCertificates
+            .Where(c => !string.IsNullOrWhiteSpace(c.SerialNumber))
+            .Select(c => (c.Issuer, c.SerialNumber!))
+            .ToHashSet();
         var currentCertificateCount = existingCertificates.Count();
+
+        bool IsDuplicate(Common.Models.ParsedCertificateInfo cert) =>
+            existingThumbprints.Contains(cert.Thumbprint) ||
+            (!string.IsNullOrWhiteSpace(cert.SerialNumber) &&
+             existingIssuerSerials.Contains((cert.Issuer, cert.SerialNumber!)));
+
+        void TrackAdded(Common.Models.ParsedCertificateInfo cert)
+        {
+            existingThumbprints.Add(cert.Thumbprint);
+            if (!string.IsNullOrWhiteSpace(cert.SerialNumber))
+                existingIssuerSerials.Add((cert.Issuer, cert.SerialNumber!));
+        }
 
         foreach (var file in request.Files)
         {
@@ -120,7 +136,7 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                 }
 
                 var parsedCertificates = parseResult.Value.ToList();
-                var newCertificates = parsedCertificates.Where(cert => !existingThumbprints.Contains(cert.Thumbprint)).ToList();
+                var newCertificates = parsedCertificates.Where(cert => !IsDuplicate(cert)).ToList();
 
                 if (!newCertificates.Any())
                 {
@@ -188,7 +204,7 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                             parsedCert.SerialNumber,
                             parentCertificate.Id);
                         await _unitOfWork.Certificates.AddAsync(childCert, cancellationToken);
-                        existingThumbprints.Add(parsedCert.Thumbprint);
+                        TrackAdded(parsedCert);
                     }
                 }
                 else
@@ -217,7 +233,7 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
 
                     parentCertificate.UpdateFilePath(objectKey);
                     await _unitOfWork.Certificates.AddAsync(parentCertificate, cancellationToken);
-                    existingThumbprints.Add(mainCertificate.Thumbprint);
+                    TrackAdded(mainCertificate);
                 }
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
