@@ -1,11 +1,9 @@
 ﻿using CertVal.Application.Common.Interfaces;
-using CertVal.Core.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace CertVal.Infrastructure.Services;
-
 public class CertificateExpiryCheckerService : BackgroundService, ICertificateExpiryChecker
 {
     private readonly IServiceProvider _serviceProvider;
@@ -108,41 +106,7 @@ public class CertificateExpiryCheckerService : BackgroundService, ICertificateEx
     private async Task CheckCertificateExpiryAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-
-        var expiringCertificates = await unitOfWork.Certificates.GetExpiringAsync(90, cancellationToken);
-
-        if (!expiringCertificates.Any())
-        {
-            _logger.LogDebug("No certificates expiring in next 90 days");
-            return;
-        }
-
-        var processedCount = 0;
-        var eventCount = 0;
-
-        foreach (var certificate in expiringCertificates)
-        {
-            try
-            {
-                var eventsBefore = certificate.DomainEvents.Count;
-                certificate.CheckExpiry();
-
-                processedCount++;
-                eventCount += certificate.DomainEvents.Count - eventsBefore;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking certificate {CertificateId} ({Subject})",
-                    certificate.Id, certificate.Subject);
-            }
-        }
-
-        if (processedCount > 0)
-        {
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Processed {Count} certificates, triggered {Events} events",
-                processedCount, eventCount);
-        }
+        var processor = scope.ServiceProvider.GetRequiredService<ICertificateExpiryProcessor>();
+        await processor.ProcessExpiryAsync(cancellationToken);
     }
 }

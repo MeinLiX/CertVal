@@ -22,6 +22,7 @@ export interface Workspace {
     maxCertificates: number;
     isPublic: boolean;
     allowMemberInvites: boolean;
+    autoDeleteExpiredCertificates: boolean;
     certificateCount: number;
     memberCount: number;
     createdAt: string;
@@ -34,6 +35,7 @@ export interface UpdateWorkspaceRequest {
     maxCertificates: number;
     isPublic: boolean;
     allowMemberInvites: boolean;
+    autoDeleteExpiredCertificates: boolean;
 }
 
 export interface Certificate {
@@ -121,6 +123,7 @@ export interface CreateWorkspaceRequest {
     maxCertificates: number;
     isPublic: boolean;
     allowMemberInvites: boolean;
+    autoDeleteExpiredCertificates: boolean;
 }
 
 export interface InviteMemberRequest {

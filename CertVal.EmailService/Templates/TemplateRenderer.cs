@@ -105,6 +105,9 @@ public class TemplateRenderer : ITemplateRenderer
     {
         if (value is null) return string.Empty;
 
+        if (value is RawTemplateValue raw)
+            return raw.Value;
+
         if (value is System.Text.Json.JsonElement je)
         {
             return ConvertJsonElement(je, htmlEncode);
@@ -153,11 +156,16 @@ public class TemplateRenderer : ITemplateRenderer
                 return string.Empty;
 
             case System.Text.Json.JsonValueKind.Array:
-                var items = je.EnumerateArray().Select(e => ConvertJsonElement(e, htmlEncode));
-                return string.Join(", ", items);
+                var items = new List<object>();
+                foreach (var e in je.EnumerateArray())
+                    items.Add(ConvertJsonElement(e, htmlEncode));
+                return items;
 
             case System.Text.Json.JsonValueKind.Object:
-                return je.GetRawText();
+                var obj = new Dictionary<string, object>(StringComparer.Ordinal);
+                foreach (var prop in je.EnumerateObject())
+                    obj[prop.Name] = ConvertJsonElement(prop.Value, htmlEncode);
+                return obj;
 
             default:
                 return string.Empty;

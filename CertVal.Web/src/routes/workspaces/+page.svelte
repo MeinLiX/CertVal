@@ -26,7 +26,8 @@
 		description: '',
 		maxCertificates: 1000,
 		isPublic: false,
-		allowMemberInvites: true
+		allowMemberInvites: true,
+		autoDeleteExpiredCertificates: false
 	});
 	let errors = $state<Record<string, string>>({});
 
@@ -95,7 +96,8 @@
 			description: '',
 			maxCertificates: 1000,
 			isPublic: false,
-			allowMemberInvites: true
+			allowMemberInvites: true,
+			autoDeleteExpiredCertificates: false
 		};
 		errors = {};
 		showCreateModal = true;
@@ -267,6 +269,15 @@
 				data-test-id="create-workspace-invites-checkbox"
 			/>
 			<span>{t('workspaces.allowMemberInvites', language.current)}</span>
+		</label>
+
+		<label class="checkbox-field">
+			<input
+				type="checkbox"
+				bind:checked={createForm.autoDeleteExpiredCertificates}
+				data-test-id="create-workspace-autodelete-checkbox"
+			/>
+			<span>{t('workspaces.autoDeleteExpired', language.current)}</span>
 		</label>
 
 		{#if errors.general}

@@ -1,0 +1,15 @@
+Certificate Expiry Digest - {{CompanyName}}
+
+Workspace {{WorkspaceName}} has {{TotalCount}} certificate(s) that require attention.
+{{SummaryLine}}
+
+{% for item in Items %}- {{ item.Subject }} ({{ item.Issuer }}) — {{ item.StatusLabel }}, expires {{ item.ExpiryDate }}
+{% endfor %}
+{{RemainingLine}}
+
+Open dashboard: {{DashboardUrl}}
+
+Renew affected certificates to avoid service interruptions.
+Need help? Contact {{SupportEmail}}.
+
+— The {{CompanyName}} Team

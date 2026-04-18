@@ -72,6 +72,11 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
         builder.HasIndex(c => new { c.WorkspaceId, c.IsBundle })
             .HasDatabaseName("IX_Certificates_Workspace_Bundle");
 
+        builder.HasIndex(c => new { c.WorkspaceId, c.Issuer, c.SerialNumber })
+            .IsUnique()
+            .HasFilter("\"SerialNumber\" IS NOT NULL AND \"IsBundle\" = false")
+            .HasDatabaseName("IX_Certificates_Workspace_Issuer_Serial");
+
         // Relationships
         builder.HasOne(c => c.Workspace)
             .WithMany(w => w.Certificates)

@@ -42,6 +42,16 @@ public class WorkspaceRepository : BaseRepository<Workspace>, IWorkspaceReposito
         return await IsUserMemberAsync(workspaceId, userId, cancellationToken);
     }
 
+    public async Task<bool> CanUserViewAsync(Guid workspaceId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .AnyAsync(w => w.Id == workspaceId &&
+                          (w.IsPublic ||
+                           w.OwnerId == userId ||
+                           w.Members.Any(m => m.UserId == userId && m.Status == Core.Enums.WorkspaceMemberStatus.Active)),
+                     cancellationToken);
+    }
+
     public override async Task<Workspace?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await DbSet

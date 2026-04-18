@@ -36,7 +36,7 @@ public class DownloadCertificateQueryHandler : IRequestHandler<DownloadCertifica
         if (certificate == null)
             return Result.Failure<(byte[], string, string)>("Certificate not found");
 
-        if (!await _unitOfWork.Workspaces.CanUserAccessAsync(certificate.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
+        if (!await _unitOfWork.Workspaces.CanUserViewAsync(certificate.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
             return Result.Failure<(byte[], string, string)>("Access denied to this certificate");
 
         if (!await _storageService.CertificateExistsAsync(certificate.FilePath, cancellationToken))

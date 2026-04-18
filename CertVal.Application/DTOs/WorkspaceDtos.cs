@@ -12,6 +12,7 @@ public record WorkspaceDto
     public int MaxCertificates { get; init; }
     public bool IsPublic { get; init; }
     public bool AllowMemberInvites { get; init; }
+    public bool AutoDeleteExpiredCertificates { get; init; }
     public int CertificateCount { get; init; }
     public int MemberCount { get; init; }
     public DateTime CreatedAt { get; init; }
@@ -32,6 +33,7 @@ public record CreateWorkspaceRequest
 
     public bool IsPublic { get; init; } = false;
     public bool AllowMemberInvites { get; init; } = true;
+    public bool AutoDeleteExpiredCertificates { get; init; } = false;
 }
 
 public record UpdateWorkspaceRequest
@@ -48,4 +50,5 @@ public record UpdateWorkspaceRequest
 
     public bool IsPublic { get; init; }
     public bool AllowMemberInvites { get; init; }
+    public bool AutoDeleteExpiredCertificates { get; init; }
 }
