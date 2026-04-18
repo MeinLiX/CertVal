@@ -8,14 +8,13 @@
 	import { WorkspaceService } from '$lib/services/WorkspaceService';
 	import { t } from '$lib/i18n';
 	import { formatDateTime } from '$lib/utils/date';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import ConfirmDeleteModal from '$lib/components/ui/ConfirmDeleteModal.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
+	import FloatingActionBar from '$lib/components/layout/FloatingActionBar.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
-	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import type {
 		CreateNotificationRuleRequest,
 		NotificationHistory,
@@ -49,8 +48,6 @@
 	});
 	let webhookUrl = $state('');
 	let errors = $state<Record<string, string>>({});
-
-	const selectedWorkspace = $derived(workspaces.find((w) => w.id === selectedWorkspaceId));
 
 	onMount(async () => {
 		if (!userSession.isAuthenticated) {
@@ -193,159 +190,97 @@
 	<title>{t('notifications.title', language.current)}</title>
 </svelte:head>
 
-<div
-	class="animate-in fade-in slide-in-from-bottom-4 space-y-8 duration-500"
-	data-test-id="notifications-page"
->
-	<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-		<div>
-			<h1
-				class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-4xl font-bold tracking-tight text-transparent"
-			>
-				{t('notifications.title', language.current)}
-			</h1>
-			<p class="text-base-content/60 mt-2 text-lg font-light">
-				{t('notifications.subtitle', language.current)}
-			</p>
+<div class="page">
+	{#if isLoading}
+		<div class="rules-grid">
+			{#each Array(6) as _}
+				<div class="skeleton-card">
+					<div class="skeleton skeleton--icon"></div>
+					<div class="skeleton skeleton--title"></div>
+					<div class="skeleton skeleton--text"></div>
+				</div>
+			{/each}
 		</div>
-		<div class="flex gap-2">
-			<Button variant="outline" onclick={loadHistory} data-test-id="notification-history-button">
-				<Icon name="document" class="mr-2 h-5 w-5" />
-				{t('notifications.history', language.current)}
-			</Button>
-			<Button
-				variant="primary"
-				onclick={openCreateModal}
-				data-test-id="create-notification-rule-button"
-			>
-				<Icon name="plus" class="mr-2 h-5 w-5" />
-				{t('notifications.create', language.current)}
-			</Button>
+	{:else if workspaces.length === 0}
+		<div class="empty-state">
+			<Icon name="workspaces" size="lg" />
+			<h3 class="empty-state__title">{t('notifications.noWorkspaces', language.current)}</h3>
+			<p class="empty-state__text">{t('notifications.createFirstWorkspace', language.current)}</p>
+			<Button onclick={() => goto('/workspaces')}>{t('nav.workspaces', language.current)}</Button>
 		</div>
-	</div>
-
-	<div
-		class="bg-base-100/50 border-base-content/5 rounded-2xl border p-6 shadow-sm backdrop-blur-sm"
-	>
-		<div class="form-control w-full max-w-md">
-			<label class="label" for="workspace-select">
-				<span class="label-text font-medium">{t('common.workspace', language.current)}</span>
-			</label>
-			<select
-				id="workspace-select"
-				class="select select-bordered focus:select-primary w-full transition-all"
-				bind:value={selectedWorkspaceId}
-				onchange={loadRulesForWorkspace}
-				data-test-id="notification-workspace-select"
-			>
-				{#each workspaces as workspace}
-					<option value={workspace.id}>{workspace.name}</option>
-				{/each}
-			</select>
-		</div>
-	</div>
-
-	<div class="relative min-h-[200px]">
-		{#if isLoading}
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-				{#each Array(6) as _}
-					<div class="card bg-base-100 h-56 animate-pulse shadow-xl">
-						<div class="card-body">
-							<div class="flex justify-between">
-								<div class="bg-base-300 h-10 w-10 rounded-xl"></div>
-								<div class="bg-base-300 h-8 w-8 rounded-full"></div>
-							</div>
-							<div class="bg-base-300 mt-4 h-6 w-3/4 rounded"></div>
-							<div class="bg-base-300 mt-2 h-4 w-1/2 rounded"></div>
-						</div>
-					</div>
-				{/each}
-			</div>
-		{:else if rules.length === 0}
-		<div
-			class="bg-base-100/50 border-base-200 flex flex-col items-center justify-center rounded-3xl border py-20 text-center backdrop-blur-sm"
-		>
-			<div class="bg-base-200 mb-6 rounded-full p-6">
-				<Icon name="notifications" class="text-base-content/30 h-12 w-12" />
-			</div>
-			<h3 class="mb-2 text-xl font-semibold">{t('notifications.empty.title', language.current)}</h3>
-			<p class="text-base-content/60 mb-8 max-w-md">
-				{t('notifications.empty.description', language.current)}
-			</p>
-			<Button
-				variant="outline"
-				onclick={openCreateModal}
-				data-test-id="empty-state-create-rule-button"
-			>
+	{:else if rules.length === 0}
+		<div class="empty-state">
+			<Icon name="notifications" size="lg" />
+			<h3 class="empty-state__title">{t('notifications.empty.title', language.current)}</h3>
+			<p class="empty-state__text">{t('notifications.empty.description', language.current)}</p>
+			<Button variant="secondary" onclick={openCreateModal}>
 				{t('notifications.create', language.current)}
 			</Button>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+		<div class="rules-grid">
 			{#each rules as rule (rule.id)}
-				<Card
-					variant="glass"
-					class="border-base-content/5 hover:border-primary/20 group border transition-all duration-300"
-					data-test-id={`notification-rule-card-${rule.id}`}
-				>
-					<div class="mb-4 flex items-start justify-between">
-						<div
-							class="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-content rounded-xl p-3 transition-colors duration-300"
-						>
-							<Icon name="notifications" class="h-6 w-6" />
+				<div class="rule-card">
+					<div class="rule-card__head">
+						<div class="rule-card__icon">
+							<Icon name="notifications" size="sm" />
 						</div>
-						<div class="dropdown dropdown-end">
-							<Button variant="ghost" size="sm" shape="circle">
-								<Icon name="settings" class="h-4 w-4" />
-							</Button>
-							<ul
-								tabindex="0"
-								role="menu"
-								class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow"
-							>
-								<li>
-									<button
-										class="text-error"
-										onclick={() => handleDeleteRule(rule.id)}
-										data-test-id={`delete-rule-button-${rule.id}`}
-										>{t('common.delete', language.current)}</button
-									>
-								</li>
-							</ul>
-						</div>
+						<h3 class="rule-card__title">{rule.name}</h3>
+						<button class="rule-card__delete" aria-label="Delete rule" onclick={() => handleDeleteRule(rule.id)}>
+							<Icon name="trash" size="sm" />
+						</button>
 					</div>
-
-					<h3 class="mb-2 text-xl font-bold">{rule.name}</h3>
-					<div class="text-base-content/70 space-y-2 text-sm">
-						<div class="flex items-center gap-2">
-							<span class="font-medium">{t('notifications.daysBefore', language.current)}:</span>
-							<span>{rule.daysBeforeExpiry}</span>
+					<dl class="rule-card__meta">
+						<div class="rule-card__row">
+							<dt>{t('notifications.daysBefore', language.current)}</dt>
+							<dd><span class="rule-card__value rule-card__value--accent">{rule.daysBeforeExpiry}</span></dd>
 						</div>
-						<div class="flex items-center gap-2">
-							<span class="font-medium">{t('notifications.frequency', language.current)}:</span>
-							<span>{rule.frequency}</span>
+						<div class="rule-card__row">
+							<dt>{t('notifications.frequency', language.current)}</dt>
+							<dd>{rule.frequency}</dd>
 						</div>
-						<div class="flex items-center gap-2">
-							<span class="font-medium">{t('notifications.channel', language.current)}:</span>
-							<span class="badge badge-sm badge-outline">{rule.channelType}</span>
+						<div class="rule-card__row">
+							<dt>{t('notifications.channel', language.current)}</dt>
+							<dd><span class="channel-badge">{rule.channelType}</span></dd>
 						</div>
-					</div>
-				</Card>
+					</dl>
+				</div>
 			{/each}
 		</div>
 	{/if}
-	</div>
+
+	<FloatingActionBar label={t('notifications.title', language.current)}>
+		{#snippet leading()}
+			{#if workspaces.length > 0}
+				<label class="toolbar-field">
+					<span class="toolbar-field__label">{t('common.workspace', language.current)}</span>
+					<select
+						class="toolbar-field__select"
+						bind:value={selectedWorkspaceId}
+						onchange={loadRulesForWorkspace}
+					>
+						{#each workspaces as workspace}
+							<option value={workspace.id}>{workspace.name}</option>
+						{/each}
+					</select>
+				</label>
+			{/if}
+		{/snippet}
+		{#snippet trailing()}
+			<Button variant="secondary" onclick={loadHistory} disabled={!selectedWorkspaceId}>
+				{t('notifications.history', language.current)}
+			</Button>
+			<Button onclick={openCreateModal} disabled={!selectedWorkspaceId}>
+				+ {t('notifications.create', language.current)}
+			</Button>
+		{/snippet}
+	</FloatingActionBar>
 </div>
 
-<Modal
-	isOpen={showCreateModal}
-	title={t('notifications.create', language.current)}
-	onClose={() => (showCreateModal = false)}
-	data-test-id="create-notification-rule-modal"
->
-	<form onsubmit={handleCreateRule} class="space-y-4">
+<Modal bind:isOpen={showCreateModal} title={t('notifications.create', language.current)} onclose={() => (showCreateModal = false)}>
+	<form class="modal-form" onsubmit={handleCreateRule}>
 		{#if errors.general}
-			<div role="alert" class="alert alert-error text-sm"><span>{errors.general}</span></div>
+			<div class="alert alert--error">{errors.general}</div>
 		{/if}
 
 		<Input
@@ -353,7 +288,6 @@
 			bind:value={createForm.name}
 			required
 			placeholder="e.g. 30 Days Warning"
-			data-test-id="create-rule-name-input"
 		/>
 
 		<Input
@@ -361,7 +295,6 @@
 			label={t('notifications.daysBefore', language.current)}
 			bind:value={createForm.daysBeforeExpiry}
 			required
-			data-test-id="create-rule-days-input"
 		/>
 
 		<Select
@@ -372,19 +305,11 @@
 				{ value: 'Daily', label: 'Daily' },
 				{ value: 'Weekly', label: 'Weekly' }
 			]}
-			data-test-id="create-rule-frequency-select"
 		/>
 
-		<div class="form-control">
-			<label class="label" for="channel">
-				<span class="label-text font-medium">{t('notifications.channel', language.current)}</span>
-			</label>
-			<select
-				id="channel"
-				class="select select-bordered focus:select-primary w-full transition-all"
-				bind:value={createForm.channelType}
-				data-test-id="create-rule-channel-select"
-			>
+		<div class="form-group">
+			<label class="form-label" for="channel">{t('notifications.channel', language.current)}</label>
+			<select id="channel" class="select" bind:value={createForm.channelType}>
 				<option value="Email">Email</option>
 				<option value="Webhook">Webhook</option>
 			</select>
@@ -396,37 +321,27 @@
 				bind:value={webhookUrl}
 				required
 				placeholder="https://api.example.com/webhook"
-				data-test-id="create-rule-webhook-input"
 			/>
 		{/if}
 
 		{#if createForm.channelType === 'Email'}
-			<div class="form-control">
-				<label class="label" for="recipients">
-					<span class="label-text font-medium"
-						>{t('notifications.recipients', language.current)}</span
-					>
-				</label>
-				<div class="border-base-300 bg-base-100/50 max-h-40 overflow-y-auto rounded-lg border p-2">
+			<div class="form-group">
+				<span class="form-label">{t('notifications.recipients', language.current)}</span>
+				<div class="recipients-list" role="group" aria-label="Recipients">
 					{#if workspaceMembers.length === 0}
-						<p class="text-base-content/50 p-2 text-sm">No members found.</p>
+						<p class="recipients-list__empty">No members found.</p>
 					{:else}
 						{#each workspaceMembers as member}
-							<label
-								class="label hover:bg-base-200/50 cursor-pointer justify-start gap-3 rounded p-2 transition-colors"
-							>
+							<label class="recipient-item">
 								<input
 									type="checkbox"
-									class="checkbox checkbox-sm checkbox-primary"
+									class="checkbox"
 									value={member.userId}
 									bind:group={createForm.recipientUserIds}
-									data-test-id={`create-rule-recipient-${member.userId}`}
 								/>
-								<div class="flex flex-col">
-									<span class="label-text font-medium"
-										>{member.user?.fullName || 'Unknown User'}</span
-									>
-									<span class="text-base-content/60 text-xs">{member.user?.email || ''}</span>
+								<div class="recipient-item__info">
+									<span class="recipient-item__name">{member.user?.fullName || 'Unknown User'}</span>
+									<span class="recipient-item__email">{member.user?.email || ''}</span>
 								</div>
 							</label>
 						{/each}
@@ -439,36 +354,18 @@
 					label={t('notifications.recipientAggregation', language.current)}
 					bind:value={createForm.recipientAggregationMode}
 					options={[
-						{
-							value: 'SingleEmailToAll',
-							label: t('notifications.aggregationAllOption', language.current)
-						},
-						{
-							value: 'Individual',
-							label: t('notifications.aggregationIndividualOption', language.current)
-						}
+						{ value: 'SingleEmailToAll', label: t('notifications.aggregationAllOption', language.current) },
+						{ value: 'Individual', label: t('notifications.aggregationIndividualOption', language.current) }
 					]}
-					data-test-id="create-rule-aggregation-select"
 				/>
 			{/if}
 		{/if}
 
-		<div class="modal-action">
-			<Button
-				type="button"
-				variant="ghost"
-				onclick={() => (showCreateModal = false)}
-				disabled={isProcessing}
-				data-test-id="create-rule-cancel-button"
-			>
+		<div class="modal-form__actions">
+			<Button type="button" variant="secondary" onclick={() => { showCreateModal = false; }} disabled={isProcessing}>
 				{t('common.cancel', language.current)}
 			</Button>
-			<Button
-				type="submit"
-				variant="primary"
-				loading={isProcessing}
-				data-test-id="create-rule-submit-button"
-			>
+			<Button type="submit" loading={isProcessing}>
 				{t('common.create', language.current)}
 			</Button>
 		</div>
@@ -483,42 +380,483 @@
 		pendingDeleteRuleId = null;
 		showConfirmModal = false;
 	}}
-	data-test-id="delete-rule-confirm-modal"
 />
 
-<Modal
-	isOpen={showHistoryModal}
-	title={t('notifications.history', language.current)}
-	onClose={() => (showHistoryModal = false)}
-	data-test-id="notification-history-modal"
->
-	<div class="max-h-96 space-y-2 overflow-y-auto">
+<Modal bind:isOpen={showHistoryModal} title={t('notifications.history', language.current)} onclose={() => (showHistoryModal = false)}>
+	<div class="history-list">
 		{#if isProcessing}
-			<div class="flex justify-center p-8"><span class="loading loading-spinner"></span></div>
+			<div class="history-list__loading">
+				<div class="spinner"></div>
+			</div>
 		{:else if history.length === 0}
-			<p class="py-8 text-center">{t('notifications.noHistory', language.current)}</p>
+			<p class="history-list__empty">{t('notifications.noHistory', language.current)}</p>
 		{:else}
 			{#each history as item}
-				<div
-					class="border-base-content/10 hover:bg-base-200/50 rounded-lg border p-3 text-sm transition-colors"
-				>
-					<div class="mb-1 flex items-center justify-between">
-						<span class="max-w-xs truncate font-semibold">{item.subject}</span>
-						<span class="badge badge-sm {item.status === 'Sent' ? 'badge-success' : 'badge-error'}"
-							>{item.status}</span
-						>
+				<div class="history-item">
+					<div class="history-item__header">
+						<span class="history-item__subject">{item.subject}</span>
+						<span class="history-item__status history-item__status--{item.status.toLowerCase()}">{item.status}</span>
 					</div>
-					<p class="flex justify-between text-xs opacity-60">
+					<div class="history-item__meta">
 						<span>{formatDateTime(item.createdAt)}</span>
 						<span>{t('common.to', language.current)} {item.recipient}</span>
-					</p>
+					</div>
 				</div>
 			{/each}
 		{/if}
 	</div>
-	<div class="modal-action">
-		<Button onclick={() => (showHistoryModal = false)} data-test-id="history-modal-close-button"
-			>{t('common.close', language.current)}</Button
-		>
+	<div class="modal-form__actions">
+		<Button onclick={() => { showHistoryModal = false; }}>{t('common.close', language.current)}</Button>
 	</div>
 </Modal>
+
+<style>
+	.page {
+		animation: fadeIn 0.5s ease-out;
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	.toolbar-field {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+
+	.toolbar-field__label {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-text-muted);
+	}
+
+	.toolbar-field__select {
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: var(--text-sm);
+		font-family: var(--font-body);
+		cursor: pointer;
+		min-width: 180px;
+		transition: border-color var(--transition-fast);
+	}
+
+	.toolbar-field__select:hover {
+		border-color: var(--color-border-hover);
+	}
+
+	.toolbar-field__select:focus {
+		outline: none;
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px var(--color-primary-alpha);
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.form-label {
+		font-size: var(--text-sm);
+		font-weight: var(--font-medium);
+		color: var(--color-text);
+	}
+
+	.select {
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font-size: var(--text-sm);
+		cursor: pointer;
+		transition: border-color var(--transition-fast);
+	}
+
+	.select:hover {
+		border-color: var(--color-border-hover);
+	}
+
+	.select:focus {
+		outline: none;
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px var(--color-primary-alpha);
+	}
+
+	.rules-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: var(--space-3);
+	}
+
+	.skeleton-card {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		padding: var(--space-5);
+	}
+
+	.skeleton {
+		background: linear-gradient(90deg, var(--color-surface-elevated) 25%, var(--color-border) 50%, var(--color-surface-elevated) 75%);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s infinite;
+		border-radius: var(--radius-sm);
+	}
+
+	.skeleton--icon {
+		width: 48px;
+		height: 48px;
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-4);
+	}
+
+	.skeleton--title {
+		height: 24px;
+		width: 70%;
+		margin-bottom: var(--space-3);
+	}
+
+	.skeleton--text {
+		height: 16px;
+		width: 50%;
+	}
+
+	@keyframes shimmer {
+		0% { background-position: 200% 0; }
+		100% { background-position: -200% 0; }
+	}
+
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: var(--space-12);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		color: var(--color-text-muted);
+	}
+
+	.empty-state__title {
+		font-family: var(--font-display);
+		font-size: var(--text-xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		color: var(--color-text);
+		margin: 0 0 var(--space-2);
+	}
+
+	.empty-state__text {
+		margin: 0 0 var(--space-6);
+		max-width: 400px;
+	}
+
+	.rule-card {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		padding: var(--space-4);
+		transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+	}
+
+	.rule-card:hover {
+		border-color: var(--color-border-hover);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.rule-card__head {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		margin-bottom: var(--space-3);
+	}
+
+	.rule-card__icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		background: var(--color-primary-light);
+		border-radius: var(--radius-md);
+		color: var(--color-primary);
+		flex-shrink: 0;
+	}
+
+	.rule-card__title {
+		flex: 1;
+		font-family: var(--font-body);
+		font-size: var(--text-base);
+		font-weight: var(--font-semibold);
+		color: var(--color-text);
+		margin: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.rule-card__delete {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		background: none;
+		border: none;
+		border-radius: var(--radius-sm);
+		color: var(--color-text-muted);
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: color var(--transition-fast), background-color var(--transition-fast);
+	}
+
+	.rule-card__delete:hover {
+		color: var(--color-error);
+		background: var(--color-error-bg);
+	}
+
+	.rule-card__meta {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: var(--space-2);
+		margin: 0;
+		padding-top: var(--space-3);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.rule-card__row {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+		min-width: 0;
+	}
+
+	.rule-card__row dt {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-text-muted);
+	}
+
+	.rule-card__row dd {
+		margin: 0;
+		font-size: var(--text-sm);
+		color: var(--color-text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.rule-card__value--accent {
+		font-family: var(--font-display);
+		font-size: var(--text-lg);
+		font-weight: var(--font-semibold);
+		color: var(--color-primary);
+	}
+
+	.channel-badge {
+		display: inline-flex;
+		padding: var(--space-1) var(--space-2);
+		background: var(--color-surface-elevated);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: 500;
+	}
+
+	.modal-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.modal-form__actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-3);
+		padding-top: var(--space-4);
+		border-top: 1px solid var(--color-border);
+		margin-top: var(--space-2);
+	}
+
+	.alert {
+		padding: var(--space-3);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+	}
+
+	.alert--error {
+		background: var(--color-error-bg);
+		color: var(--color-error);
+		border: 1px solid var(--color-error);
+	}
+
+	.recipients-list {
+		max-height: 200px;
+		overflow-y: auto;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		padding: var(--space-2);
+	}
+
+	.recipients-list__empty {
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
+		padding: var(--space-2);
+		margin: 0;
+	}
+
+	.recipient-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2);
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		transition: background-color 0.15s ease;
+	}
+
+	.recipient-item:hover {
+		background: var(--color-surface-elevated);
+	}
+
+	.checkbox {
+		width: 16px;
+		height: 16px;
+		accent-color: var(--color-primary);
+	}
+
+	.recipient-item__info {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.recipient-item__name {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text);
+	}
+
+	.recipient-item__email {
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	.history-list {
+		max-height: 400px;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.history-list__loading {
+		display: flex;
+		justify-content: center;
+		padding: var(--space-8);
+	}
+
+	.spinner {
+		width: 32px;
+		height: 32px;
+		border: 3px solid var(--color-border);
+		border-top-color: var(--color-primary);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	.history-list__empty {
+		text-align: center;
+		color: var(--color-text-muted);
+		padding: var(--space-8);
+		margin: 0;
+	}
+
+	.history-item {
+		padding: var(--space-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		transition: background-color 0.15s ease;
+	}
+
+	.history-item:hover {
+		background: var(--color-surface-elevated);
+	}
+
+	.history-item__header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: var(--space-1);
+	}
+
+	.history-item__subject {
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--color-text);
+		max-width: 200px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.history-item__status {
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: 500;
+	}
+
+	.history-item__status--sent {
+		background: var(--color-success-bg);
+		color: var(--color-success);
+	}
+
+	.history-item__status--failed {
+		background: var(--color-error-bg);
+		color: var(--color-error);
+	}
+
+	.history-item__meta {
+		display: flex;
+		justify-content: space-between;
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	@media (max-width: 768px) {
+		.page {
+			padding: var(--space-4);
+		}
+
+		.page__title-row {
+			flex-direction: column;
+		}
+
+		.page__actions {
+			width: 100%;
+		}
+
+		.page__actions :global(button) {
+			flex: 1;
+		}
+
+		.rules-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

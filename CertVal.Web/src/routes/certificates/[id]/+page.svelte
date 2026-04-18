@@ -8,10 +8,8 @@
 	import { CertificateService } from '$lib/services/CertificateService';
 	import { t } from '$lib/i18n';
 	import { formatDate, formatDateTime, getCertificateStatus } from '$lib/utils/date';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
 	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import type { Certificate } from '$lib/types';
 
@@ -57,21 +55,15 @@
 			if (response.data) {
 				certificate = response.data;
 				if (certificate.parentCertificateId && certificate.parentCertificateId !== certificate.id) {
-					const parentRes = await api.get<Certificate>(
-						`/certificates/${certificate.parentCertificateId}`
-					);
+					const parentRes = await api.get<Certificate>(`/certificates/${certificate.parentCertificateId}`);
 					if (parentRes.data) parentCertificate = parentRes.data;
 				}
 				if (certificate.previousCertificateId) {
-					const prevRes = await api.get<Certificate>(
-						`/certificates/${certificate.previousCertificateId}`
-					);
+					const prevRes = await api.get<Certificate>(`/certificates/${certificate.previousCertificateId}`);
 					if (prevRes.data) previousCertificate = prevRes.data;
 				}
 				if (certificate.nextCertificateId) {
-					const nextRes = await api.get<Certificate>(
-						`/certificates/${certificate.nextCertificateId}`
-					);
+					const nextRes = await api.get<Certificate>(`/certificates/${certificate.nextCertificateId}`);
 					if (nextRes.data) nextCertificate = nextRes.data;
 				}
 			}
@@ -100,13 +92,10 @@
 		isDownloading = true;
 		downloadProgress = 0;
 		try {
-			const res = await api.downloadAndSave(`/certificates/${certificate.id}/download`, {
+			await api.downloadAndSave(`/certificates/${certificate.id}/download`, {
 				onProgress: (p) => (downloadProgress = p),
 				suggestedFileName: certificate.originalFileName
 			});
-			if ('message' in res) {
-				// alert(res.message);
-			}
 		} catch (err) {
 			console.error('Failed to download certificate:', err);
 		} finally {
@@ -121,11 +110,7 @@
 
 		isUpdating = true;
 		try {
-			const res = await CertificateService.uploadUpdated(
-				certificate.id,
-				certificate.workspaceId,
-				updateFile
-			);
+			const res = await CertificateService.uploadUpdated(certificate.id, certificate.workspaceId, updateFile);
 			if (res.data) {
 				goto(`/certificates/${res.data.id}`);
 			}
@@ -153,11 +138,7 @@
 		if (!certificate) return;
 		isTogglingSkip = true;
 		try {
-			await CertificateService.toggleSkip(
-				certificate.id,
-				certificate.workspaceId,
-				!certificate.isSkipped
-			);
+			await CertificateService.toggleSkip(certificate.id, certificate.workspaceId, !certificate.isSkipped);
 			await loadCertificate();
 		} catch (err) {
 			console.error('Failed to toggle skip:', err);
@@ -169,447 +150,267 @@
 </script>
 
 <svelte:head>
-	<title
-		>{certificate ? certificate.subject : t('nav.certificates', language.current)} | CertVal</title
-	>
+	<title>{certificate ? certificate.subject : t('nav.certificates', language.current)} | CertVal</title>
 </svelte:head>
 
-<div
-	class="animate-in fade-in mx-auto max-w-7xl space-y-8 p-6 duration-500"
-	data-test-id="certificate-details-page"
->
+<div class="page" data-test-id="certificate-details-page">
 	{#if isLoading}
 		<GlobalLoader variant="overlay" />
 	{:else if !certificate}
-		<Card variant="glass" class="border-error/20 bg-error/5">
-			<div class="flex flex-col items-center justify-center py-12 text-center">
-				<div class="bg-error/10 mb-4 rounded-full p-4">
-					<Icon name="security" class="text-error h-12 w-12" />
-				</div>
-				<h2 class="text-error text-xl font-bold">{t('certificates.notFound', language.current)}</h2>
-				<Button
-					variant="ghost"
-					class="mt-4"
-					onclick={() => goto('/certificates')}
-					data-test-id="cert-details-back-button"
-				>
-					<Icon name="leftArrow" class="mr-2 h-4 w-4" />
-					{t('common.back', language.current)}
-				</Button>
+		<div class="not-found">
+			<div class="not-found__icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+					<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+					<path d="M7 11V7a5 5 0 0 1 10 0v4" />
+				</svg>
 			</div>
-		</Card>
+			<h2 class="not-found__title">{t('certificates.notFound', language.current)}</h2>
+			<Button variant="secondary" onclick={() => goto('/certificates')} data-test-id="cert-details-back-button">
+				← {t('common.back', language.current)}
+			</Button>
+		</div>
 	{:else}
-		<div class="flex flex-col gap-6">
-			<div class="space-y-2">
-				<div class="text-base-content/60 flex items-center gap-2 text-sm">
-					<a
-						href="/certificates?workspace={certificate.workspaceId}"
-						class="hover:text-primary transition-colors"
-					>
-						{t('nav.certificates', language.current)}
-					</a>
-					<span>/</span>
-					<span class="max-w-[200px] truncate">{certificate.subject}</span>
-				</div>
+		{@const status = getCertificateStatus(certificate.notAfter)}
 
-				<div class="flex items-center gap-4">
-					<div>
-						<h1 class="text-3xl font-bold tracking-tight">{certificate.subject}</h1>
-						<p class="text-base-content/60 mt-1 font-mono text-sm">{certificate.thumbprint}</p>
-					</div>
-				</div>
+		<header class="header">
+			<nav class="breadcrumb">
+				<a href="/certificates?workspace={certificate.workspaceId}" class="breadcrumb__link">
+					{t('nav.certificates', language.current)}
+				</a>
+				<span class="breadcrumb__separator">/</span>
+				<span class="breadcrumb__current">{certificate.subject}</span>
+			</nav>
+
+			<div class="header__main">
+				<h1 class="header__title">{certificate.subject}</h1>
+				<p class="header__thumbprint">{certificate.thumbprint}</p>
 			</div>
 
-			<div class="flex flex-wrap gap-3 self-end">
+			<div class="header__actions">
 				<Button
-					variant="outline"
+					variant="secondary"
 					onclick={toggleSkip}
 					disabled={!!certificate.nextCertificateId && certificate.isSkipped}
-					title={!!certificate.nextCertificateId && certificate.isSkipped
-						? t('certificates.cannotEnableMonitoring', language.current)
-						: ''}
+					title={!!certificate.nextCertificateId && certificate.isSkipped ? t('certificates.cannotEnableMonitoring', language.current) : ''}
 					data-test-id="cert-toggle-skip-button"
 				>
-					<Icon name={certificate.isSkipped ? 'eye' : 'eye-off'} class="mr-2 h-4 w-4" />
-					{certificate.isSkipped
-						? t('certificates.monitor', language.current)
-						: t('certificates.ignore', language.current)}
+					{certificate.isSkipped ? t('certificates.monitor', language.current) : t('certificates.ignore', language.current)}
 				</Button>
 				<Button
-					variant="outline"
-					onclick={() => (showUpdateModal = true)}
+					variant="secondary"
+					onclick={() => { showUpdateModal = true; }}
 					disabled={!!certificate.nextCertificateId}
-					title={!!certificate.nextCertificateId
-						? t('certificates.newerVersionAvailable', language.current)
-						: ''}
+					title={!!certificate.nextCertificateId ? t('certificates.newerVersionAvailable', language.current) : ''}
 					data-test-id="cert-update-button"
 				>
-					<Icon name="upload" class="mr-2 h-4 w-4" />
 					{t('certificates.uploadUpdated', language.current)}
 				</Button>
-				<Button
-					variant="glass"
-					onclick={handleDownload}
-					loading={isDownloading}
-					data-test-id="cert-download-button"
-				>
-					<Icon name="download" class="mr-2 h-4 w-4" />
-					{t('common.download', language.current)}
-					{isDownloading ? ` (${downloadProgress}%)` : ''}
+				<Button variant="primary" onclick={handleDownload} disabled={isDownloading} data-test-id="cert-download-button">
+					{t('common.download', language.current)}{isDownloading ? ` (${downloadProgress}%)` : ''}
 				</Button>
-				<Button
-					variant="danger"
-					class="bg-error/10 hover:bg-error/20 text-error border-error/20"
-					onclick={() => (showDeleteModal = true)}
-					data-test-id="cert-delete-button"
-				>
-					<Icon name="trash" class="mr-2 h-4 w-4" />
+				<Button variant="danger" onclick={() => { showDeleteModal = true; }} data-test-id="cert-delete-button">
 					{t('common.delete', language.current)}
 				</Button>
 			</div>
-		</div>
+		</header>
 
 		{#if nextCertificate}
-			<div class="alert alert-info shadow-lg">
-				<Icon name="history" class="h-6 w-6" />
-				<div>
-					<h3 class="font-bold">{t('certificates.newerVersionAvailable', language.current)}</h3>
-					<div class="text-xs">{t('certificates.newerVersionDescription', language.current)}</div>
+			<div class="alert alert--info">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="10" />
+					<polyline points="12 6 12 12 16 14" />
+				</svg>
+				<div class="alert__content">
+					<h3 class="alert__title">{t('certificates.newerVersionAvailable', language.current)}</h3>
+					<p class="alert__text">{t('certificates.newerVersionDescription', language.current)}</p>
 				</div>
-				<Button
-					size="sm"
-					variant="ghost"
-					onclick={() => goto(`/certificates/${nextCertificate?.id}`)}
-				>
+				<Button variant="secondary" onclick={() => goto(`/certificates/${nextCertificate?.id}`)}>
 					{t('common.view', language.current)}
 				</Button>
 			</div>
 		{/if}
 
 		{#if certificate.isSkipped}
-			<div class="alert alert-warning shadow-lg">
-				<Icon name="eye-off" class="h-6 w-6" />
-				<div>
-					<h3 class="font-bold">{t('certificates.monitoringSkipped', language.current)}</h3>
-					<div class="text-xs">
-						{t('certificates.monitoringSkippedDescription', language.current)}
-					</div>
+			<div class="alert alert--warning">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+					<line x1="1" y1="1" x2="23" y2="23" />
+				</svg>
+				<div class="alert__content">
+					<h3 class="alert__title">{t('certificates.monitoringSkipped', language.current)}</h3>
+					<p class="alert__text">{t('certificates.monitoringSkippedDescription', language.current)}</p>
 				</div>
 			</div>
 		{/if}
 
 		{#if previousCertificate}
-			<Card variant="glass" class="border-l-info bg-info/5 border-l-4">
-				<div class="flex items-center gap-4 p-2">
-					<div class="bg-info/10 text-info rounded-full p-2">
-						<Icon name="history" class="h-6 w-6" />
-					</div>
-					<div>
-						<div class="text-lg font-semibold">
-							{t('certificates.newVersion', language.current)}
-						</div>
-						<div class="text-sm opacity-70">
-							{t('certificates.previousVersion', language.current)}:
-							<a href="/certificates/{previousCertificate.id}" class="link link-info font-bold">
-								{previousCertificate.subject}
-							</a>
-						</div>
-					</div>
-				</div>
-			</Card>
-		{/if}
-
-		{@const status = getCertificateStatus(certificate.notAfter)}
-		<Card
-			variant="glass"
-			class={`border-l-4 ${
-				status === 'expired'
-					? 'border-l-error bg-error/5'
-					: status === 'expiring'
-						? 'border-l-warning bg-warning/5'
-						: 'border-l-success bg-success/5'
-			}`}
-		>
-			<div class="flex items-center justify-between p-2">
-				<div class="flex items-center gap-4">
-					<div
-						class={`rounded-full p-2 ${
-							status === 'expired'
-								? 'bg-error/10 text-error'
-								: status === 'expiring'
-									? 'bg-warning/10 text-warning'
-									: 'bg-success/10 text-success'
-						}`}
-					>
-						<Icon name="time" class="h-6 w-6" />
-					</div>
-					<div>
-						<div class="text-lg font-semibold">{t(`certificates.${status}`, language.current)}</div>
-						<div class="text-sm opacity-70">
-							{certificate.daysUntilExpiry}
-							{t('certificates.daysRemaining', language.current)}
-						</div>
-					</div>
-				</div>
-				<div class="text-right">
-					<div class="text-sm opacity-60">{t('certificates.expires', language.current)}</div>
-					<div class="font-mono text-lg font-semibold">{formatDateTime(certificate.notAfter)}</div>
+			<div class="alert alert--info">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="10" />
+					<polyline points="12 6 12 12 16 14" />
+				</svg>
+				<div class="alert__content">
+					<h3 class="alert__title">{t('certificates.newVersion', language.current)}</h3>
+					<p class="alert__text">
+						{t('certificates.previousVersion', language.current)}:
+						<a href="/certificates/{previousCertificate.id}" class="alert__link">{previousCertificate.subject}</a>
+					</p>
 				</div>
 			</div>
-		</Card>
+		{/if}
 
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-			<div class="space-y-6 lg:col-span-2">
-				<Card variant="glass" title={t('certificates.details', language.current)}>
-					<div class="grid gap-6 sm:grid-cols-2">
-						<div class="space-y-1">
-							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
-								<Icon name="security" class="h-4 w-4" />
-								{t('certificates.issuer', language.current)}
-							</div>
-							<div class="bg-base-200/30 break-all rounded-lg p-3 text-sm">
-								{certificate.issuer}
-							</div>
+		<div class="status-card status-card--{status}">
+			<div class="status-card__icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="10" />
+					<polyline points="12 6 12 12 16 14" />
+				</svg>
+			</div>
+			<div class="status-card__info">
+				<span class="status-card__label">{t(`certificates.${status}`, language.current)}</span>
+				<span class="status-card__days">{certificate.daysUntilExpiry} {t('certificates.daysRemaining', language.current)}</span>
+			</div>
+			<div class="status-card__date">
+				<span class="status-card__date-label">{t('certificates.expires', language.current)}</span>
+				<span class="status-card__date-value">{formatDateTime(certificate.notAfter)}</span>
+			</div>
+		</div>
+
+		<div class="content-grid">
+			<div class="content-main">
+				<section class="card">
+					<h2 class="card__title">{t('certificates.details', language.current)}</h2>
+					<div class="details-grid">
+						<div class="detail-item">
+							<span class="detail-item__label">{t('certificates.issuer', language.current)}</span>
+							<span class="detail-item__value">{certificate.issuer}</span>
 						</div>
-
-						<div class="space-y-1">
-							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
-								<Icon name="hash" class="h-4 w-4" />
-								{t('certificates.serialNumber', language.current)}
-							</div>
-							<div class="bg-base-200/30 break-all rounded-lg p-3 font-mono text-sm">
-								{certificate.serialNumber}
-							</div>
+						<div class="detail-item">
+							<span class="detail-item__label">{t('certificates.serialNumber', language.current)}</span>
+							<span class="detail-item__value detail-item__value--mono">{certificate.serialNumber}</span>
 						</div>
-
-						<div class="space-y-1 sm:col-span-2">
-							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
-								<Icon name="key" class="h-4 w-4" />
-								{t('certificates.thumbprint', language.current)}
-							</div>
-							<div class="bg-base-200/30 break-all rounded-lg p-3 font-mono text-sm">
-								{certificate.thumbprint}
-							</div>
+						<div class="detail-item detail-item--full">
+							<span class="detail-item__label">{t('certificates.thumbprint', language.current)}</span>
+							<span class="detail-item__value detail-item__value--mono">{certificate.thumbprint}</span>
 						</div>
-
-						<div class="space-y-1">
-							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
-								<Icon name="calendar" class="h-4 w-4" />
-								{t('certificates.validFrom', language.current)}
-							</div>
-							<div class="bg-base-200/30 rounded-lg p-3 text-sm">
-								{formatDateTime(certificate.notBefore)}
-							</div>
+						<div class="detail-item">
+							<span class="detail-item__label">{t('certificates.validFrom', language.current)}</span>
+							<span class="detail-item__value">{formatDateTime(certificate.notBefore)}</span>
 						</div>
-
-						<div class="space-y-1">
-							<div class="flex items-center gap-2 text-sm font-medium opacity-70">
-								<Icon name="calendar" class="h-4 w-4" />
-								{t('certificates.validUntil', language.current)}
-							</div>
-							<div class="bg-base-200/30 rounded-lg p-3 text-sm">
-								{formatDateTime(certificate.notAfter)}
-							</div>
+						<div class="detail-item">
+							<span class="detail-item__label">{t('certificates.validUntil', language.current)}</span>
+							<span class="detail-item__value">{formatDateTime(certificate.notAfter)}</span>
 						</div>
 					</div>
-				</Card>
+				</section>
 
 				{#if certificate.isBundle && certificate.childCertificates.length > 0}
-					<Card
-						variant="glass"
-						title={`${t('certificates.bundleContents', language.current)} (${certificate.childCertificates.length})`}
-					>
-						<div class="space-y-3">
+					<section class="card">
+						<h2 class="card__title">{t('certificates.bundleContents', language.current)} ({certificate.childCertificates.length})</h2>
+						<div class="bundle-list">
 							{#each certificate.childCertificates as child}
-								<div
-									class="border-base-content/5 bg-base-100/30 hover:bg-base-100/50 flex items-center justify-between rounded-xl border p-4 backdrop-blur-sm transition-colors"
-								>
-									<div class="flex items-center gap-3">
-										<div class="bg-primary/10 text-primary rounded-full p-2">
-											<Icon name="document" class="h-4 w-4" />
-										</div>
-										<div>
-											<p class="font-medium">{child.subject}</p>
-											<p class="text-xs opacity-60">
-												{t('certificates.expires', language.current)}: {formatDate(child.notAfter)}
-											</p>
-										</div>
+								<div class="bundle-item">
+									<div class="bundle-item__icon">
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+											<polyline points="14 2 14 8 20 8" />
+										</svg>
+									</div>
+									<div class="bundle-item__info">
+										<span class="bundle-item__subject">{child.subject}</span>
+										<span class="bundle-item__expiry">{t('certificates.expires', language.current)}: {formatDate(child.notAfter)}</span>
 									</div>
 								</div>
 							{/each}
 						</div>
-					</Card>
+					</section>
 				{/if}
 			</div>
 
-			<div class="space-y-6">
-				<Card variant="glass" title={t('certificates.metadata', language.current)}>
-					<div class="space-y-4">
-						<div
-							class="border-base-content/5 flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
-						>
-							<div class="flex items-center gap-2 text-sm opacity-70">
-								<Icon name="document" class="h-4 w-4" />
-								{t('certificates.originalFilename', language.current)}
-							</div>
-							<div
-								class="max-w-[50%] truncate text-sm font-medium"
-								title={certificate.originalFileName}
-							>
-								{certificate.originalFileName}
-							</div>
+			<aside class="content-aside">
+				<section class="card">
+					<h2 class="card__title">{t('certificates.metadata', language.current)}</h2>
+					<div class="meta-list">
+						<div class="meta-item">
+							<span class="meta-item__label">{t('certificates.originalFilename', language.current)}</span>
+							<span class="meta-item__value" title={certificate.originalFileName}>{certificate.originalFileName}</span>
 						</div>
-
-						<div
-							class="border-base-content/5 flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
-						>
-							<div class="flex items-center gap-2 text-sm opacity-70">
-								<Icon name="document" class="h-4 w-4" />
-								{t('certificates.fileFormat', language.current)}
-							</div>
-							<div class="text-sm font-medium">{certificate.fileFormat}</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{t('certificates.fileFormat', language.current)}</span>
+							<span class="meta-item__value">{certificate.fileFormat}</span>
 						</div>
-
-						<div
-							class="border-base-content/5 flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
-						>
-							<div class="flex items-center gap-2 text-sm opacity-70">
-								<Icon name="hardDrive" class="h-4 w-4" />
-								{t('certificates.fileSize', language.current)}
-							</div>
-							<div class="text-sm font-medium">{(certificate.fileSize / 1024).toFixed(2)} KB</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{t('certificates.fileSize', language.current)}</span>
+							<span class="meta-item__value">{(certificate.fileSize / 1024).toFixed(2)} KB</span>
 						</div>
-
-						<div
-							class="border-base-content/5 flex items-center justify-between border-b pb-3 last:border-0 last:pb-0"
-						>
-							<div class="flex items-center gap-2 text-sm opacity-70">
-								<Icon name="time" class="h-4 w-4" />
-								{t('certificates.uploadedAt', language.current)}
-							</div>
-							<div class="text-sm font-medium">{formatDateTime(certificate.createdAt)}</div>
+						<div class="meta-item">
+							<span class="meta-item__label">{t('certificates.uploadedAt', language.current)}</span>
+							<span class="meta-item__value">{formatDateTime(certificate.createdAt)}</span>
 						</div>
 					</div>
-				</Card>
+				</section>
 
-				{#if certificate.parentCertificateId}
-					<Card variant="glass" title={t('certificates.baseCertificate', language.current)}>
-						{#if parentCertificate}
-							<div class="bg-base-100/30 rounded-xl p-4">
-								<div class="mb-3 flex items-start gap-3">
-									<div class="bg-secondary/10 text-secondary rounded-full p-2">
-										<Icon name="security" class="h-4 w-4" />
-									</div>
-									<div class="min-w-0 flex-1">
-										<div class="truncate font-medium">{parentCertificate.subject}</div>
-										<div class="text-xs opacity-70">
-											{t('certificates.expires', language.current)}: {formatDateTime(
-												parentCertificate.notAfter
-											)}
-										</div>
-									</div>
-								</div>
-								<Button
-									variant="outline"
-									size="sm"
-									class="w-full"
-									onclick={() => {
-										if (parentCertificate?.id) {
-											goto(`/certificates/${parentCertificate.id}`);
-										}
-									}}
-								>
-									{t('common.view', language.current)}
-								</Button>
+				{#if certificate.parentCertificateId && parentCertificate}
+					<section class="card">
+						<h2 class="card__title">{t('certificates.baseCertificate', language.current)}</h2>
+						<div class="parent-cert">
+							<div class="parent-cert__info">
+								<span class="parent-cert__subject">{parentCertificate.subject}</span>
+								<span class="parent-cert__expiry">{t('certificates.expires', language.current)}: {formatDateTime(parentCertificate.notAfter)}</span>
 							</div>
-						{:else}
-							<div class="flex items-center justify-center py-8 opacity-50">
-								<GlobalLoader variant="inline" size="sm" />
-							</div>
-						{/if}
-					</Card>
+							<Button variant="secondary" fullWidth onclick={() => { if (parentCertificate?.id) goto(`/certificates/${parentCertificate.id}`); }}>
+								{t('common.view', language.current)}
+							</Button>
+						</div>
+					</section>
 				{/if}
-			</div>
+			</aside>
 		</div>
 	{/if}
 </div>
 
-<Modal
-	isOpen={showDeleteModal}
-	title={t('certificates.deleteCertificate', language.current)}
-	onClose={() => (showDeleteModal = false)}
-	data-test-id="cert-delete-modal"
->
-	<div class="space-y-4">
-		<div class="bg-error/10 text-error flex items-center gap-4 rounded-lg p-4">
-			<Icon name="trash" class="h-6 w-6" />
-			<p class="font-medium">{t('certificates.confirmDeleteMessage', language.current)}</p>
+<Modal isOpen={showDeleteModal} title={t('certificates.deleteCertificate', language.current)} onclose={() => (showDeleteModal = false)} data-test-id="cert-delete-modal">
+	<div class="modal-content">
+		<div class="modal-warning modal-warning--error">
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<polyline points="3 6 5 6 21 6" />
+				<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+			</svg>
+			<p>{t('certificates.confirmDeleteMessage', language.current)}</p>
 		</div>
-		<p class="text-sm opacity-70">
+		<p class="modal-text">
 			This action cannot be undone. This will permanently delete the certificate
-			<span class="font-mono font-bold">{certificate?.subject}</span> and remove it from our servers.
+			<strong>{certificate?.subject}</strong> and remove it from our servers.
 		</p>
 	</div>
-
-	<div class="modal-action mt-6">
-		<Button type="button" variant="ghost" onclick={() => (showDeleteModal = false)}>
-			{t('common.cancel', language.current)}
-		</Button>
-		<Button
-			variant="danger"
-			loading={isDeleting}
-			onclick={handleDelete}
-			data-test-id="cert-delete-confirm-button"
-		>
-			{t('common.delete', language.current)}
+	<div class="modal-actions">
+		<Button variant="secondary" onclick={() => { showDeleteModal = false; }}>{t('common.cancel', language.current)}</Button>
+		<Button variant="danger" disabled={isDeleting} onclick={handleDelete} data-test-id="cert-delete-confirm-button">
+			{isDeleting ? '...' : t('common.delete', language.current)}
 		</Button>
 	</div>
 </Modal>
 
-<Modal
-	isOpen={showUpdateModal}
-	title={t('certificates.uploadUpdated', language.current)}
-	onClose={() => (showUpdateModal = false)}
-	data-test-id="update-certificate-modal"
->
-	<form onsubmit={handleUpdate} class="space-y-6">
-		<div class="form-control w-full">
-			<label class="label" for="update-file-upload">
-				<span class="label-text font-medium">{t('certificates.selectFile', language.current)}</span>
-			</label>
-			<input
-				id="update-file-upload"
-				type="file"
-				class="file-input file-input-bordered file-input-primary bg-base-100/50 w-full transition-all"
-				accept=".cer,.crt,.pem,.pfx,.p12"
-				onchange={handleUpdateFileChange}
-				required
-				data-test-id="update-file-input"
-			/>
-			<div class="label">
-				<span class="label-text-alt text-base-content/60"
-					>{t('certificates.supportedFormats', language.current)}: .cer, .crt, .pem, .pfx, .p12</span
-				>
+<Modal isOpen={showUpdateModal} title={t('certificates.uploadUpdated', language.current)} onclose={() => (showUpdateModal = false)} data-test-id="update-certificate-modal">
+	<form onsubmit={handleUpdate} class="modal-form">
+		<div class="form-group">
+			<label class="form-label" for="update-file-upload">{t('certificates.selectFile', language.current)}</label>
+			<div class="file-input-wrapper">
+				<input id="update-file-upload" type="file" class="file-input" accept=".cer,.crt,.pem,.pfx,.p12" onchange={handleUpdateFileChange} required data-test-id="update-file-input" />
+				<div class="file-input-display">
+					{#if updateFile}
+						<span>{updateFile.name}</span>
+					{:else}
+						<span class="file-input-placeholder">Choose file or drag & drop</span>
+					{/if}
+				</div>
 			</div>
+			<p class="form-hint">{t('certificates.supportedFormats', language.current)}: .cer, .crt, .pem, .pfx, .p12</p>
 		</div>
-
-		<div class="modal-action">
-			<Button
-				variant="ghost"
-				onclick={() => (showUpdateModal = false)}
-				type="button"
-				data-test-id="update-cancel-button"
-			>
-				{t('common.cancel', language.current)}
-			</Button>
-			<Button
-				variant="primary"
-				type="submit"
-				loading={isUpdating}
-				disabled={!updateFile}
-				data-test-id="update-submit-button"
-			>
-				{t('common.upload', language.current)}
+		<div class="modal-actions">
+			<Button variant="secondary" type="button" onclick={() => { showUpdateModal = false; }} data-test-id="update-cancel-button">{t('common.cancel', language.current)}</Button>
+			<Button variant="primary" type="submit" disabled={isUpdating || !updateFile} data-test-id="update-submit-button">
+				{isUpdating ? '...' : t('common.upload', language.current)}
 			</Button>
 		</div>
 	</form>
@@ -617,34 +418,527 @@
 
 <Modal
 	isOpen={showToggleSkipModal}
-	title={certificate?.isSkipped
-		? t('certificates.monitorConfirmTitle', language.current)
-		: t('certificates.ignoreConfirmTitle', language.current)}
-	onClose={() => (showToggleSkipModal = false)}
+	title={certificate?.isSkipped ? t('certificates.monitorConfirmTitle', language.current) : t('certificates.ignoreConfirmTitle', language.current)}
+	onclose={() => (showToggleSkipModal = false)}
 	data-test-id="cert-toggle-skip-modal"
 >
-	<div class="space-y-4">
-		<div class="bg-warning/10 text-warning flex items-center gap-4 rounded-lg p-4">
-			<Icon name={certificate?.isSkipped ? 'eye' : 'eye-off'} class="h-6 w-6" />
-			<p class="font-medium">
+	<div class="modal-content">
+		<div class="modal-warning modal-warning--warning">
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+				<circle cx="12" cy="12" r="3" />
+			</svg>
+			<p>
 				{certificate?.isSkipped
 					? t('certificates.monitorConfirmMessage', language.current)
 					: t('certificates.ignoreConfirmMessage', language.current)}
 			</p>
 		</div>
 	</div>
-
-	<div class="modal-action mt-6">
-		<Button type="button" variant="ghost" onclick={() => (showToggleSkipModal = false)}>
-			{t('common.cancel', language.current)}
-		</Button>
-		<Button
-			variant="primary"
-			loading={isTogglingSkip}
-			onclick={confirmToggleSkip}
-			data-test-id="cert-toggle-skip-confirm-button"
-		>
-			{t('common.confirm', language.current)}
+	<div class="modal-actions">
+		<Button variant="secondary" onclick={() => { showToggleSkipModal = false; }}>{t('common.cancel', language.current)}</Button>
+		<Button variant="primary" disabled={isTogglingSkip} onclick={confirmToggleSkip} data-test-id="cert-toggle-skip-confirm-button">
+			{isTogglingSkip ? '...' : t('common.confirm', language.current)}
 		</Button>
 	</div>
 </Modal>
+
+<style>
+	.page {
+		padding: var(--space-6);
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
+	.not-found {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: var(--space-12);
+	}
+
+	.not-found__icon {
+		color: var(--color-error);
+		opacity: 0.5;
+		margin-bottom: var(--space-4);
+	}
+
+	.not-found__title {
+		font-size: var(--text-xl);
+		font-weight: 600;
+		color: var(--color-error);
+		margin: 0 0 var(--space-4);
+	}
+
+	.header {
+		margin-bottom: var(--space-6);
+	}
+
+	.breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-3);
+	}
+
+	.breadcrumb__link {
+		color: var(--color-text-muted);
+		text-decoration: none;
+		transition: color 0.15s ease;
+	}
+
+	.breadcrumb__link:hover {
+		color: var(--color-primary);
+	}
+
+	.breadcrumb__current {
+		max-width: 200px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.header__main {
+		margin-bottom: var(--space-4);
+	}
+
+	.header__title {
+		font-family: var(--font-display);
+		font-size: var(--text-3xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+		margin: 0;
+	}
+
+	.header__thumbprint {
+		font-family: var(--font-mono, monospace);
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+		margin: var(--space-1) 0 0;
+	}
+
+	.header__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+	}
+
+	.alert {
+		display: flex;
+		align-items: flex-start;
+		gap: var(--space-3);
+		padding: var(--space-4);
+		border-radius: var(--radius-lg);
+		margin-bottom: var(--space-4);
+	}
+
+	.alert--info {
+		background: var(--color-primary-alpha);
+		border: 1px solid var(--color-primary);
+		color: var(--color-primary);
+	}
+
+	.alert--warning {
+		background: var(--color-warning-bg);
+		border: 1px solid var(--color-warning);
+		color: var(--color-warning);
+	}
+
+	.alert svg {
+		flex-shrink: 0;
+		margin-top: 2px;
+	}
+
+	.alert__content {
+		flex: 1;
+	}
+
+	.alert__title {
+		font-size: var(--text-sm);
+		font-weight: 600;
+		margin: 0 0 var(--space-1);
+	}
+
+	.alert__text {
+		font-size: var(--text-sm);
+		margin: 0;
+		opacity: 0.9;
+	}
+
+	.alert__link {
+		color: inherit;
+		font-weight: 600;
+	}
+
+	.status-card {
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+		padding: var(--space-4);
+		border-radius: var(--radius-lg);
+		border-left: 4px solid;
+		margin-bottom: var(--space-6);
+	}
+
+	.status-card--valid {
+		background: var(--color-success-bg);
+		border-left-color: var(--color-success);
+	}
+
+	.status-card--expiring {
+		background: var(--color-warning-bg);
+		border-left-color: var(--color-warning);
+	}
+
+	.status-card--expired {
+		background: var(--color-error-bg);
+		border-left-color: var(--color-error);
+	}
+
+	.status-card__icon {
+		padding: var(--space-2);
+		border-radius: var(--radius-full);
+	}
+
+	.status-card--valid .status-card__icon {
+		background: var(--color-success);
+		color: white;
+	}
+
+	.status-card--expiring .status-card__icon {
+		background: var(--color-warning);
+		color: white;
+	}
+
+	.status-card--expired .status-card__icon {
+		background: var(--color-error);
+		color: white;
+	}
+
+	.status-card__info {
+		flex: 1;
+	}
+
+	.status-card__label {
+		display: block;
+		font-size: var(--text-lg);
+		font-weight: 600;
+		color: var(--color-text);
+	}
+
+	.status-card__days {
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+	}
+
+	.status-card__date {
+		text-align: right;
+	}
+
+	.status-card__date-label {
+		display: block;
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	.status-card__date-value {
+		font-family: var(--font-mono, monospace);
+		font-size: var(--text-lg);
+		font-weight: 600;
+		color: var(--color-text);
+	}
+
+	.content-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-6);
+	}
+
+	@media (min-width: 1024px) {
+		.content-grid {
+			grid-template-columns: 2fr 1fr;
+		}
+	}
+
+	.content-main,
+	.content-aside {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-6);
+	}
+
+	.card {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		padding: var(--space-5);
+	}
+
+	.card__title {
+		font-size: var(--text-lg);
+		font-weight: 600;
+		color: var(--color-text);
+		margin: 0 0 var(--space-4);
+		padding-bottom: var(--space-3);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.details-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-4);
+	}
+
+	@media (min-width: 640px) {
+		.details-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	.detail-item {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+
+	.detail-item--full {
+		grid-column: 1 / -1;
+	}
+
+	.detail-item__label {
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+		font-weight: 500;
+	}
+
+	.detail-item__value {
+		padding: var(--space-3);
+		background: var(--color-surface-elevated);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		color: var(--color-text);
+		word-break: break-all;
+	}
+
+	.detail-item__value--mono {
+		font-family: var(--font-mono, monospace);
+	}
+
+	.bundle-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.bundle-item {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-3);
+		background: var(--color-surface-elevated);
+		border-radius: var(--radius-md);
+	}
+
+	.bundle-item__icon {
+		color: var(--color-primary);
+	}
+
+	.bundle-item__info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.bundle-item__subject {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text);
+	}
+
+	.bundle-item__expiry {
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	.meta-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.meta-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding-bottom: var(--space-3);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.meta-item:last-child {
+		padding-bottom: 0;
+		border-bottom: none;
+	}
+
+	.meta-item__label {
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+	}
+
+	.meta-item__value {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text);
+		max-width: 50%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.parent-cert {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.parent-cert__info {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+
+	.parent-cert__subject {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text);
+	}
+
+	.parent-cert__expiry {
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+	}
+
+	.modal-content {
+		margin-bottom: var(--space-4);
+	}
+
+	.modal-warning {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-4);
+		border-radius: var(--radius-md);
+		margin-bottom: var(--space-4);
+	}
+
+	.modal-warning--error {
+		background: var(--color-error-bg);
+		color: var(--color-error);
+	}
+
+	.modal-warning--warning {
+		background: var(--color-warning-bg);
+		color: var(--color-warning);
+	}
+
+	.modal-warning p {
+		margin: 0;
+		font-weight: 500;
+	}
+
+	.modal-text {
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+		margin: 0;
+	}
+
+	.modal-text strong {
+		font-family: var(--font-mono, monospace);
+		color: var(--color-text);
+	}
+
+	.modal-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-3);
+		padding-top: var(--space-4);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.modal-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.form-label {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text);
+	}
+
+	.form-hint {
+		font-size: var(--text-xs);
+		color: var(--color-text-muted);
+		margin: 0;
+	}
+
+	.file-input-wrapper {
+		position: relative;
+	}
+
+	.file-input {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.file-input-display {
+		padding: var(--space-4);
+		border: 2px dashed var(--color-border);
+		border-radius: var(--radius-md);
+		text-align: center;
+		background: var(--color-surface);
+		transition: border-color 0.15s ease;
+	}
+
+	.file-input-wrapper:hover .file-input-display {
+		border-color: var(--color-primary);
+	}
+
+	.file-input-placeholder {
+		color: var(--color-text-muted);
+	}
+
+	@media (max-width: 768px) {
+		.page {
+			padding: var(--space-4);
+		}
+
+		.header__actions {
+			flex-direction: column;
+		}
+
+		.status-card {
+			flex-direction: column;
+			text-align: center;
+		}
+
+		.status-card__date {
+			text-align: center;
+		}
+	}
+</style>

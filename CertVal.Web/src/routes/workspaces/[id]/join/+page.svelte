@@ -7,7 +7,6 @@
 	import { language } from '$lib/stores/language.svelte';
 	import { auth } from '$lib/stores/auth';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Icon from '$lib/components/ui/Icon.svelte';
 
 	let message = $state(t('workspaces.join.processing', language.current));
 	let error = $state('');
@@ -76,71 +75,130 @@
 	<title>{t('workspaces.join.title', language.current)}</title>
 </svelte:head>
 
-<div
-	class="bg-base-200/30 flex min-h-[calc(100vh-10rem)] items-center justify-center p-4"
-	data-test-id="join-workspace-page"
->
-	<div class="w-full max-w-md space-y-8">
-		<div
-			class="border-base-content/10 bg-base-100/50 rounded-2xl border p-8 shadow-xl backdrop-blur-sm"
-		>
-			<div class="mb-8 text-center">
-				<h1 class="text-2xl font-bold">{t('workspaces.join.title', language.current)}</h1>
+<div class="page">
+	<div class="card">
+		<h1 class="card__title">{t('workspaces.join.title', language.current)}</h1>
+
+		{#if isLoading}
+			<div class="state state--loading">
+				<div class="spinner"></div>
+				<p class="state__message">{message}</p>
 			</div>
-
-			{#if isLoading}
-				<div class="flex flex-col items-center justify-center space-y-4 py-8">
-					<span class="loading loading-spinner loading-lg text-primary"></span>
-					<p class="text-base-content/60 animate-pulse">{message}</p>
+		{:else if error}
+			<div class="state state--error">
+				<div class="state__icon state__icon--error">
+					<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="12" r="10" />
+						<line x1="12" y1="8" x2="12" y2="12" />
+						<line x1="12" y1="16" x2="12.01" y2="16" />
+					</svg>
 				</div>
-			{:else if error}
-				<div class="flex flex-col items-center justify-center space-y-4 text-center">
-					<div class="bg-error/10 text-error mb-2 rounded-full p-4">
-						<Icon name="error" class="h-8 w-8" />
-					</div>
-					<p class="text-error font-medium">{error}</p>
-					<Button
-						class="mt-4 w-full"
-						variant="outline"
-						onclick={() => goto('/auth/login')}
-						data-test-id="join-back-to-login-button"
-					>
-						<Icon name="leftArrow" class="mr-2 h-4 w-4" />
-						{t('auth.login.title', language.current)}
-					</Button>
+				<p class="state__message state__message--error">{error}</p>
+				<Button variant="secondary" onclick={() => goto('/auth/login')}>
+					← {t('auth.login.title', language.current)}
+				</Button>
+			</div>
+		{:else}
+			<div class="state state--success">
+				<div class="state__icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+						<rect x="3" y="3" width="7" height="7" />
+						<rect x="14" y="3" width="7" height="7" />
+						<rect x="14" y="14" width="7" height="7" />
+						<rect x="3" y="14" width="7" height="7" />
+					</svg>
 				</div>
-			{:else}
-				<div class="flex flex-col items-center justify-center space-y-6 text-center">
-					<div
-						class="from-primary/10 to-secondary/10 text-primary mb-2 rounded-3xl bg-gradient-to-br p-6"
-					>
-						<Icon name="workspaces" class="h-12 w-12" />
-					</div>
-
-					<p class="text-lg font-medium">
-						{message}
-					</p>
-
-					<div class="w-full pt-4">
-						<Button
-							class="shadow-primary/20 w-full shadow-lg"
-							variant="primary"
-							size="lg"
-							onclick={handleAccept}
-							loading={isLoading}
-							data-test-id="join-workspace-button"
-						>
-							{#if $auth.isAuthenticated}
-								<Icon name="check" class="mr-2 h-5 w-5" />
-								{t('workspaces.join.acceptButton', language.current)}
-							{:else}
-								<Icon name="user" class="mr-2 h-5 w-5" />
-								{t('workspaces.join.loginToAccept', language.current)}
-							{/if}
-						</Button>
-					</div>
-				</div>
-			{/if}
-		</div>
+				<p class="state__message">{message}</p>
+				<Button size="lg" onclick={handleAccept} loading={isLoading} class="full-width">
+					{#if $auth.isAuthenticated}
+						{t('workspaces.join.acceptButton', language.current)}
+					{:else}
+						{t('workspaces.join.loginToAccept', language.current)}
+					{/if}
+				</Button>
+			</div>
+		{/if}
 	</div>
 </div>
+
+<style>
+	.page {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: calc(100vh - 10rem);
+		padding: var(--space-6);
+	}
+
+	.card {
+		width: 100%;
+		max-width: 440px;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		padding: var(--space-8);
+	}
+
+	.card__title {
+		font-family: var(--font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+		text-align: left;
+		margin: 0 0 var(--space-6);
+	}
+
+	.state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: var(--space-4);
+	}
+
+	.state--loading {
+		padding: var(--space-8) 0;
+	}
+
+	.spinner {
+		width: 40px;
+		height: 40px;
+		border: 3px solid var(--color-border);
+		border-top-color: var(--color-primary);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	.state__icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 80px;
+		height: 80px;
+		background: var(--color-surface-elevated);
+		border-radius: var(--radius-xl);
+		color: var(--color-text-muted);
+	}
+
+	.state__icon--error {
+		background: var(--color-error-bg);
+		color: var(--color-error);
+	}
+
+	.state__message {
+		font-size: var(--text-lg);
+		color: var(--color-text-muted);
+		margin: 0;
+	}
+
+	.state__message--error {
+		color: var(--color-error);
+		font-weight: 500;
+	}
+</style>

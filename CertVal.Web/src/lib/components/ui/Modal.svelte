@@ -1,153 +1,197 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import Button from '$lib/components/ui/Button.svelte';
+	import type { Snippet } from 'svelte';
+	import Button from './Button.svelte';
+	import Icon from './Icon.svelte';
 
-	let {
-		isOpen = false,
-		title = '',
-		onClose,
-		children,
-		class: className = '',
-		allowClickOutsideToClose = false,
-		'data-test-id': testId
-	}: {
+	interface Props {
 		isOpen?: boolean;
 		title?: string;
+		size?: 'sm' | 'md' | 'lg';
 		onClose?: () => void;
-		children?: any;
+		onclose?: () => void;
+		children?: Snippet;
+		footer?: Snippet;
 		class?: string;
 		allowClickOutsideToClose?: boolean;
 		'data-test-id'?: string;
-	} = $props();
+	}
+
+	let {
+		isOpen = $bindable(false),
+		title = '',
+		size = 'md',
+		onClose,
+		onclose,
+		children,
+		footer,
+		class: className = '',
+		allowClickOutsideToClose = false,
+		'data-test-id': testId
+	}: Props = $props();
+
+	// Support both onClose and onclose props
+	const handleClose = $derived(onClose ?? onclose);
 
 	let dialog: HTMLDialogElement | undefined = $state();
 	let isVisible = $state(false);
+
 	$effect(() => {
 		if (isOpen) {
 			isVisible = true;
 			tick().then(() => {
 				dialog?.showModal();
 			});
-		} else {
-			if (dialog) {
-				dialog.classList.add('modal-closing');
-
-				const closeDialog = () => {
-					dialog?.classList.remove('modal-closing');
-					dialog?.close();
-					isVisible = false;
-				};
-
-				dialog.addEventListener('animationend', closeDialog, { once: true });
-
-				setTimeout(closeDialog, 250);
-			}
+		} else if (dialog) {
+			dialog.classList.add('modal--closing');
+			const timer = setTimeout(() => {
+				dialog?.classList.remove('modal--closing');
+				dialog?.close();
+				isVisible = false;
+			}, 200);
+			return () => clearTimeout(timer);
 		}
 	});
+
+	function handleBackdropClick(e: MouseEvent) {
+		if (allowClickOutsideToClose && e.target === dialog) {
+			handleClose?.();
+		}
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			handleClose?.();
+		}
+	}
 </script>
 
 {#if isVisible}
 	<dialog
 		bind:this={dialog}
-		class="modal {className}"
+		class="modal modal--{size} {className}"
+		onclick={handleBackdropClick}
+		onkeydown={handleKeydown}
+		oncancel={(e) => { e.preventDefault(); handleClose?.(); }}
 		data-test-id={testId}
-		oncancel={(e) => {
-			e.preventDefault();
-			if (allowClickOutsideToClose) {
-				onClose?.();
-			}
-		}}
-		onclick={(e) => {
-			if (allowClickOutsideToClose && e.currentTarget === e.target) {
-				onClose?.();
-			}
-		}}
 	>
-		<div class="modal-box">
+		<div class="modal__container">
 			{#if title}
-				<h3 class="text-lg font-bold mb-6">{title}</h3>
+				<header class="modal__header">
+					<h3 class="modal__title">{title}</h3>
+					<Button variant="ghost" icon onclick={() => handleClose?.()} data-test-id="modal-close-btn">
+						<Icon name="close" />
+					</Button>
+				</header>
 			{/if}
-			<div>
+
+			<div class="modal__body">
 				{@render children?.()}
 			</div>
+
+			{#if footer}
+				<footer class="modal__footer">
+					{@render footer?.()}
+				</footer>
+			{/if}
 		</div>
 	</dialog>
 {/if}
 
 <style>
-	dialog.modal {
+	.modal {
 		position: fixed;
 		inset: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 1rem;
+		padding: var(--space-4);
 		margin: 0;
-		z-index: 60;
-	}
-
-	dialog.modal::backdrop {
-		background-color: rgba(0, 0, 0, 0.4);
-		backdrop-filter: blur(8px);
-	}
-
-	.modal-box {
-		max-width: min(720px, 95vw);
+		max-width: 100%;
+		max-height: 100%;
 		width: 100%;
-		margin: 0 auto;
-		border-radius: 1rem;
-		box-shadow:
-			0 20px 25px -5px rgb(0 0 0 / 0.1),
-			0 8px 10px -6px rgb(0 0 0 / 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		height: 100%;
+		border: none;
+		background: transparent;
+		z-index: var(--z-modal);
 	}
 
-	.modal {
-		animation: fade-in 0.2s ease-out forwards;
+	.modal::backdrop {
+		background-color: rgba(0, 0, 0, 0.5);
+		animation: fadeIn var(--transition-fast) ease;
 	}
-	.modal-box {
-		animation: slide-up 0.2s ease-out forwards;
+
+	.modal__container {
+		background-color: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-pop);
+		width: 100%;
+		max-height: 90vh;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		animation: slideUp var(--transition-base) ease;
 	}
-	.modal-closing {
-		animation: fade-out 0.2s ease-in forwards;
+
+	.modal--sm .modal__container { max-width: 400px; }
+	.modal--md .modal__container { max-width: 560px; }
+	.modal--lg .modal__container { max-width: 720px; }
+
+	.modal--closing .modal__container {
+		animation: slideDown var(--transition-fast) ease forwards;
 	}
-	.modal-closing .modal-box {
-		animation: slide-down 0.2s ease-in forwards;
+
+	.modal--closing::backdrop {
+		animation: fadeOut var(--transition-fast) ease forwards;
 	}
-	@keyframes fade-in {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
+
+	.modal__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-5) var(--space-6);
+		border-bottom: 1px solid var(--color-border);
 	}
-	@keyframes fade-out {
-		from {
-			opacity: 1;
-		}
-		to {
-			opacity: 0;
-		}
+
+	.modal__title {
+		font-size: var(--text-lg);
+		font-weight: var(--font-semibold);
+		margin: 0;
 	}
-	@keyframes slide-up {
-		from {
-			transform: translateY(20px);
-			opacity: 0;
-		}
-		to {
-			transform: translateY(0);
-			opacity: 1;
-		}
+
+	.modal__body {
+		padding: var(--space-6);
+		overflow-y: auto;
+		flex: 1;
 	}
-	@keyframes slide-down {
-		from {
-			transform: translateY(0);
-			opacity: 1;
-		}
-		to {
-			transform: translateY(20px);
-			opacity: 0;
-		}
+
+	.modal__footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-3);
+		padding: var(--space-4) var(--space-6);
+		border-top: 1px solid var(--color-border);
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	@keyframes fadeOut {
+		from { opacity: 1; }
+		to { opacity: 0; }
+	}
+
+	@keyframes slideUp {
+		from { opacity: 0; transform: translateY(16px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes slideDown {
+		from { opacity: 1; transform: translateY(0); }
+		to { opacity: 0; transform: translateY(16px); }
 	}
 </style>
