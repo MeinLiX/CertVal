@@ -33,6 +33,7 @@ public static class ServiceRegistration
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddSingleton<IWebhookSecurityService, WebhookSecurityService>();
         services.AddScoped<IRateLimitService, RedisRateLimitService>();
+        services.AddScoped<ICertificateExpiryProcessor, CertificateExpiryProcessor>();
 
         return services;
     }
@@ -77,8 +78,6 @@ public static class ServiceRegistration
         services.AddScoped<EmailNotificationEventHandlers>();
         services.AddScoped<IDomainEventHandler<UserRegisteredEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
         services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
-        services.AddScoped<IDomainEventHandler<CertificateExpiringEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
-        services.AddScoped<IDomainEventHandler<CertificateExpiredEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
 
         // Webhook notification event handlers
         services.AddScoped<WebhookNotificationEventHandlers>();

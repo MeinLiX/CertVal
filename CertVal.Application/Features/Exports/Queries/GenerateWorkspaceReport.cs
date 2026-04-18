@@ -24,7 +24,7 @@ public class GenerateWorkspaceReportQueryHandler : IRequestHandler<GenerateWorks
         if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
             return Result.Failure<WorkspaceReportDto>("User not authenticated");
 
-        if (!await _unitOfWork.Workspaces.CanUserAccessAsync(request.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
+        if (!await _unitOfWork.Workspaces.CanUserViewAsync(request.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
             return Result.Failure<WorkspaceReportDto>("Access denied");
 
         var workspace = await _unitOfWork.Workspaces.GetByIdAsync(request.WorkspaceId, cancellationToken);

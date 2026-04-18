@@ -12,6 +12,9 @@ public class Workspace : BaseEntity
     public int MaxCertificates { get; private set; } = 1000;
     public bool IsPublic { get; private set; } = false;
     public bool AllowMemberInvites { get; private set; } = true;
+    public bool AutoDeleteExpiredCertificates { get; private set; } = false;
+
+    public const int ExpiredCertificateRetentionDays = 30;
 
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
@@ -60,7 +63,7 @@ public class Workspace : BaseEntity
         }
     }
 
-    public void UpdateSettings(int maxCertificates, bool isPublic, bool allowMemberInvites)
+    public void UpdateSettings(int maxCertificates, bool isPublic, bool allowMemberInvites, bool autoDeleteExpiredCertificates = false)
     {
         if (maxCertificates <= 0)
             throw new ArgumentException("Max certificates must be positive", nameof(maxCertificates));
@@ -68,6 +71,7 @@ public class Workspace : BaseEntity
         MaxCertificates = maxCertificates;
         IsPublic = isPublic;
         AllowMemberInvites = allowMemberInvites;
+        AutoDeleteExpiredCertificates = autoDeleteExpiredCertificates;
         UpdatedAt = DateTime.UtcNow;
     }
 

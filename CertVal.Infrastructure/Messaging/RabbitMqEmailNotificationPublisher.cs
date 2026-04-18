@@ -196,6 +196,58 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
         await PublishAsync(message, cancellationToken);
     }
 
+    public async Task PublishCertificateExpiryDigestAsync(CertificateExpiryDigestMessage digest, CancellationToken cancellationToken = default)
+    {
+        var recipients = digest.Recipients.Distinct().ToList();
+        if (recipients.Count == 0 || digest.Items.Count == 0) return;
+
+        var items = digest.Items.Select(i => new Dictionary<string, object>
+        {
+            ["Subject"] = i.Subject,
+            ["Issuer"] = i.Issuer,
+            ["SerialNumber"] = i.SerialNumber ?? string.Empty,
+            ["ExpiryDate"] = i.ExpiryDate,
+            ["DaysUntilExpiry"] = i.DaysUntilExpiry,
+            ["StatusLabel"] = i.IsExpired ? "Expired" : $"Expires in {i.DaysUntilExpiry} day(s)",
+            ["StatusClass"] = i.IsExpired ? "status-expired" : "status-soon"
+        }).Cast<object>().ToList();
+
+        var summaryParts = new List<string>();
+        if (digest.ExpiredCount > 0) summaryParts.Add($"{digest.ExpiredCount} expired");
+        if (digest.ExpiringCount > 0) summaryParts.Add($"{digest.ExpiringCount} expiring soon");
+        var summaryLine = string.Join(" · ", summaryParts);
+
+        var remainingLine = digest.RemainingCount > 0
+            ? $"…and {digest.RemainingCount} more certificate(s) not shown here."
+            : string.Empty;
+
+        var message = new EmailNotificationMessage
+        {
+            MessageId = Guid.NewGuid().ToString(),
+            Type = EmailNotificationType.CertificateExpiryDigest,
+            ToEmail = recipients[0],
+            ToName = string.Empty,
+            Recipients = recipients,
+            CorrelationId = digest.CorrelationId,
+            Data = new Dictionary<string, object>
+            {
+                ["WorkspaceName"] = digest.WorkspaceName,
+                ["Items"] = items,
+                ["TotalCount"] = digest.TotalCount,
+                ["ShownCount"] = digest.Items.Count,
+                ["RemainingCount"] = digest.RemainingCount,
+                ["ExpiredCount"] = digest.ExpiredCount,
+                ["ExpiringCount"] = digest.ExpiringCount,
+                ["SummaryLine"] = summaryLine,
+                ["RemainingLine"] = remainingLine
+            },
+            CreatedAt = DateTime.UtcNow,
+            RetryCount = 0
+        };
+
+        await PublishAsync(message, cancellationToken);
+    }
+
     private async Task<IChannel> GetChannelAsync()
     {
         if (_channel != null) return _channel;

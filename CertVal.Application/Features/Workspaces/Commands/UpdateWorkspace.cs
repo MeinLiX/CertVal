@@ -16,6 +16,7 @@ public record UpdateWorkspaceCommand : IRequest<Result<WorkspaceDto>>
     public int MaxCertificates { get; init; } = 1000;
     public bool IsPublic { get; init; } = false;
     public bool AllowMemberInvites { get; init; } = true;
+    public bool AutoDeleteExpiredCertificates { get; init; } = false;
 }
 
 public class UpdateWorkspaceCommandValidator : AbstractValidator<UpdateWorkspaceCommand>
@@ -63,7 +64,11 @@ public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceComm
             return Result.Failure<WorkspaceDto>("Access denied - insufficient permissions to manage this workspace");
 
         workspace.Update(request.Name, request.Description);
-        workspace.UpdateSettings(request.MaxCertificates, request.IsPublic, request.AllowMemberInvites);
+        workspace.UpdateSettings(
+            request.MaxCertificates,
+            request.IsPublic,
+            request.AllowMemberInvites,
+            request.AutoDeleteExpiredCertificates);
 
         await _unitOfWork.Workspaces.UpdateAsync(workspace, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
