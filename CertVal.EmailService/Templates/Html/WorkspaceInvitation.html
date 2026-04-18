@@ -16,7 +16,13 @@
             line-height: 1.55;
             -webkit-font-smoothing: antialiased;
         }
-        .wrapper { width: 100%; background-color: #f5f5f7; padding: 32px 16px; }
+
+        .wrapper {
+            width: 100%;
+            background-color: #f5f5f7;
+            padding: 32px 16px;
+        }
+
         .card {
             max-width: 560px;
             margin: 0 auto;
@@ -25,7 +31,12 @@
             border-radius: 12px;
             overflow: hidden;
         }
-        .brand { padding: 28px 40px; border-bottom: 1px solid #f1f5f9; }
+
+        .brand {
+            padding: 28px 40px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
         .brand__mark {
             display: inline-block;
             font-size: 11px;
@@ -34,6 +45,7 @@
             color: #4f46ff;
             font-weight: 600;
         }
+
         .brand__title {
             margin: 6px 0 0;
             font-family: Georgia, 'Times New Roman', serif;
@@ -42,10 +54,29 @@
             color: #0f172a;
             letter-spacing: -0.01em;
         }
-        .content { padding: 32px 40px; }
-        .content p { margin: 0 0 16px; color: #334155; font-size: 15px; }
-        .content h2 { font-size: 18px; font-weight: 600; color: #0f172a; margin: 0 0 16px; }
-        .btn-row { text-align: center; margin: 28px 0; }
+
+        .content {
+            padding: 32px 40px;
+        }
+
+            .content p {
+                margin: 0 0 16px;
+                color: #334155;
+                font-size: 15px;
+            }
+
+            .content h2 {
+                font-size: 18px;
+                font-weight: 600;
+                color: #0f172a;
+                margin: 0 0 16px;
+            }
+
+        .btn-row {
+            text-align: center;
+            margin: 28px 0;
+        }
+
         .btn {
             display: inline-block;
             padding: 12px 24px;
@@ -56,6 +87,7 @@
             font-weight: 600;
             font-size: 15px;
         }
+
         .details {
             background: #f8fafc;
             border: 1px solid #e5e7eb;
@@ -65,17 +97,30 @@
             font-size: 14px;
             color: #334155;
         }
-        .details dl { margin: 0; }
-        .details dt {
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #64748b;
-            font-weight: 600;
-            margin-top: 10px;
-        }
-        .details dt:first-child { margin-top: 0; }
-        .details dd { margin: 2px 0 0; color: #0f172a; word-break: break-word; }
+
+            .details dl {
+                margin: 0;
+            }
+
+            .details dt {
+                font-size: 11px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: #64748b;
+                font-weight: 600;
+                margin-top: 10px;
+            }
+
+                .details dt:first-child {
+                    margin-top: 0;
+                }
+
+            .details dd {
+                margin: 2px 0 0;
+                color: #0f172a;
+                word-break: break-word;
+            }
+
         .link-fallback {
             word-break: break-all;
             background: #f8fafc;
@@ -87,6 +132,7 @@
             color: #475569;
             margin: 0 0 16px;
         }
+
         .footer {
             padding: 20px 40px 28px;
             border-top: 1px solid #f1f5f9;
@@ -94,8 +140,14 @@
             color: #64748b;
             text-align: center;
         }
-        .footer p { margin: 4px 0; }
-        a { color: #4f46ff; }
+
+            .footer p {
+                margin: 4px 0;
+            }
+
+        a {
+            color: #4f46ff;
+        }
     </style>
 </head>
 <body>
@@ -111,9 +163,12 @@
 
                 <div class="details">
                     <dl>
-                        <dt>Workspace</dt><dd>{{WorkspaceName}}</dd>
-                        <dt>Role</dt><dd>{{Role}}</dd>
-                        <dt>Invited by</dt><dd>{{InviterName}}</dd>
+                        <dt>Workspace</dt>
+                        <dd>{{WorkspaceName}}</dd>
+                        <dt>Role</dt>
+                        <dd>{{Role}}</dd>
+                        <dt>Invited by</dt>
+                        <dd>{{InviterName}}</dd>
                     </dl>
                 </div>
 
@@ -132,57 +187,6 @@
                 <p>&copy; {{CompanyName}}. All rights reserved.</p>
             </div>
         </div>
-    </div>
-</body>
-</html>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workspace Invitation - {{CompanyName}}</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .header h1 { color: white; margin: 0; font-size: 28px; }
-        .content { background: #ffffff; padding: 40px; border: 1px solid #e0e0e0; }
-        .button { display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
-        .button:hover { background: #5a6fd8; }
-        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }
-        .info-box { background: #e3f2fd; border: 1px solid #81d4fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Workspace Invitation</h1>
-    </div>
-    <div class="content">
-        <h2>Hello {{InviteeName}}!</h2>
-        <p>{{InviterName}} has invited you to join the "{{WorkspaceName}}" workspace on {{CompanyName}} as a {{Role}}.</p>
-        
-        <div class="info-box">
-            <strong>Workspace:</strong> {{WorkspaceName}}<br>
-            <strong>Role:</strong> {{Role}}<br>
-            <strong>Invited by:</strong> {{InviterName}}
-        </div>
-        
-        <p>Click the button below to accept this invitation:</p>
-        
-        <div style="text-align: center;">
-            <a href="{{InvitationUrl}}" class="button">Accept Invitation</a>
-        </div>
-        
-        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-        <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 5px;">{{InvitationUrl}}</p>
-        
-        <p>This invitation will expire in 7 days. If you don't have a {{CompanyName}} account yet, you'll be prompted to create one.</p>
-        
-        <p>If you have any questions, contact our support team at <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>.</p>
-        
-        <p>Best regards,<br>The {{CompanyName}} Team</p>
-    </div>
-    <div class="footer">
-        <p>&copy; 2025 {{CompanyName}}. All rights reserved.</p>
     </div>
 </body>
 </html>
