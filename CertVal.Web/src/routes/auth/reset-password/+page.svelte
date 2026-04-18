@@ -14,6 +14,7 @@
 	let isLoading = $state(false);
 	let successMessage = $state('');
 	let token = $state('');
+
 	onMount(() => {
 		token = page.url.searchParams.get('token') || '';
 		if (!token) {
@@ -51,59 +52,104 @@
 	<title>{t('auth.reset.title', language.current)} - CertVal</title>
 </svelte:head>
 
-<div
-	class="card bg-base-100/20 w-full max-w-md shrink-0 overflow-hidden border border-white/20 shadow-2xl backdrop-blur-xl"
-	data-test-id="reset-password-card"
->
-	<form class="card-body gap-6 p-8" onsubmit={handleSubmit}>
-		<div class="mb-2 text-center">
-			<h2
-				class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent"
-			>
-				{t('auth.reset.title', language.current)}
-			</h2>
+<div class="auth-card" data-test-id="reset-password-card">
+	<div class="auth-card__inner">
+		<div class="auth-card__header">
+			<h1 class="auth-card__title">{t('auth.reset.title', language.current)}</h1>
 		</div>
 
-		{#if successMessage}
-			<div role="alert" class="alert alert-success text-sm">
-				<span>{successMessage}</span>
-			</div>
-		{/if}
+		<form onsubmit={handleSubmit} class="auth-form">
+			{#if successMessage}
+				<div class="auth-success">
+					<span>{successMessage}</span>
+				</div>
+			{/if}
 
-		{#if errors.general}
-			<div role="alert" class="alert alert-error text-sm">
-				<span>{errors.general}</span>
-			</div>
-		{/if}
+			{#if errors.general}
+				<div class="auth-error">
+					<span>{errors.general}</span>
+				</div>
+			{/if}
 
-		<FloatingInput
-			id="password"
-			label={t('auth.reset.newPassword', language.current)}
-			type="password"
-			bind:value={password}
-			required
-			data-test-id="reset-password-input"
-		/>
-		<FloatingInput
-			id="confirmPassword"
-			label={t('auth.reset.confirmPassword', language.current)}
-			type="password"
-			bind:value={confirmPassword}
-			required
-			error={errors.confirmPassword}
-			data-test-id="reset-confirm-password-input"
-		/>
+			<FloatingInput
+				id="password"
+				label={t('auth.reset.newPassword', language.current)}
+				type="password"
+				bind:value={password}
+				required
+				data-test-id="reset-password-input"
+			/>
+			<FloatingInput
+				id="confirmPassword"
+				label={t('auth.reset.confirmPassword', language.current)}
+				type="password"
+				bind:value={confirmPassword}
+				required
+				error={errors.confirmPassword}
+				data-test-id="reset-confirm-password-input"
+			/>
 
-		<div class="form-control mt-2">
 			<Button
 				type="submit"
 				variant="primary"
 				loading={isLoading}
-				class="w-full"
 				data-test-id="reset-password-submit-button"
 			>
 				{t('auth.reset.submit', language.current)}
 			</Button>
-		</div>
-	</form>
+		</form>
+	</div>
 </div>
+
+<style>
+	.auth-card {
+		width: 100%;
+		max-width: 420px;
+	}
+
+	.auth-card__inner {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-8);
+	}
+
+	.auth-card__header {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.auth-card__title {
+		font-family: var(--font-display);
+		font-size: var(--text-3xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+		margin: 0;
+	}
+
+	.auth-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.auth-success {
+		padding: var(--space-3) var(--space-4);
+		background-color: var(--color-success-light);
+		border: 1px solid var(--color-success);
+		border-radius: var(--radius-md);
+		color: var(--color-success);
+		font-size: var(--text-sm);
+	}
+
+	.auth-error {
+		padding: var(--space-3) var(--space-4);
+		background-color: var(--color-error-light);
+		border: 1px solid var(--color-error);
+		border-radius: var(--radius-md);
+		color: var(--color-error);
+		font-size: var(--text-sm);
+	}
+</style>

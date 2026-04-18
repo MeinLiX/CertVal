@@ -6,7 +6,6 @@
 	import { UserService } from '$lib/services/UserService';
 	import { t } from '$lib/i18n';
 	import { formatDateTime } from '$lib/utils/date';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
 	import Icon from '$lib/components/ui/Icon.svelte';
@@ -43,109 +42,278 @@
 	<title>{t('profile.title', language.current)} - CertVal</title>
 </svelte:head>
 
-<div
-	class="animate-in fade-in slide-in-from-bottom-4 mx-auto max-w-5xl space-y-8 duration-500"
-	data-test-id="profile-page"
->
-	<div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-		<div>
-			<h1
-				class="from-primary to-secondary bg-gradient-to-r bg-clip-text text-4xl font-bold text-transparent"
-			>
-				{t('profile.title', language.current)}
-			</h1>
-			<p class="text-base-content/60 mt-2 text-lg font-light">
-				{t('profile.subtitle', language.current)}
-			</p>
+<div class="page" data-test-id="profile-page">
+	<header class="page__header">
+		<div class="page__header-content">
+			<h1 class="page__title">{t('profile.title', language.current)}</h1>
+			<p class="page__subtitle">{t('profile.subtitle', language.current)}</p>
 		</div>
 		<Button
 			onclick={() => goto('/profile/settings/personal')}
 			variant="outline"
-			class="shadow-sm"
 			data-test-id="edit-profile-button"
 		>
-			<Icon name="settings" class="mr-2 h-4 w-4" />
+			<Icon name="settings" />
 			{t('profile.editProfile', language.current)}
 		</Button>
-	</div>
+	</header>
 
-	<div class="relative min-h-[400px]">
+	<div class="profile-content">
 		{#if isLoading}
 			<GlobalLoader variant="overlay" />
 		{/if}
+		
 		{#if user}
-			<Card
-				variant="glass"
-				class="border-primary/10 relative overflow-hidden"
-				data-test-id="profile-card"
-			>
-				<div
-					class="bg-primary/5 pointer-events-none absolute right-0 top-0 -mr-32 -mt-32 h-64 w-64 rounded-full blur-3xl"
-				></div>
-
-				<div class="relative z-10 p-8">
-					<div class="mb-8 flex flex-col items-center gap-8 md:flex-row">
-						<div
-							class="ring-primary/10 bg-base-100/50 shrink-0 rounded-full p-6 shadow-xl ring-[12px] backdrop-blur-sm"
-						>
-							<UserAvatar
-								firstName={user.firstName}
-								lastName={user.lastName}
-								size="w-32"
-								textSize="text-5xl"
-							/>
-						</div>
-						<div class="flex-1 space-y-2 text-center md:text-left">
-							<h2 class="text-4xl font-bold tracking-tight">{user.fullName}</h2>
-							<div
-								class="text-base-content/60 flex items-center justify-center gap-2 text-lg font-light md:justify-start"
-							>
-								<Icon name="mail" class="h-5 w-5 opacity-70" />
-								{user.email}
-							</div>
-						</div>
+			<div class="profile-card" data-test-id="profile-card">
+				<div class="profile-card__header">
+					<div class="profile-card__avatar-wrapper">
+						<UserAvatar
+							firstName={user.firstName}
+							lastName={user.lastName}
+							size="2xl"
+						/>
 					</div>
-
-					<div class="divider opacity-50"></div>
-
-					<div class="mt-8 grid grid-cols-1 gap-6 text-sm sm:grid-cols-3">
-						<div
-							class="bg-base-100/50 border-base-content/5 rounded-2xl border p-5 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
-						>
-							<div class="mb-2 flex items-center gap-2 font-medium opacity-70">
-								<Icon name="checkCircle" class="text-success h-4 w-4" />
-								{t('profile.status', language.current)}
-							</div>
-							<div class="badge badge-success badge-lg gap-2 shadow-sm">
-								<span class="h-2 w-2 animate-pulse rounded-full bg-white"></span>
-								{user.status}
-							</div>
-						</div>
-
-						<div
-							class="bg-base-100/50 border-base-content/5 rounded-2xl border p-5 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
-						>
-							<div class="mb-2 flex items-center gap-2 font-medium opacity-70">
-								<Icon name="time" class="text-primary h-4 w-4" />
-								{t('profile.lastLogin', language.current)}
-							</div>
-							<div class="font-mono text-base font-semibold">
-								{formatDateTime(user.lastLoginAt)}
-							</div>
-						</div>
-
-						<div
-							class="bg-base-100/50 border-base-content/5 rounded-2xl border p-5 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
-						>
-							<div class="mb-2 flex items-center gap-2 font-medium opacity-70">
-								<Icon name="calendar" class="text-secondary h-4 w-4" />
-								{t('profile.joinedOn', language.current)}
-							</div>
-							<div class="font-mono text-base font-semibold">{formatDateTime(user.createdAt)}</div>
+					<div class="profile-card__info">
+						<h2 class="profile-card__name">{user.fullName}</h2>
+						<div class="profile-card__email">
+							<Icon name="mail" />
+							<span>{user.email}</span>
 						</div>
 					</div>
 				</div>
-			</Card>
+
+				<div class="profile-card__divider"></div>
+
+				<div class="profile-card__stats">
+					<div class="stat-card">
+						<div class="stat-card__header">
+							<Icon name="checkCircle" />
+							<span class="stat-card__label">{t('profile.status', language.current)}</span>
+						</div>
+						<span class="badge badge--success">
+							<span class="badge__indicator"></span>
+							{user.status}
+						</span>
+					</div>
+
+					<div class="stat-card">
+						<div class="stat-card__header">
+							<Icon name="time" />
+							<span class="stat-card__label">{t('profile.lastLogin', language.current)}</span>
+						</div>
+						<span class="stat-card__value">{formatDateTime(user.lastLoginAt)}</span>
+					</div>
+
+					<div class="stat-card">
+						<div class="stat-card__header">
+							<Icon name="calendar" />
+							<span class="stat-card__label">{t('profile.joinedOn', language.current)}</span>
+						</div>
+						<span class="stat-card__value">{formatDateTime(user.createdAt)}</span>
+					</div>
+				</div>
+			</div>
 		{/if}
 	</div>
 </div>
+
+<style>
+	.page {
+		max-width: 1000px;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-8);
+	}
+
+	.page__header {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	@media (min-width: 768px) {
+		.page__header {
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: flex-start;
+		}
+	}
+
+	.page__header-content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.page__title {
+		font-family: var(--font-display);
+		font-size: var(--text-4xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+		margin: 0;
+	}
+
+	.page__subtitle {
+		font-size: var(--text-md);
+		color: var(--color-text-secondary);
+		font-weight: var(--font-normal);
+	}
+
+	.profile-content {
+		position: relative;
+		min-height: 400px;
+	}
+
+	.profile-card {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		overflow: hidden;
+	}
+
+	.profile-card__header {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-6);
+		padding: var(--space-8);
+	}
+
+	@media (min-width: 768px) {
+		.profile-card__header {
+			flex-direction: row;
+		}
+	}
+
+	.profile-card__avatar-wrapper {
+		flex-shrink: 0;
+		padding: var(--space-4);
+		background: var(--color-bg-secondary);
+		border-radius: 50%;
+		box-shadow: var(--shadow-lg);
+	}
+
+	.profile-card__info {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		text-align: center;
+	}
+
+	@media (min-width: 768px) {
+		.profile-card__info {
+			text-align: left;
+		}
+	}
+
+	.profile-card__name {
+		font-family: var(--font-display);
+		font-size: var(--text-3xl);
+		font-weight: var(--font-semibold);
+		letter-spacing: var(--tracking-tight);
+		line-height: var(--leading-tight);
+		color: var(--color-text);
+	}
+
+	.profile-card__email {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		color: var(--color-text-secondary);
+		font-size: var(--text-lg);
+	}
+
+	@media (min-width: 768px) {
+		.profile-card__email {
+			justify-content: flex-start;
+		}
+	}
+
+	.profile-card__divider {
+		height: 1px;
+		background: var(--color-border);
+		margin: 0 var(--space-8);
+	}
+
+	.profile-card__stats {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-4);
+		padding: var(--space-8);
+	}
+
+	@media (min-width: 640px) {
+		.profile-card__stats {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	.stat-card {
+		background: var(--color-bg-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		padding: var(--space-5);
+		transition: border-color var(--transition-fast);
+	}
+
+	.stat-card:hover {
+		border-color: var(--color-border-strong);
+	}
+
+	.stat-card__header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin-bottom: var(--space-3);
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
+		font-weight: 500;
+	}
+
+	.stat-card__label {
+		opacity: 0.8;
+	}
+
+	.stat-card__value {
+		font-family: var(--font-mono);
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-text-primary);
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-1) var(--space-3);
+		border-radius: var(--radius-full);
+		font-size: var(--text-sm);
+		font-weight: 500;
+	}
+
+	.badge--success {
+		background: var(--color-success-bg);
+		color: var(--color-success);
+	}
+
+	.badge__indicator {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: currentColor;
+		animation: pulse 2s infinite;
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
+	}
+</style>
