@@ -44,7 +44,7 @@ public class GetWorkspaceMembersQueryHandler : IRequestHandler<GetWorkspaceMembe
         if (workspace == null)
             return Result.Failure<IEnumerable<WorkspaceMemberDto>>("Workspace not found");
 
-        if (!await _unitOfWork.Workspaces.CanUserAccessAsync(request.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
+        if (!await _unitOfWork.Workspaces.CanUserViewAsync(request.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
             return Result.Failure<IEnumerable<WorkspaceMemberDto>>("Access denied to this workspace");
 
         var members = await _unitOfWork.WorkspaceMembers.GetByWorkspaceAsync(request.WorkspaceId, cancellationToken);

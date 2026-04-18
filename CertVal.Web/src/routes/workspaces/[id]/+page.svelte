@@ -18,7 +18,8 @@
 		PagedResult,
 		WorkspaceMember,
 		InviteMemberRequest,
-		TransferOwnershipRequest
+		TransferOwnershipRequest,
+		UpdateWorkspaceRequest
 	} from '$lib/types';
 
 	let workspace = $state<Workspace | null>(null);
@@ -31,10 +32,19 @@
 	let showDeleteModal = $state(false);
 	let showTransferModal = $state(false);
 	let showRemoveMemberModal = $state(false);
+	let showEditModal = $state(false);
 	let memberToRemove = $state<WorkspaceMember | null>(null);
 
 	let inviteForm = $state<InviteMemberRequest>({ email: '', role: 'Viewer' });
 	let transferForm = $state<TransferOwnershipRequest>({ newOwnerEmail: '' });
+	let editForm = $state<UpdateWorkspaceRequest>({
+		name: '',
+		description: '',
+		maxCertificates: 1000,
+		isPublic: false,
+		allowMemberInvites: true,
+		autoDeleteExpiredCertificates: false
+	});
 	let confirmDeleteName = $state('');
 	let isProcessing = $state(false);
 
@@ -159,6 +169,40 @@
 			confirmDeleteName = '';
 		}
 	}
+
+	function openEditModal() {
+		if (!workspace) return;
+		editForm = {
+			name: workspace.name,
+			description: workspace.description ?? '',
+			maxCertificates: workspace.maxCertificates,
+			isPublic: workspace.isPublic,
+			allowMemberInvites: workspace.allowMemberInvites,
+			autoDeleteExpiredCertificates: workspace.autoDeleteExpiredCertificates
+		};
+		errors = {};
+		showEditModal = true;
+	}
+
+	async function handleEdit(event: Event) {
+		event.preventDefault();
+		if (!workspace) return;
+		errors = {};
+		isProcessing = true;
+		try {
+			const response = await api.put<Workspace>(`/workspaces/${workspaceId}`, editForm);
+			if (response.data) {
+				workspace = response.data;
+				showEditModal = false;
+			} else {
+				errors.edit = response.message || t('errors.general', language.current);
+			}
+		} catch (err) {
+			errors.edit = t('errors.network', language.current);
+		} finally {
+			isProcessing = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -222,6 +266,11 @@
 					<Button variant="secondary" onclick={() => goto(`/notifications?workspace=${workspaceId}`)}>
 						{t('workspaces.manageNotifications', language.current)}
 					</Button>
+					{#if canManage}
+						<Button variant="primary" onclick={openEditModal}>
+							{t('workspaces.edit', language.current)}
+						</Button>
+					{/if}
 				</div>
 			</div>
 		</header>
@@ -563,6 +612,54 @@
 			</Button>
 		</div>
 	</div>
+</Modal>
+
+<Modal
+	bind:isOpen={showEditModal}
+	title={t('workspaces.edit', language.current)}
+	onclose={() => (showEditModal = false)}
+>
+	<form class="modal-form" onsubmit={handleEdit}>
+		{#if errors.edit}
+			<div class="alert alert--error">{errors.edit}</div>
+		{/if}
+		<Input
+			label={t('workspaces.name', language.current)}
+			bind:value={editForm.name}
+			required
+			placeholder={t('workspaces.namePlaceholder', language.current)}
+		/>
+		<Input
+			label={t('workspaces.description', language.current)}
+			bind:value={editForm.description}
+			placeholder={t('workspaces.descriptionPlaceholder', language.current)}
+		/>
+		<Input
+			label={t('workspaces.maxCertificates', language.current)}
+			type="number"
+			bind:value={editForm.maxCertificates}
+		/>
+		<label class="checkbox-field">
+			<input type="checkbox" bind:checked={editForm.isPublic} />
+			<span>{t('workspaces.isPublic', language.current)}</span>
+		</label>
+		<label class="checkbox-field">
+			<input type="checkbox" bind:checked={editForm.allowMemberInvites} />
+			<span>{t('workspaces.allowMemberInvites', language.current)}</span>
+		</label>
+		<label class="checkbox-field">
+			<input type="checkbox" bind:checked={editForm.autoDeleteExpiredCertificates} />
+			<span>{t('workspaces.autoDeleteExpired', language.current)}</span>
+		</label>
+		<div class="modal-form__actions">
+			<Button type="button" variant="secondary" onclick={() => { showEditModal = false; }}>
+				{t('common.cancel', language.current)}
+			</Button>
+			<Button type="submit" loading={isProcessing}>
+				{t('common.save', language.current)}
+			</Button>
+		</div>
+	</form>
 </Modal>
 
 <style>

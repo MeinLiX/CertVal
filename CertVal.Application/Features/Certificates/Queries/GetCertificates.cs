@@ -188,6 +188,6 @@ public class GetCertificatesQueryHandler : IRequestHandler<GetCertificatesQuery,
     private async Task<bool> CanAccessWorkspace(Guid workspaceId, CancellationToken cancellationToken)
     {
         if (!_currentUser.UserId.HasValue) return false;
-        return await _unitOfWork.Workspaces.CanUserAccessAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
+        return await _unitOfWork.Workspaces.CanUserViewAsync(workspaceId, _currentUser.UserId.Value, cancellationToken);
     }
 }

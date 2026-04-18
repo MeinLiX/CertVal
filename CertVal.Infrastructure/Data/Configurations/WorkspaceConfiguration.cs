@@ -31,6 +31,9 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.Property(w => w.AllowMemberInvites)
             .HasDefaultValue(true);
 
+        builder.Property(w => w.AutoDeleteExpiredCertificates)
+            .HasDefaultValue(false);
+
         // Indexes
         builder.HasIndex(w => w.OwnerId)
             .HasDatabaseName("IX_Workspaces_OwnerId");

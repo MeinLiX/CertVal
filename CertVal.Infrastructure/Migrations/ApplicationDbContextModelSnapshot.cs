@@ -196,6 +196,11 @@ namespace CertVal.Infrastructure.Migrations
                     b.HasIndex("WorkspaceId", "Status")
                         .HasDatabaseName("IX_Certificates_Workspace_Status");
 
+                    b.HasIndex("WorkspaceId", "Issuer", "SerialNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Certificates_Workspace_Issuer_Serial")
+                        .HasFilter("\"SerialNumber\" IS NOT NULL AND \"IsBundle\" = false");
+
                     b.HasIndex("WorkspaceId", "NotAfter", "Status")
                         .HasDatabaseName("IX_Certificates_Workspace_Expiry_Status");
 
@@ -539,6 +544,11 @@ namespace CertVal.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("AutoDeleteExpiredCertificates")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

@@ -31,7 +31,7 @@ public class GetExpiringCertificatesQueryHandler : IRequestHandler<GetExpiringCe
         var accessibleCertificates = new List<Certificate>();
         foreach (var cert in certificates)
         {
-            if (await _unitOfWork.Workspaces.CanUserAccessAsync(cert.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
+            if (await _unitOfWork.Workspaces.CanUserViewAsync(cert.WorkspaceId, _currentUser.UserId.Value, cancellationToken))
             {
                 accessibleCertificates.Add(cert);
             }

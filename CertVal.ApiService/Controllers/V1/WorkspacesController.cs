@@ -95,7 +95,8 @@ public class WorkspacesController : ControllerBase
             Description = request.Description,
             MaxCertificates = request.MaxCertificates,
             IsPublic = request.IsPublic,
-            AllowMemberInvites = request.AllowMemberInvites
+            AllowMemberInvites = request.AllowMemberInvites,
+            AutoDeleteExpiredCertificates = request.AutoDeleteExpiredCertificates
         };
 
         var result = await _mediator.Send(command, cancellationToken);

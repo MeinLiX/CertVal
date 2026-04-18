@@ -73,6 +73,15 @@ public class UploadUpdatedCertificateCommandHandler(
 
         var parsedInfo = parsedCertificates.First();
 
+        if (parsedInfo.Thumbprint == previousCertificate.Thumbprint)
+            return Result.Failure<CertificateDto>("Uploaded certificate is identical to the previous version.");
+
+        if (await unitOfWork.Certificates.ExistsByIssuerAndSerialAsync(
+                request.WorkspaceId, parsedInfo.Issuer, parsedInfo.SerialNumber, cancellationToken))
+        {
+            return Result.Failure<CertificateDto>("A certificate with the same issuer and serial number already exists in this workspace.");
+        }
+
         var newCertificate = Certificate.Create(
             request.WorkspaceId,
             parsedInfo.Subject,
