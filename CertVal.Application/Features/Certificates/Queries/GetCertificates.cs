@@ -181,6 +181,11 @@ public class GetCertificatesQueryHandler : IRequestHandler<GetCertificatesQuery,
             DaysUntilExpiry = (certificate.NotAfter - DateTime.UtcNow).Days,
             Status = certificate.Status.ToString(),
             FileFormat = certificate.FileFormat.ToString(),
+            OcspStatus = certificate.OcspStatus.ToString(),
+            OcspLastCheckedAt = certificate.OcspLastCheckedAt,
+            OcspResponderUrl = certificate.OcspResponderUrl,
+            OcspRevocationReason = certificate.OcspRevocationReason,
+            OcspRevokedAt = certificate.OcspRevokedAt,
             ChildCertificates = certificate.ChildCertificates.Select(MapToCertificateDto).ToList()
         };
     }

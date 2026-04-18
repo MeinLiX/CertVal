@@ -50,7 +50,12 @@ public class GetCertificateByIdQueryHandler : IRequestHandler<GetCertificateById
             DaysUntilExpiry = (certificate.NotAfter - DateTime.UtcNow).Days,
             Status = certificate.Status.ToString(),
             FileFormat = certificate.FileFormat.ToString(),
-            ChildCertificates = certificate.ChildCertificates.Select(c => c.Adapt<CertificateDto>()).ToList(),
+            OcspStatus = certificate.OcspStatus.ToString(),
+            OcspLastCheckedAt = certificate.OcspLastCheckedAt,
+            OcspResponderUrl = certificate.OcspResponderUrl,
+            OcspRevocationReason = certificate.OcspRevocationReason,
+            OcspRevokedAt = certificate.OcspRevokedAt,
+            ChildCertificates = certificate.ChildCertificates.Select(c => c.Adapt<CertificateDto>() with { OcspStatus = c.OcspStatus.ToString(), OcspLastCheckedAt = c.OcspLastCheckedAt, OcspResponderUrl = c.OcspResponderUrl, OcspRevocationReason = c.OcspRevocationReason, OcspRevokedAt = c.OcspRevokedAt, Status = c.Status.ToString(), FileFormat = c.FileFormat.ToString() }).ToList(),
             NextCertificateId = nextVersion?.Id
         };
 

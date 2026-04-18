@@ -36,6 +36,14 @@ public class Certificate : BaseEntity
     // Monitoring
     public bool IsSkipped { get; private set; }
 
+    // OCSP revocation tracking
+    public OcspStatus OcspStatus { get; private set; } = OcspStatus.NotChecked;
+    public DateTime? OcspLastCheckedAt { get; private set; }
+    public string? OcspResponderUrl { get; private set; }
+    public string? OcspRevocationReason { get; private set; }
+    public DateTime? OcspRevokedAt { get; private set; }
+    public string? OcspLastError { get; private set; }
+
     // Versioning
     public Guid? PreviousCertificateId { get; private set; }
     public virtual Certificate? PreviousCertificate { get; private set; }
@@ -141,5 +149,44 @@ public class Certificate : BaseEntity
     {
         PreviousCertificateId = previousCertificateId;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Updates the OCSP revocation state. Raises a <see cref="CertificateRevokedEvent"/>
+    /// the first time the certificate transitions into <see cref="OcspStatus.Revoked"/>.
+    /// </summary>
+    public void UpdateOcspStatus(
+        OcspStatus newStatus,
+        string? responderUrl = null,
+        string? revocationReason = null,
+        DateTime? revokedAt = null,
+        string? lastError = null)
+    {
+        var transitioningToRevoked = newStatus == OcspStatus.Revoked && OcspStatus != OcspStatus.Revoked;
+
+        OcspStatus = newStatus;
+        OcspLastCheckedAt = DateTime.UtcNow;
+        if (!string.IsNullOrWhiteSpace(responderUrl))
+            OcspResponderUrl = responderUrl;
+
+        OcspRevocationReason = newStatus == OcspStatus.Revoked ? revocationReason : null;
+        OcspRevokedAt = newStatus == OcspStatus.Revoked ? (revokedAt ?? OcspRevokedAt ?? DateTime.UtcNow) : null;
+        OcspLastError = newStatus == OcspStatus.CheckFailed ? lastError : null;
+
+        if (newStatus == OcspStatus.Revoked && Status != CertificateStatus.Revoked)
+            Status = CertificateStatus.Revoked;
+
+        UpdatedAt = DateTime.UtcNow;
+
+        if (transitioningToRevoked)
+        {
+            AddDomainEvent(new CertificateRevokedEvent(
+                Id,
+                WorkspaceId,
+                Subject,
+                Issuer,
+                OcspRevokedAt ?? DateTime.UtcNow,
+                revocationReason));
+        }
     }
 }

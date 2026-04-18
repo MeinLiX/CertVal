@@ -133,6 +133,29 @@ namespace CertVal.Infrastructure.Migrations
                     b.Property<DateTime>("NotBefore")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("OcspLastCheckedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OcspLastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("OcspResponderUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("OcspRevocationReason")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("OcspRevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OcspStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("OriginalFileName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -183,6 +206,9 @@ namespace CertVal.Infrastructure.Migrations
 
                     b.HasIndex("WorkspaceId")
                         .HasDatabaseName("IX_Certificates_WorkspaceId");
+
+                    b.HasIndex("OcspLastCheckedAt", "OcspStatus")
+                        .HasDatabaseName("IX_Certificates_OcspLastCheckedAt");
 
                     b.HasIndex("Subject", "Issuer")
                         .HasDatabaseName("IX_Certificates_Subject_Issuer");

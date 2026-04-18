@@ -7,7 +7,8 @@ namespace CertVal.Infrastructure.Events;
 
 public class EmailNotificationEventHandlers :
     IDomainEventHandler<UserRegisteredEvent>,
-    IDomainEventHandler<WorkspaceMemberInvitedEvent>
+    IDomainEventHandler<WorkspaceMemberInvitedEvent>,
+    IDomainEventHandler<CertificateRevokedEvent>
 {
     private readonly IEmailNotificationPublisher _emailPublisher;
     private readonly IUnitOfWork _unitOfWork;
@@ -98,6 +99,54 @@ public class EmailNotificationEventHandlers :
         {
             _logger.LogError(ex, "Failed to handle WorkspaceMemberInvitedEvent for workspace {WorkspaceId}, user {UserId}",
                 domainEvent.WorkspaceId, domainEvent.UserId);
+        }
+    }
+
+    public async Task HandleAsync(CertificateRevokedEvent domainEvent, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var certificate = await _unitOfWork.Certificates.GetByIdAsync(domainEvent.CertificateId, cancellationToken);
+            if (certificate?.Workspace == null)
+            {
+                _logger.LogWarning("Certificate or workspace missing for CertificateRevokedEvent {CertificateId}", domainEvent.CertificateId);
+                return;
+            }
+
+            var recipients = new List<string>();
+            if (certificate.Workspace.Owner is { } owner && !string.IsNullOrWhiteSpace(owner.Email))
+                recipients.Add(owner.Email);
+
+            var members = await _unitOfWork.WorkspaceMembers.GetByWorkspaceAsync(domainEvent.WorkspaceId, cancellationToken);
+            foreach (var member in members)
+            {
+                if (member.Status != Core.Enums.WorkspaceMemberStatus.Active) continue;
+                if (member.User?.Email is { } email && !string.IsNullOrWhiteSpace(email))
+                    recipients.Add(email);
+            }
+
+            if (recipients.Count == 0)
+            {
+                _logger.LogDebug("No recipients found for revocation notification on certificate {CertificateId}", domainEvent.CertificateId);
+                return;
+            }
+
+            await _emailPublisher.PublishCertificateRevokedAsync(
+                recipients,
+                certificate.Workspace.Name,
+                certificate.Subject,
+                certificate.Issuer,
+                certificate.SerialNumber,
+                domainEvent.RevokedAt,
+                domainEvent.Reason,
+                cancellationToken);
+
+            _logger.LogInformation("Published certificate revocation email for certificate {CertificateId} to {RecipientCount} recipient(s)",
+                domainEvent.CertificateId, recipients.Distinct().Count());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to handle CertificateRevokedEvent for certificate {CertificateId}", domainEvent.CertificateId);
         }
     }
 }

@@ -248,6 +248,42 @@ public class RabbitMqEmailNotificationPublisher : IEmailNotificationPublisher, I
         await PublishAsync(message, cancellationToken);
     }
 
+    public async Task PublishCertificateRevokedAsync(
+        IEnumerable<string> recipients,
+        string workspaceName,
+        string certificateSubject,
+        string certificateIssuer,
+        string? serialNumber,
+        DateTime revokedAt,
+        string? revocationReason,
+        CancellationToken cancellationToken = default)
+    {
+        var recipientList = recipients.Where(e => !string.IsNullOrWhiteSpace(e)).Distinct().ToList();
+        if (recipientList.Count == 0) return;
+
+        var message = new EmailNotificationMessage
+        {
+            MessageId = Guid.NewGuid().ToString(),
+            Type = EmailNotificationType.CertificateRevoked,
+            ToEmail = recipientList[0],
+            ToName = string.Empty,
+            Recipients = recipientList,
+            Data = new Dictionary<string, object>
+            {
+                ["WorkspaceName"] = workspaceName,
+                ["CertificateSubject"] = certificateSubject,
+                ["CertificateIssuer"] = certificateIssuer,
+                ["SerialNumber"] = serialNumber ?? string.Empty,
+                ["RevokedAt"] = revokedAt,
+                ["RevocationReason"] = revocationReason ?? "Unspecified"
+            },
+            CreatedAt = DateTime.UtcNow,
+            RetryCount = 0
+        };
+
+        await PublishAsync(message, cancellationToken);
+    }
+
     private async Task<IChannel> GetChannelAsync()
     {
         if (_channel != null) return _channel;

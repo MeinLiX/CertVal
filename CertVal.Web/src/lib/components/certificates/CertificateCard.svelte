@@ -3,6 +3,7 @@
 	import { language } from '$lib/stores/language.svelte';
 	import { formatDate, getCertificateStatus } from '$lib/utils/date';
 	import type { Certificate } from '$lib/types';
+	import OcspBadge from './OcspBadge.svelte';
 
 	let {
 		certificate,
@@ -82,8 +83,17 @@
 
 		<div class="cert-card__footer">
 			<div class="cert-card__expiry">
-				<span class="cert-card__expiry-label">{t('certificates.expires', language.current)}</span>
-				<span class="cert-card__expiry-date">{formatDate(certificate.notAfter)}</span>
+				<OcspBadge
+					status={certificate.ocspStatus}
+					lastCheckedAt={certificate.ocspLastCheckedAt}
+					revokedAt={certificate.ocspRevokedAt}
+					revocationReason={certificate.ocspRevocationReason}
+					size="xs"
+				/>
+				<span class="cert-card__expiry-date">
+					<span class="cert-card__expiry-label">{t('certificates.expires', language.current)}:</span>
+					{formatDate(certificate.notAfter)}
+				</span>
 			</div>
 			<div class="cert-card__days">
 				<span class="cert-card__days-count">{certificate.daysUntilExpiry}</span>
@@ -232,6 +242,10 @@
 		overflow: hidden;
 	}
 
+	.cert-card__ocsp {
+		margin-top: var(--space-2);
+	}
+
 	.cert-card__issuer {
 		margin: var(--space-1) 0 0;
 		font-size: var(--text-xs);
@@ -253,7 +267,9 @@
 	.cert-card__expiry {
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
+		align-items: flex-start;
+		gap: var(--space-1);
+		min-width: 0;
 	}
 
 	.cert-card__expiry-label {
@@ -261,6 +277,7 @@
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		color: var(--color-text-muted);
+		margin-right: var(--space-1);
 	}
 
 	.cert-card__expiry-date {

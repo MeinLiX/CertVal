@@ -1,0 +1,22 @@
+Certificate Revoked - {{CompanyName}}
+
+CRITICAL: CERTIFICATE REVOKED
+
+An OCSP responder has reported that the following certificate was revoked by the issuing authority.
+
+Certificate Details:
+- Subject: {{CertificateSubject}}
+- Issuer: {{CertificateIssuer}}
+- Serial number: {{SerialNumber}}
+- Workspace: {{WorkspaceName}}
+- Revoked at: {{RevokedAt}}
+- Reason: {{RevocationReason}}
+
+Replace this certificate immediately to restore trust and avoid service disruption.
+
+View in Dashboard: {{DashboardUrl}}
+
+For assistance, contact our support team at {{SupportEmail}}.
+
+Best regards,
+The {{CompanyName}} Team
