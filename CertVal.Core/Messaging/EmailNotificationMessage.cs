@@ -25,5 +25,6 @@ public enum EmailNotificationType
     WorkspaceInvitation = 4,
     CertificateExpiring = 5,
     CertificateExpired = 6,
-    CertificateExpiryDigest = 7
+    CertificateExpiryDigest = 7,
+    CertificateRevoked = 8
 }

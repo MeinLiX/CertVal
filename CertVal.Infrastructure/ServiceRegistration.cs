@@ -4,6 +4,7 @@ using CertVal.Core.Events;
 using CertVal.Core.Messaging;
 using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Authentication;
+using CertVal.Infrastructure.Configuration;
 using CertVal.Infrastructure.Data;
 using CertVal.Infrastructure.Events;
 using CertVal.Infrastructure.Messaging;
@@ -12,6 +13,7 @@ using CertVal.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CertVal.Infrastructure;
 
@@ -35,7 +37,30 @@ public static class ServiceRegistration
         services.AddScoped<IRateLimitService, RedisRateLimitService>();
         services.AddScoped<ICertificateExpiryProcessor, CertificateExpiryProcessor>();
 
+        AddRevocationChecking(services);
+
         return services;
+    }
+
+    private static void AddRevocationChecking(IServiceCollection services)
+    {
+        services.AddOptions<OcspCheckingConfiguration>()
+            .BindConfiguration(OcspCheckingConfiguration.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddHttpClient<IOcspCheckService, OcspCheckService>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<OcspCheckingConfiguration>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.HttpTimeoutSeconds);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("CertVal-OCSP/1.0");
+        });
+
+        services.AddScoped<ICertificateRevocationProcessor, CertificateRevocationProcessor>();
+
+        services.AddSingleton<CertificateRevocationCheckService>();
+        services.AddSingleton<ICertificateRevocationChecker>(sp => sp.GetRequiredService<CertificateRevocationCheckService>());
+        services.AddHostedService(sp => sp.GetRequiredService<CertificateRevocationCheckService>());
     }
 
     private static void AddDomainEventHandlers(IServiceCollection services)
@@ -78,6 +103,7 @@ public static class ServiceRegistration
         services.AddScoped<EmailNotificationEventHandlers>();
         services.AddScoped<IDomainEventHandler<UserRegisteredEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
         services.AddScoped<IDomainEventHandler<WorkspaceMemberInvitedEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
+        services.AddScoped<IDomainEventHandler<CertificateRevokedEvent>>(sp => sp.GetRequiredService<EmailNotificationEventHandlers>());
 
         // Webhook notification event handlers
         services.AddScoped<WebhookNotificationEventHandlers>();

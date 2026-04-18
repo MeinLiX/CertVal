@@ -23,6 +23,7 @@ public record CertificateUploadedEvent(Guid CertificateId, Guid WorkspaceId, str
 public record CertificateExpiringEvent(Guid CertificateId, Guid WorkspaceId, string Subject, DateTime ExpiryDate, int DaysUntilExpiry) : DomainEvent;
 public record CertificateExpiredEvent(Guid CertificateId, Guid WorkspaceId, string Subject, DateTime ExpiryDate) : DomainEvent;
 public record CertificateBundleProcessedEvent(Guid ParentCertificateId, Guid WorkspaceId, int CertificateCount) : DomainEvent;
+public record CertificateRevokedEvent(Guid CertificateId, Guid WorkspaceId, string Subject, string Issuer, DateTime RevokedAt, string? Reason) : DomainEvent;
 
 // Notification events
 public record NotificationRuleCreatedEvent(Guid RuleId, Guid WorkspaceId, string Name, int DaysBeforeExpiry) : DomainEvent;

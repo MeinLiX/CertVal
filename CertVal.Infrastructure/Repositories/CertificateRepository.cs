@@ -1,4 +1,5 @@
 ﻿using CertVal.Core.Entities;
+using CertVal.Core.Enums;
 using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -107,6 +108,25 @@ public class CertificateRepository : BaseRepository<Certificate>, ICertificateRe
             .Where(c => workspaceIds.Contains(c.WorkspaceId) && c.NotAfter <= cutoffDate && c.NotAfter > DateTime.UtcNow && !c.IsSkipped)
             .OrderBy(c => c.NotAfter)
             .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Certificate>> GetForOcspCheckAsync(int batchSize, TimeSpan minCheckInterval, CancellationToken cancellationToken = default)
+    {
+        if (batchSize <= 0) return Array.Empty<Certificate>();
+
+        var now = DateTime.UtcNow;
+        var dueCutoff = now - minCheckInterval;
+
+        return await DbSet
+            .Where(c => !c.IsBundle
+                        && !c.IsSkipped
+                        && c.Status != CertificateStatus.Revoked
+                        && c.NotAfter > now
+                        && (c.OcspLastCheckedAt == null || c.OcspLastCheckedAt < dueCutoff))
+            .OrderBy(c => c.OcspLastCheckedAt)
+            .ThenBy(c => c.NotAfter)
+            .Take(batchSize)
             .ToListAsync(cancellationToken);
     }
 }
