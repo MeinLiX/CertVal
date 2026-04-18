@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace CertVal.Infrastructure.Services;
+
 public class CertificateExpiryCheckerService : BackgroundService, ICertificateExpiryChecker
 {
     private readonly IServiceProvider _serviceProvider;

@@ -98,6 +98,7 @@ public class TemplateService : ITemplateService
         EmailNotificationType.CertificateExpiring => "CertificateExpiring",
         EmailNotificationType.CertificateExpired => "CertificateExpired",
         EmailNotificationType.CertificateExpiryDigest => "CertificateExpiryDigest",
+        EmailNotificationType.CertificateRevoked => "CertificateRevoked",
         _ => throw new ArgumentException($"Unknown email notification type: {type}")
     };
 
@@ -110,6 +111,7 @@ public class TemplateService : ITemplateService
         EmailNotificationType.CertificateExpiring => $"Certificate expiring soon - {_config.CompanyName}",
         EmailNotificationType.CertificateExpired => $"Certificate expired - {_config.CompanyName}",
         EmailNotificationType.CertificateExpiryDigest => $"Certificates expiring - {_config.CompanyName}",
+        EmailNotificationType.CertificateRevoked => $"Certificate revoked - {_config.CompanyName}",
         _ => $"Notification - {_config.CompanyName}"
     };
 

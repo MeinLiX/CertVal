@@ -49,6 +49,20 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
         builder.Property(c => c.IsSkipped)
             .HasDefaultValue(false);
 
+        builder.Property(c => c.OcspStatus)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(CertVal.Core.Enums.OcspStatus.NotChecked);
+
+        builder.Property(c => c.OcspResponderUrl)
+            .HasMaxLength(500);
+
+        builder.Property(c => c.OcspRevocationReason)
+            .HasMaxLength(100);
+
+        builder.Property(c => c.OcspLastError)
+            .HasMaxLength(500);
+
         // Indexes
         builder.HasIndex(c => c.WorkspaceId)
             .HasDatabaseName("IX_Certificates_WorkspaceId");
@@ -76,6 +90,9 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
             .IsUnique()
             .HasFilter("\"SerialNumber\" IS NOT NULL AND \"IsBundle\" = false")
             .HasDatabaseName("IX_Certificates_Workspace_Issuer_Serial");
+
+        builder.HasIndex(c => new { c.OcspLastCheckedAt, c.OcspStatus })
+            .HasDatabaseName("IX_Certificates_OcspLastCheckedAt");
 
         // Relationships
         builder.HasOne(c => c.Workspace)

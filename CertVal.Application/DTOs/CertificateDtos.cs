@@ -25,6 +25,11 @@ public record CertificateDto
     public string Status { get; init; } = string.Empty;
     public bool IsExpired { get; init; }
     public int DaysUntilExpiry { get; init; }
+    public string OcspStatus { get; init; } = nameof(CertVal.Core.Enums.OcspStatus.NotChecked);
+    public DateTime? OcspLastCheckedAt { get; init; }
+    public string? OcspResponderUrl { get; init; }
+    public string? OcspRevocationReason { get; init; }
+    public DateTime? OcspRevokedAt { get; init; }
     public List<CertificateDto> ChildCertificates { get; init; } = [];
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; init; }
