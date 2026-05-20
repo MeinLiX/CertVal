@@ -132,7 +132,7 @@ var app = builder.Build();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.MapOpenApi();
-app.MapScalarApiReference(options =>
+app.MapScalarApiReference("/api/scalar", options =>
 {
     options.WithTitle("CertVal API Documentation");
     options.WithTheme(ScalarTheme.Default);
@@ -140,7 +140,7 @@ app.MapScalarApiReference(options =>
     options.Servers = Array.Empty<ScalarServer>();
 });
 
-app.MapGet("/", () => Results.Redirect("/scalar/v1"))
+app.MapGet("/", () => Results.Redirect("/api/scalar/v1"))
     .ExcludeFromDescription();
 
 if (app.Environment.IsDevelopment())
