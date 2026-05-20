@@ -11,6 +11,7 @@
 	import UserAvatar from '$lib/components/ui/UserAvatar.svelte';
 	import type { IconName } from '$lib/icons';
 	import type { Language } from '$lib/types';
+	import { utilsBlocks } from '$lib/utils/utilsNav';
 
 	interface NavItem {
 		labelKey: string;
@@ -31,6 +32,19 @@
 
 	let userMenuOpen = $state(false);
 	let mobileNavOpen = $state(false);
+	let utilsOpen = $state(false);
+	let utilsCloseTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function openUtils() {
+		clearTimeout(utilsCloseTimer);
+		utilsOpen = true;
+	}
+
+	function startCloseUtils() {
+		utilsCloseTimer = setTimeout(() => {
+			utilsOpen = false;
+		}, 150);
+	}
 
 	function isActive(href: string): boolean {
 		if (href === '/dashboard') return currentPath === '/dashboard' || currentPath === '/';
@@ -78,9 +92,9 @@
 			<span class="topbar__brand-name">CertVal</span>
 		</button>
 
-		<!-- Primary nav (desktop, only when authenticated) -->
-		{#if isAuthenticated}
-			<nav class="topbar__nav" aria-label="Primary">
+		<!-- Primary nav -->
+		<nav class="topbar__nav" aria-label="Primary">
+			{#if isAuthenticated}
 				{#each navItems as item}
 					{@const active = isActive(item.href)}
 					<button
@@ -92,8 +106,50 @@
 						<span>{t(item.labelKey, language.current)}</span>
 					</button>
 				{/each}
-			</nav>
-		{/if}
+			{/if}
+			<div class="topbar__nav-utils-wrap">
+				<button
+					class="topbar__nav-link topbar__nav-link--has-chevron"
+					class:topbar__nav-link--active={isActive('/utils')}
+					onclick={() => navigate('/utils')}
+					onmouseenter={openUtils}
+					onmouseleave={startCloseUtils}
+					data-test-id="topbar-nav-utils"
+				>
+					<span>{t('nav.utils', language.current)}</span>
+					<Icon name={utilsOpen ? 'chevronUp' : 'chevronDown'} size="sm" />
+				</button>
+
+				{#if utilsOpen}
+					<div
+						class="topbar__utils-dropdown animate-slideDown"
+						onmouseenter={openUtils}
+						onmouseleave={startCloseUtils}
+						role="menu"
+						tabindex="-1"
+					>
+						{#each utilsBlocks as block}
+							<div class="topbar__utils-group">
+								<div class="topbar__utils-group-head">
+									<span class="topbar__utils-group-title">{t(block.titleKey, language.current)}</span>
+									{#if block.badge}<span class="topbar__utils-badge">{block.badge}</span>{/if}
+								</div>
+								{#each block.tools as tool}
+									<button
+										class="topbar__utils-item"
+										class:topbar__utils-item--active={isActive(tool.href)}
+										onclick={() => navigate(tool.href)}
+										role="menuitem"
+									>
+										{t(tool.labelKey, language.current)}
+									</button>
+								{/each}
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</nav>
 
 		<!-- Right cluster -->
 		<div class="topbar__actions">
@@ -410,6 +466,112 @@
 		height: 1px;
 		background-color: var(--color-border);
 		margin: var(--space-1) var(--space-1);
+	}
+
+	/* Utils hover dropdown */
+	.topbar__nav-utils-wrap {
+		position: relative;
+	}
+
+	.topbar__nav-link--has-chevron {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+	}
+
+	.topbar__nav-link--has-chevron :global(svg) {
+		width: 14px;
+		height: 14px;
+		opacity: 0.6;
+		transition: opacity var(--transition-fast);
+	}
+
+	.topbar__nav-link--has-chevron:hover :global(svg),
+	.topbar__nav-link--has-chevron.topbar__nav-link--active :global(svg) {
+		opacity: 1;
+	}
+
+	.topbar__utils-dropdown {
+		position: absolute;
+		left: 0;
+		top: calc(100% + 4px);
+		min-width: 220px;
+		background-color: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-pop);
+		padding: var(--space-2);
+		z-index: var(--z-dropdown);
+	}
+
+	.topbar__utils-group {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.topbar__utils-group + .topbar__utils-group {
+		margin-top: var(--space-2);
+		padding-top: var(--space-2);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.topbar__utils-group-head {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3) var(--space-1);
+	}
+
+	.topbar__utils-group-title {
+		font-size: var(--text-xs);
+		font-weight: var(--font-semibold);
+		color: var(--color-text-muted);
+		letter-spacing: var(--tracking-wide);
+		text-transform: uppercase;
+	}
+
+	.topbar__utils-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.05rem 0.4rem;
+		background: var(--color-primary);
+		color: #fff;
+		border-radius: var(--radius-sm);
+		font-family: var(--font-mono);
+		font-size: 0.55rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		line-height: 1.6;
+	}
+
+	.topbar__utils-item {
+		display: flex;
+		align-items: center;
+		width: 100%;
+		padding: var(--space-2) var(--space-3);
+		font-size: var(--text-sm);
+		color: var(--color-text);
+		background: none;
+		border: 0;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		text-align: left;
+		transition: background-color var(--transition-fast), color var(--transition-fast);
+	}
+
+	.topbar__utils-item:hover {
+		background-color: var(--color-surface-hover);
+	}
+
+	.topbar__utils-item--active {
+		color: var(--color-primary);
+		font-weight: var(--font-semibold);
+		background-color: var(--color-primary-light);
+	}
+
+	.topbar__utils-item--active:hover {
+		background-color: var(--color-primary-light);
 	}
 
 	/* Mobile drawer */
