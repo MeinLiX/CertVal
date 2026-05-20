@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <fonts>
+        <font>
+            <name>eUkraine</name>
+            <path>fonts/e-Ukraine-Regular.ttf</path>
+            <style>normal</style>
+        </font>
+        <font>
+            <name>eUkraineHead</name>
+            <path>fonts/e-UkraineHead-Regular.ttf</path>
+            <style>normal</style>
+        </font>
+    </fonts>
+    <options>
+        <margins>20</margins>
+        <font>eUkraine</font>
+        <font-size>10</font-size>
+        <font-color>black</font-color>
+        <font-style>normal</font-style>
+    </options>
+    <contents>
+        <complexType id="report">
+            <sequence>
+                <item visibility="pdf" align="center" i18n="true" font="eUkraineHead">Онлайн сервіс створення та перевірки кваліфікованого та удосконаленого електронного підпису</item>
+                <item visibility="pdf"></item>
+                <item visibility="pdf" align="center" i18n="true" font="eUkraineHead">ПРОТОКОЛ</item>
+                <item visibility="pdf" align="center" i18n="true" font="eUkraineHead">створення та перевірки кваліфікованого та удосконаленого електронного підпису</item>
+                <item visibility="pdf"></item>
+                <date visibility="pdf" title="Дата та час" id="createTime" format="hh:mm:ss dd.MM.yyyy"></date>
+                <item visibility="pdf"></item>
+                <item visibility="pdf" title="Назва файлу з підписом" id="signFileName"></item>
+                <item visibility="pdf" title="Розмір файлу з підписом" id="signFileSize"></item>
+                <item visibility="pdf"></item>
+                <item visibility="pdf" title="Назва файлу без підпису" id="dataFileName"></item>
+                <item visibility="pdf" title="Розмір файлу без підпису" id="dataFileSize"></item>
+                <html visibility="html" id="saveSignFileButton"></html>
+                <item visibility="html"></item>
+                <html visibility="html" id="saveDataFileButton"></html>
+                <item visibility="html"></item>
+                <html visibility="html" id="saveReportFileButton"></html>
+                <item></item>
+                <item></item>
+                <complexType id="signInfo">
+                    <sequence>
+                        <item visibility="pdf" title="Результат перевірки підпису" id="signResult"></item>
+                        <item visibility="html" i18n="true">Підписувачі</item>
+                        <complexType id="signerInfos">
+                            <array>
+                                <complexType id="signerInfo">
+                                    <sequence>
+                                        <item></item>
+                                        <item title="Підписувач" id="subjCN"></item>
+                                        <item title="П.І.Б." id="subjFullName"></item>
+                                        <item title="Країна" id="subjCountry"></item>
+                                        <item title="РНОКПП" id="subjDRFOCode"></item>
+                                        <item title="Організація (установа)" id="subjOrg"></item>
+                                        <item title="Код ЄДРПОУ" id="subjEDRPOUCode"></item>
+                                        <item title="Посада" id="subjTitle"></item>
+                                        <complexType id="timeInfo">
+                                            <choice>
+                                                <item title="Час підпису" id="none" font-color="red"></item>
+                                                <date title="Час підпису (не підтверджено кваліфікованою позначкою часу для підпису від Надавача)" id="time" format="hh:mm:ss dd.MM.yyyy" font-color="red"></date>
+                                                <date title="Час підпису (підтверджено кваліфікованою позначкою часу для даних від Надавача)" id="timeStamp" format="hh:mm:ss dd.MM.yyyy"></date>
+                                                <date title="Час підпису (підтверджено кваліфікованою позначкою часу для підпису від Надавача)" id="signTimeStamp" format="hh:mm:ss dd.MM.yyyy"></date>
+                                            </choice>
+                                        </complexType>
+                                        <item title="Сертифікат виданий" id="issuerCN"></item>
+                                        <item title="Серійний номер" id="serial"></item>
+                                        <item title="Тип носія особистого ключа" id="qscdName" i18n="true"></item>
+                                        <item title="Серійний номер носія особистого ключа" id="qscdSN" i18n="true"></item>
+                                        <item title="Алгоритм підпису" id="signAlgo" i18n="true"></item>
+                                        <item title="Тип підпису" id="signType" i18n="true"></item>
+                                        <item title="Тип контейнера" id="signContainerType" i18n="true"></item>
+                                        <item title="Формат підпису" id="signFormat" i18n="true"></item>
+                                        <complexType id="certType">
+                                            <choice>
+                                                <item title="Сертифікат" id="advancedWarning" font-color="red"></item>
+                                                <item title="Сертифікат" id="advanced"></item>
+                                                <item title="Сертифікат" id="qualified"></item>
+                                            </choice>
+                                        </complexType>
+                                        <item title="Підписані файли" id="signFilesName"></item>
+                                        <complexType id="notAllContentCovered">
+                                            <choice>
+                                                <complexType id="none">
+                                                    <sequence>
+                                                    </sequence>
+                                                </complexType>
+                                                <complexType id="signFilesWarning">
+                                                    <sequence>
+                                                        <item font-color="red" i18n="true">Користувачем підписано не всі файли в контейнері ASiC</item>
+                                                    </sequence>
+                                                </complexType>
+                                            </choice>
+                                        </complexType>
+                                    </sequence>
+                                </complexType>
+                            </array>
+                        </complexType>
+                        <complexType id="noTSPWarning">
+                            <choice>
+                                <complexType id="none">
+                                    <sequence>
+                                    </sequence>
+                                </complexType>
+                                <complexType id="noTSP">
+                                    <sequence>
+                                        <item></item>
+                                        <item font-color="red" i18n="true">Шановний користувач!</item>
+                                        <item></item>
+                                        <item font-color="red" i18n="true">Звертаємо Вашу увагу на те, що із набуттям чинності 07.11.2018 Закону України «Про електронну ідентифікацію та електронні довірчі послуги» та відповідно до частини четвертої статті 26 цього закону, використання кваліфікованої електронної позначки часу для постійного зберігання електронних даних є обов’язковим.</item>
+                                        <item></item>
+                                        <item font-color="red" i18n="true">Просимо звернутися до свого суб’єкта надання послуг електронного підпису із вимогою про приведення програмно-технічного комплексу у відповідність до норм законодавства.</item>
+                                        <item></item>
+                                    </sequence>
+                                </complexType>
+                            </choice>
+                        </complexType>
+                        <complexType id="advancedWarning">
+                            <choice>
+                                <complexType id="none">
+                                    <sequence>
+                                    </sequence>
+                                </complexType>
+                                <complexType id="advanced">
+                                    <sequence>
+                                        <item></item>
+                                        <item font-color="red" i18n="true">Шановний користувач!</item>
+                                        <item></item>
+                                        <item font-color="red" i18n="true">Звертаємо Вашу увагу на те, що із набуттям чинності 07.11.2018 Закону України «Про електронну ідентифікацію та електронні довірчі послуги» та відповідно до частини 2 статті 17 цього закону, використання кваліфікованого сертифікату відкритого ключа є обов’язковим.</item>
+                                        <item></item>
+                                        <item font-color="red" i18n="true">Просимо звернутися до свого суб’єкта надання електронних довірчих послуг для отримання кваліфікованого сертифікату відкритого ключа.</item>
+                                        <item></item>
+                                    </sequence>
+                                </complexType>
+                            </choice>
+                        </complexType>
+                    </sequence>
+                </complexType>
+                <item visibility="pdf"></item>
+                <item visibility="pdf"></item>
+                <item visibility="pdf" title="Версія від" id="libraryVersion"></item>
+            </sequence>
+        </complexType>
+    </contents>
+</document>
