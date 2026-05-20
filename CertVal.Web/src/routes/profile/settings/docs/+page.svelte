@@ -7,7 +7,7 @@
 	import FloatingActionBar from '$lib/components/layout/FloatingActionBar.svelte';
 
 	const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-	const scalarBaseUrl = VITE_API_BASE_URL.replace('/api', '/scalar');
+	const scalarBaseUrl = VITE_API_BASE_URL.replace('/api', '/api/scalar');
 
 	const scalarUrl = $derived(
 		`${scalarBaseUrl}?darkMode=${theme.current === 'dark'}&_t=${theme.current}`
