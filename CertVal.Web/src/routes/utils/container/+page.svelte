@@ -321,16 +321,16 @@
 	}
 	.privacy-note {
 		padding: 0.75rem 1rem;
-		background: var(--color-info-bg, #eef6ff);
-		border: 1px solid var(--color-info-border, #b9d6ff);
-		color: var(--color-info-text, #1a4480);
+		background: var(--color-primary-light);
+		border: 1px solid var(--color-border);
+		color: var(--color-primary);
 		border-radius: 8px;
 		font-size: 0.9rem;
 	}
 	.privacy-note p { margin: 0; }
 	.status { padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; }
-	.status.info { background: #eef6ff; color: #1a4480; }
-	.status.error { background: #fee2e2; color: #991b1b; }
+	.status.info { background: var(--color-primary-light); color: var(--color-primary); }
+	.status.error { background: var(--color-error-light); color: var(--color-error); }
 	.form { display: flex; flex-direction: column; gap: 0.75rem; }
 	.data-slot > summary {
 		cursor: pointer;
@@ -351,8 +351,8 @@
 		padding: 0.75rem 2rem;
 		border-radius: 6px;
 		border: 1px solid rgba(255, 255, 255, 0.1);
-		background: linear-gradient(135deg, #4f46ff 0%, #3e35df 100%);
-		color: #fff;
+		background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+		color: var(--color-primary-text);
 		font-size: 0.95rem;
 		font-weight: 600;
 		cursor: pointer;
@@ -385,19 +385,20 @@
 	.btn-sm {
 		padding: 0.3rem 0.75rem;
 		border-radius: 6px;
-		border: 1px solid var(--color-border, #d8dde6);
-		background: #f8fafc;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface-inset);
+		color: var(--color-text);
 		cursor: pointer;
 		font-size: 0.82rem;
 	}
-	.btn-sm:hover { background: #f1f5f9; }
-	.btn-sm.active { background: #e0e7ff; border-color: #a5b4fc; color: #312e81; }
+	.btn-sm:hover { background: var(--color-surface-hover); }
+	.btn-sm.active { background: var(--color-primary-light); border-color: var(--color-primary); color: var(--color-primary); }
 	/* Tree */
 	.tree-root {
-		border: 1px solid var(--color-border, #d8dde6);
+		border: 1px solid var(--color-border);
 		border-radius: 10px;
 		overflow: hidden;
-		background: #fff;
+		background: var(--color-surface);
 	}
 	.tree-section {
 		display: flex;
@@ -409,21 +410,21 @@
 		padding-right: 0.75rem;
 		padding-bottom: 0.45rem;
 		border: 0;
-		border-bottom: 1px solid var(--color-border, #d8dde6);
-		background: #f8fafc;
+		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface-inset);
 		cursor: pointer;
 		font-size: 0.9rem;
 		font-weight: 600;
-		color: #1e40af;
+		color: var(--color-primary);
 		transition: background 0.1s;
 	}
-	.tree-section:hover { background: #eff6ff; }
-	.chevron { font-size: 0.6rem; color: #94a3b8; flex-shrink: 0; width: 10px; }
+	.tree-section:hover { background: var(--color-surface-hover); }
+	.chevron { font-size: 0.6rem; color: var(--color-text-muted); flex-shrink: 0; width: 10px; }
 	.section-label { flex-shrink: 0; }
 	.section-sub {
 		font-size: 0.82rem;
 		font-weight: 400;
-		color: #6a7280;
+		color: var(--color-text-muted);
 		flex: 1;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -436,18 +437,18 @@
 		padding-top: 0.3rem;
 		padding-right: 0.75rem;
 		padding-bottom: 0.3rem;
-		border-bottom: 1px solid #f1f5f9;
+		border-bottom: 1px solid var(--color-border);
 		font-size: 0.875rem;
 	}
 	.tree-leaf:last-child { border-bottom: 0; }
-	.leaf-label { color: #6a7280; white-space: nowrap; flex-shrink: 0; min-width: 140px; }
+	.leaf-label { color: var(--color-text-muted); white-space: nowrap; flex-shrink: 0; min-width: 140px; }
 	.leaf-val { flex: 1; word-break: break-word; }
-	.leaf-val.ok { color: #16a34a; font-weight: 600; }
-	.leaf-val.warn { color: #d97706; font-weight: 600; }
+	.leaf-val.ok { color: var(--color-success); font-weight: 600; }
+	.leaf-val.warn { color: var(--color-warning); font-weight: 600; }
 	/* Raw JSON */
 	.raw-json {
-		background: #f8fafc;
-		border: 1px solid var(--color-border, #d8dde6);
+		background: var(--color-surface-inset);
+		border: 1px solid var(--color-border);
 		border-radius: 10px;
 		padding: 1rem;
 		font-family: monospace;
@@ -455,6 +456,7 @@
 		overflow: auto;
 		max-height: 600px;
 		white-space: pre;
+		color: var(--color-text);
 	}
 </style>
 

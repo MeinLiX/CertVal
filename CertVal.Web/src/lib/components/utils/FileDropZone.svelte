@@ -124,22 +124,23 @@
 
 <style>
 	.drop-zone {
-		border: 2px dashed var(--color-border, #c7cfd9);
+		border: 2px dashed var(--color-border);
 		border-radius: 12px;
 		padding: 1.5rem 1rem;
 		text-align: center;
-		background: var(--color-surface-alt, #f8fafc);
+		background: var(--color-surface-inset);
+		color: var(--color-text);
 		cursor: pointer;
 		transition: background 0.15s, border-color 0.15s;
 		outline: none;
 	}
 	.drop-zone:focus-visible {
-		border-color: var(--color-primary, #1a4480);
-		box-shadow: 0 0 0 3px rgba(26, 68, 128, 0.15);
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px rgba(79, 70, 255, 0.2);
 	}
 	.drop-zone.drag-over {
-		border-color: var(--color-primary, #1a4480);
-		background: rgba(26, 68, 128, 0.05);
+		border-color: var(--color-primary);
+		background: var(--color-primary-light);
 	}
 	.drop-zone.disabled {
 		opacity: 0.55;

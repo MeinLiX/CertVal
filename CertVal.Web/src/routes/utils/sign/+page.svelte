@@ -925,17 +925,17 @@
 	}
 	.privacy-note {
 		padding: 0.75rem 1rem;
-		background: var(--color-info-bg, #eef6ff);
-		border: 1px solid var(--color-info-border, #b9d6ff);
-		color: var(--color-info-text, #1a4480);
+		background: var(--color-primary-light);
+		border: 1px solid var(--color-border);
+		color: var(--color-primary);
 		border-radius: 8px;
 		font-size: 0.9rem;
 	}
 	.privacy-note p { margin: 0; }
 	.step {
 		padding: 1rem 1.25rem;
-		background: #fff;
-		border: 1px solid var(--color-border, #d8dde6);
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
 		border-radius: 12px;
 		display: flex;
 		flex-direction: column;
@@ -947,8 +947,8 @@
 		border-radius: 8px;
 		font-size: 0.9rem;
 	}
-	.status.info { background: #eef6ff; color: #1a4480; }
-	.status.error { background: #fee2e2; color: #991b1b; }
+	.status.info { background: var(--color-primary-light); color: var(--color-primary); }
+	.status.error { background: var(--color-error-light); color: var(--color-error); }
 	.field {
 		display: flex;
 		flex-direction: column;
@@ -957,9 +957,11 @@
 	}
 	.field input, .field select {
 		padding: 0.5rem 0.75rem;
-		border: 1px solid var(--color-border, #d8dde6);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		font-size: 1rem;
+		background: var(--color-surface-inset);
+		color: var(--color-text);
 	}
 	/* Mode tabs */
 	.mode-tabs {
@@ -972,18 +974,19 @@
 		align-items: center;
 		gap: 0.4rem;
 		padding: 0.5rem 1rem;
-		border: 1px solid var(--color-border, #d8dde6);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
-		background: #f9fafb;
+		background: var(--color-surface-inset);
+		color: var(--color-text);
 		cursor: pointer;
 		font-size: 0.9rem;
 		transition: background 0.12s, border-color 0.12s;
 	}
-	.mode-tab:hover { background: #f0f4ff; }
+	.mode-tab:hover { background: var(--color-surface-hover); }
 	.mode-tab.active {
-		background: #111827;
-		color: #fff;
-		border-color: #111827;
+		background: var(--color-text);
+		color: var(--color-bg);
+		border-color: var(--color-text);
 	}
 	.tab-num {
 		font-size: 0.75rem;
@@ -993,7 +996,7 @@
 	.mode-desc {
 		margin: 0;
 		font-size: 0.88rem;
-		color: var(--color-text-muted, #6a7280);
+		color: var(--color-text-muted);
 	}
 	.hash-algo-card {
 		display: flex;
@@ -1001,35 +1004,35 @@
 		align-items: center;
 		gap: 0.4rem;
 		padding: 0.5rem 0.75rem;
-		background: #f0f7ff;
-		border: 1px solid #c3d9f8;
+		background: var(--color-primary-light);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		font-size: 0.85rem;
-		color: #1a4480;
+		color: var(--color-primary);
 	}
-	.hash-algo-sep { color: #9ca3af; }
+	.hash-algo-sep { color: var(--color-text-muted); }
 	.hash-len-hint {
 		margin: 0.2rem 0 0;
 		font-size: 0.8rem;
 		color: var(--color-text-muted, #6a7280);
 	}
-	.hash-len-hint.len-warn { color: #d97706; font-weight: 500; }
+	.hash-len-hint.len-warn { color: var(--color-warning); font-weight: 500; }
 	/* Field groups */
 	.field-group { display: flex; flex-direction: column; gap: 0.3rem; }
-	.field-label { font-size: 0.82rem; font-weight: 600; color: var(--color-text-muted, #6a7280); }
+	.field-label { font-size: 0.82rem; font-weight: 600; color: var(--color-text-muted); }
 	.radio-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 	.radio-pill {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
 		padding: 0.35rem 0.7rem;
-		border: 1px solid var(--color-border, #d8dde6);
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
 		cursor: pointer;
 		font-size: 0.85rem;
 		transition: background 0.1s;
 	}
-	.radio-pill.active { background: #e0e7ff; border-color: #a5b4fc; color: #312e81; }
+	.radio-pill.active { background: var(--color-primary-light); border-color: var(--color-primary); color: var(--color-primary); }
 	.radio-pill input[type="radio"] { display: none; }
 	.checks-row { display: flex; flex-wrap: wrap; gap: 1rem; }
 	/* Primary button styling: elegant high-tech rounded rectangle, nicely balanced */
@@ -1041,8 +1044,8 @@
 		padding: 0.75rem 2rem;
 		border-radius: 6px;
 		border: 1px solid rgba(255, 255, 255, 0.1);
-		background: linear-gradient(135deg, #4f46ff 0%, #3e35df 100%);
-		color: #fff;
+		background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+		color: var(--color-primary-text);
 		font-size: 0.95rem;
 		font-weight: 600;
 		cursor: pointer;
@@ -1065,7 +1068,7 @@
 	.link {
 		background: transparent;
 		border: 0;
-		color: #1a4480;
+		color: var(--color-primary);
 		text-decoration: underline;
 		cursor: pointer;
 		font-size: 0.9rem;
@@ -1085,10 +1088,12 @@
 		gap: 0.4rem;
 		align-items: center;
 		padding: 0.4rem 0.65rem;
-		border: 1px solid var(--color-border, #d8dde6);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		cursor: pointer;
 		font-size: 0.875rem;
+		background: var(--color-surface-inset);
+		color: var(--color-text);
 	}
 	.badge {
 		font-size: 0.65rem;
@@ -1096,7 +1101,7 @@
 		border-radius: 999px;
 		font-weight: 600;
 	}
-	.badge.net { background: #fef9c3; color: #713f12; }
+	.badge.net { background: var(--color-warning-light); color: var(--color-warning); }
 	.badge.pdf { background: #fce7f3; color: #831843; }
 	.row { display: flex; gap: 1rem; justify-content: center; } /* Centered link-action options */
 	.checkbox { display: inline-flex; gap: 0.5rem; align-items: center; font-size: 0.9rem; }
@@ -1115,13 +1120,13 @@
 		gap: 0.6rem;
 		align-items: center;
 		padding: 0.45rem 0.75rem;
-		border: 1px solid var(--color-border, #d8dde6);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		font-size: 0.875rem;
 	}
-	.outputs li.ok { background: #f0fdf4; border-color: #bbf7d0; }
-	.outputs li.fail { background: #fef2f2; border-color: #fecaca; }
-	.outputs li.global-err { color: #991b1b; }
+	.outputs li.ok { background: var(--color-success-light); border-color: var(--color-success); }
+	.outputs li.fail { background: var(--color-error-light); border-color: var(--color-error); }
+	.outputs li.global-err { color: var(--color-error); }
 	.outputs .name {
 		flex: 1;
 		overflow: hidden;
@@ -1138,13 +1143,13 @@
 		font-size: 0.72rem;
 		padding: 0.15rem 0.5rem;
 		border-radius: 999px;
-		background: #e0e7ff;
-		color: #312e81;
+		background: var(--color-primary-light);
+		color: var(--color-primary);
 		white-space: nowrap;
 	}
 	.outputs .err-msg {
 		flex: 1;
-		color: #991b1b;
+		color: var(--color-error);
 		font-size: 0.82rem;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -1152,8 +1157,8 @@
 	}
 	.outputs button {
 		border: 0;
-		background: #111827;
-		color: #fff;
+		background: var(--color-text);
+		color: var(--color-bg);
 		width: 28px;
 		height: 28px;
 		border-radius: 50%;
@@ -1169,14 +1174,14 @@
 		border-radius: 8px;
 		font-size: 0.9rem;
 	}
-	.result-row.ok { background: #f0fdf4; border: 1px solid #bbf7d0; }
+	.result-row.ok { background: var(--color-success-light); border: 1px solid var(--color-success); }
 	.result-row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.result-row .size { font-size: 0.8rem; color: var(--color-text-muted, #6a7280); white-space: nowrap; }
+	.result-row .size { font-size: 0.8rem; color: var(--color-text-muted); white-space: nowrap; }
 	.result-row button {
 		padding: 0.35rem 0.8rem;
 		border: 0;
-		background: #111827;
-		color: #fff;
+		background: var(--color-text);
+		color: var(--color-bg);
 		border-radius: 999px;
 		cursor: pointer;
 		font-size: 0.85rem;
@@ -1186,16 +1191,18 @@
 	.hash-input {
 		width: 100%;
 		padding: 0.6rem 0.75rem;
-		border: 1px solid var(--color-border, #d8dde6);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		font-family: monospace;
 		font-size: 0.85rem;
 		resize: vertical;
 		box-sizing: border-box;
+		background: var(--color-surface-inset);
+		color: var(--color-text);
 	}
 	.hash-out {
-		background: #f8fafc;
-		border: 1px solid var(--color-border, #d8dde6);
+		background: var(--color-surface-inset);
+		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		padding: 0.75rem;
 		font-family: monospace;
@@ -1206,5 +1213,6 @@
 		max-height: 200px;
 		overflow-y: auto;
 		margin: 0;
+		color: var(--color-text);
 	}
 </style>
