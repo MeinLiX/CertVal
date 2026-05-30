@@ -18,7 +18,7 @@ public class GetApiInfoQueryHandler : IRequestHandler<GetApiInfoQuery, Result<Ap
             Name = "CertVal API",
             Version = $"v{version}",
             Description = "Certificate monitoring and management API",
-            Documentation = "/scalar/v1",
+            Documentation = "/api/scalar/v1",
             ServerTime = DateTime.UtcNow,
             Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production",
             Authentication = new AuthenticationInfo
