@@ -47,6 +47,11 @@ declare global {
 			};
 		};
 	}
+
+	/** Short git commit hash injected at build time (see vite.config.ts). */
+	const __APP_COMMIT__: string;
+	/** Canonical repository URL injected at build time (see vite.config.ts). */
+	const __APP_REPO_URL__: string;
 }
 
 export { };

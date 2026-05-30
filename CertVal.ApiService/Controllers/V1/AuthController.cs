@@ -39,7 +39,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginCommand request, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var result = await _mediator.Send(request with { IpAddress = GetClientIpAddress() }, cancellationToken);
 
         if (!result.IsSuccess)
             return Unauthorized(new ErrorResponseDto(result.Error));
@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<LoginResponse>> LoginWithGoogle([FromBody] LoginWithGoogleCommand request, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var result = await _mediator.Send(request with { IpAddress = GetClientIpAddress() }, cancellationToken);
 
         if (!result.IsSuccess)
             return Unauthorized(new ErrorResponseDto(result.Error));
@@ -80,12 +80,33 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<LoginResponse>> ConfirmEmail([FromBody] ConfirmEmailCommand request, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(request, cancellationToken);
+        var result = await _mediator.Send(request with { IpAddress = GetClientIpAddress() }, cancellationToken);
 
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(result.Error));
 
         return Ok(result.Value);
+    }
+
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<LoginResponse>> Refresh([FromBody] RefreshTokenCommand request, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(request with { IpAddress = GetClientIpAddress() }, cancellationToken);
+
+        if (!result.IsSuccess)
+            return Unauthorized(new ErrorResponseDto(result.Error));
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("logout")]
+    [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Logout([FromBody] LogoutCommand request, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(request with { IpAddress = GetClientIpAddress() }, cancellationToken);
+        return Ok(new MessageResponseDto("Logged out successfully"));
     }
 
     [HttpPost("resend-confirmation")]
@@ -137,5 +158,17 @@ public class AuthController : ControllerBase
             return BadRequest(new ErrorResponseDto(result.Error));
 
         return Ok(result.Value);
+    }
+
+    private string? GetClientIpAddress()
+    {
+        if (Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor) && forwardedFor.Count > 0)
+        {
+            var first = forwardedFor.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(first))
+                return first;
+        }
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 }

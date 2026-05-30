@@ -3,6 +3,8 @@ import { language } from '$lib/stores/language.svelte';
 import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
 import type { ApiResponse, ErrorResponseDto, ProblemDetails } from '$lib/types';
+import { userSession } from '$lib/stores/userSession.svelte';
+import { refreshAccessToken, forceLogout, isRefreshableEndpoint } from '$lib/api/tokenRefresh';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -47,6 +49,35 @@ class ApiClient {
         return authState.token ? { Authorization: `Bearer ${authState.token}` } : {};
     }
 
+    private async authedFetch(endpoint: string, init: RequestInit): Promise<Response> {
+        const refreshable = isRefreshableEndpoint(endpoint);
+        const url = `${API_BASE}${endpoint}`;
+        const doFetch = () =>
+            fetch(url, {
+                ...init,
+                headers: Object.assign({}, init.headers ?? {}, this.getAuthHeader()),
+            });
+
+        if (refreshable && userSession.token && userSession.refreshToken && userSession.isAccessTokenExpiring()) {
+            await refreshAccessToken();
+        }
+
+        let response = await doFetch();
+
+        if (response.status === 401 && refreshable && userSession.refreshToken) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                response = await doFetch();
+            }
+        }
+
+        if (response.status === 401 && refreshable) {
+            forceLogout();
+        }
+
+        return response;
+    }
+
     private handleError(errorData: unknown, fallbackKey: string): string {
         const currentLang = language.current;
 
@@ -73,12 +104,11 @@ class ApiClient {
         options: RequestInit = {}
     ): Promise<ApiResponse<T>> {
         try {
-            const response = await fetch(`${API_BASE}${endpoint}`, {
+            const response = await this.authedFetch(endpoint, {
                 ...options,
                 headers: Object.assign(
                     {},
                     { 'Content-Type': 'application/json' },
-                    this.getAuthHeader(),
                     options.headers ?? {}
                 )
             });
@@ -89,10 +119,6 @@ class ApiClient {
                     return { data };
                 }
                 return { data: null as unknown as T };
-            }
-
-            if (response.status === 401) {
-                auth.logout();
             }
 
             if (this.isJsonResponse(response)) {
@@ -146,11 +172,8 @@ class ApiClient {
 
     async upload<T>(endpoint: string, formData: FormData) {
         try {
-            const response = await fetch(`${API_BASE}${endpoint}`, {
+            const response = await this.authedFetch(endpoint, {
                 method: 'POST',
-                headers: Object.assign(
-                    this.getAuthHeader(),
-                ),
                 body: formData
             });
 
@@ -160,10 +183,6 @@ class ApiClient {
                     return { data };
                 }
                 return { data: null as unknown as T };
-            }
-
-            if (response.status === 401) {
-                auth.logout();
             }
 
             if (this.isJsonResponse(response)) {
@@ -186,21 +205,13 @@ class ApiClient {
 
     async download(endpoint: string): Promise<{ blob: Blob; filename: string } | { message: string }> {
         try {
-            const response = await fetch(`${API_BASE}${endpoint}`, {
-                headers: Object.assign(
-                    this.getAuthHeader(),
-                ),
-            });
+            const response = await this.authedFetch(endpoint, {});
 
             if (response.ok) {
                 const contentDisposition = response.headers.get('content-disposition');
                 let filename = this.parseFilenameFromContentDisposition(contentDisposition) || 'downloaded_file';
                 const blob = await response.blob();
                 return { blob, filename };
-            }
-
-            if (response.status === 401) {
-                auth.logout();
             }
 
             if (this.isJsonResponse(response)) {
@@ -226,10 +237,7 @@ class ApiClient {
         opts?: { onProgress?: (percent: number) => void; suggestedFileName?: string; signal?: AbortSignal }
     ): Promise<{ success: true } | { message: string }> {
         try {
-            const response = await fetch(`${API_BASE}${endpoint}`, {
-                headers: Object.assign(
-                    this.getAuthHeader(),
-                ),
+            const response = await this.authedFetch(endpoint, {
                 signal: opts?.signal
             });
 
@@ -271,10 +279,6 @@ class ApiClient {
                 this.saveBlob(blob, filename);
                 if (opts?.onProgress) opts.onProgress(100);
                 return { success: true };
-            }
-
-            if (response.status === 401) {
-                auth.logout();
             }
 
             if (this.isJsonResponse(response)) {
