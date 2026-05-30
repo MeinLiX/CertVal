@@ -1,4 +1,5 @@
 import { userSession } from '$lib/stores/userSession.svelte';
+import { refreshAccessToken, forceLogout, isRefreshableEndpoint } from '$lib/api/tokenRefresh';
 
 export type ApiResult<T> = {
     data: T | null;
@@ -8,33 +9,59 @@ export type ApiResult<T> = {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
-async function request<T>(
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+function sendRequest(
     endpoint: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-    body?: unknown,
-    customHeaders: Record<string, string> = {}
-): Promise<ApiResult<T>> {
+    method: HttpMethod,
+    body: unknown,
+    customHeaders: Record<string, string>
+): Promise<Response> {
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...customHeaders,
     };
 
-    // Use the Runes-based store
     if (userSession.token) {
         headers['Authorization'] = `Bearer ${userSession.token}`;
     }
 
+    return fetch(`${BASE_URL}${endpoint}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+    });
+}
+
+async function request<T>(
+    endpoint: string,
+    method: HttpMethod,
+    body?: unknown,
+    customHeaders: Record<string, string> = {}
+): Promise<ApiResult<T>> {
+    const refreshable = isRefreshableEndpoint(endpoint);
+
+    // Proactively refresh when the access token is about to expire, so a long-idle
+    // page transparently continues working instead of failing with a 401.
+    if (refreshable && userSession.token && userSession.refreshToken && userSession.isAccessTokenExpiring()) {
+        await refreshAccessToken();
+    }
+
     try {
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
-            method,
-            headers,
-            body: body ? JSON.stringify(body) : undefined,
-        });
+        let response = await sendRequest(endpoint, method, body, customHeaders);
+
+        // Reactively refresh once on 401, then retry the original request.
+        if (response.status === 401 && refreshable && userSession.refreshToken) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                response = await sendRequest(endpoint, method, body, customHeaders);
+            }
+        }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                userSession.logout();
-                // Optionally redirect to login
+            // Session could not be renewed: clear it and send the user to login.
+            if (response.status === 401 && refreshable) {
+                forceLogout();
             }
 
             let errorMessage = response.statusText;

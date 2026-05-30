@@ -66,8 +66,8 @@
 		language.set(next);
 	}
 
-	function handleLogout() {
-		AuthService.logout();
+	async function handleLogout() {
+		await AuthService.logout();
 		goto('/auth/login');
 	}
 

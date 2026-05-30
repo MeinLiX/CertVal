@@ -7,6 +7,7 @@
 	import type { Language, Theme } from '$lib/types';
 	import logoUrl from '$lib/assets/favicon.svg?url';
 	import Icon from '$lib/components/ui/Icon.svelte';
+	import { REPO_URL, COMMIT_URL, COMMIT_HASH, HAS_COMMIT } from '$lib/config/appInfo';
 
 	let { children } = $props();
 
@@ -85,7 +86,18 @@
 			<nav class="auth__footer-nav">
 				<a href="/">Home</a>
 				<span aria-hidden="true">&middot;</span>
-				<a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+				<a href={REPO_URL} target="_blank" rel="noopener">GitHub</a>
+				<span aria-hidden="true">&middot;</span>
+				<a
+					class="auth__build"
+					href={COMMIT_URL}
+					target="_blank"
+					rel="noopener"
+					title={HAS_COMMIT ? `Build ${COMMIT_HASH}` : 'Local development build'}
+				>
+					<Icon name="hash" size="sm" />
+					<span class="auth__build-hash">{COMMIT_HASH}</span>
+				</a>
 			</nav>
 		</footer>
 	</section>
@@ -293,5 +305,22 @@
 
 	.auth__footer a:hover {
 		color: var(--color-text);
+	}
+
+	.auth__build {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+		font-family: var(--font-mono, monospace);
+		font-size: var(--text-xs);
+		opacity: 0.85;
+	}
+
+	.auth__build:hover {
+		opacity: 1;
+	}
+
+	.auth__build-hash {
+		letter-spacing: 0.02em;
 	}
 </style>

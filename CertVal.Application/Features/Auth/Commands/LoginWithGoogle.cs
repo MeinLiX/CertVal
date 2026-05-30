@@ -11,6 +11,7 @@ namespace CertVal.Application.Features.Auth.Commands;
 public record LoginWithGoogleCommand : IRequest<Result<LoginResponse>>
 {
     public string IdToken { get; init; } = string.Empty;
+    public string? IpAddress { get; init; }
 }
 
 public class LoginWithGoogleCommandValidator : AbstractValidator<LoginWithGoogleCommand>
@@ -24,16 +25,16 @@ public class LoginWithGoogleCommandValidator : AbstractValidator<LoginWithGoogle
 public class LoginWithGoogleCommandHandler : IRequestHandler<LoginWithGoogleCommand, Result<LoginResponse>>
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IJwtTokenService _jwtTokenService;
+    private readonly IAuthTokenService _authTokenService;
     private readonly IGoogleAuthService _googleAuthService;
 
     public LoginWithGoogleCommandHandler(
         IUnitOfWork unitOfWork,
-        IJwtTokenService jwtTokenService,
+        IAuthTokenService authTokenService,
         IGoogleAuthService googleAuthService)
     {
         _unitOfWork = unitOfWork;
-        _jwtTokenService = jwtTokenService;
+        _authTokenService = authTokenService;
         _googleAuthService = googleAuthService;
     }
 
@@ -59,29 +60,8 @@ public class LoginWithGoogleCommandHandler : IRequestHandler<LoginWithGoogleComm
         }
 
         user.UpdateLastLogin();
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var token = _jwtTokenService.GenerateToken(user);
-
-        return Result.Success(new LoginResponse
-        {
-            Token = token,
-            ExpiresAt = DateTime.UtcNow.AddHours(24),
-            User = new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                FullName = user.FullName,
-                IsEmailConfirmed = user.IsEmailConfirmed,
-                LastLoginAt = user.LastLoginAt,
-                Status = user.Status.ToString(),
-                TimeZone = user.TimeZone,
-                Language = user.Language,
-                EmailNotificationsEnabled = user.EmailNotificationsEnabled,
-                CreatedAt = user.CreatedAt
-            }
-        });
+        var response = await _authTokenService.IssueTokensAsync(user, request.IpAddress, cancellationToken);
+        return Result.Success(response);
     }
 }

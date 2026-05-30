@@ -16,7 +16,20 @@ public record LoginResponse
 {
     public string Token { get; init; } = string.Empty;
     public DateTime ExpiresAt { get; init; }
+    public string RefreshToken { get; init; } = string.Empty;
+    public DateTime RefreshTokenExpiresAt { get; init; }
     public UserDto User { get; init; } = null!;
+}
+
+public record RefreshTokenRequest
+{
+    [Required]
+    public string RefreshToken { get; init; } = string.Empty;
+}
+
+public record LogoutRequest
+{
+    public string? RefreshToken { get; init; }
 }
 
 public record ConfirmEmailRequest
