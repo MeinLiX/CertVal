@@ -59,21 +59,23 @@
 		data-test-id="floating-action-bar"
 	>
 		<div class="action-bar__inner">
-			{#if leading}
-				<div class="action-bar__slot action-bar__slot--leading">
-					{@render leading()}
-				</div>
-			{/if}
-			{#if center}
-				<div class="action-bar__slot action-bar__slot--center">
-					{@render center()}
-				</div>
-			{/if}
-			{#if trailing}
-				<div class="action-bar__slot action-bar__slot--trailing">
-					{@render trailing()}
-				</div>
-			{/if}
+			<div class="action-bar__track">
+				{#if leading}
+					<div class="action-bar__slot action-bar__slot--leading">
+						{@render leading()}
+					</div>
+				{/if}
+				{#if center}
+					<div class="action-bar__slot action-bar__slot--center">
+						{@render center()}
+					</div>
+				{/if}
+				{#if trailing}
+					<div class="action-bar__slot action-bar__slot--trailing">
+						{@render trailing()}
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 {/if}
@@ -116,13 +118,20 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: var(--space-2);
-		flex-wrap: nowrap;
 		pointer-events: auto;
 		transition:
 			border-color var(--transition-fast),
 			box-shadow var(--transition-fast),
 			transform var(--transition-fast);
+	}
+
+	.action-bar__track {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		flex-wrap: nowrap;
+		min-width: 0;
 	}
 
 	.action-bar__inner:hover {
@@ -170,27 +179,44 @@
 
 	@media (max-width: 640px) {
 		.action-bar {
-			bottom: var(--space-3);
-			left: var(--space-3);
-			right: var(--space-3);
+			bottom: 0;
+			left: 0;
+			right: 0;
 			transform: none;
 			max-width: none;
+			padding: 0 var(--space-3)
+				max(var(--space-3), env(safe-area-inset-bottom, 0px));
 			animation-name: bar-in-mobile;
 		}
 
 		.action-bar__inner {
 			width: 100%;
 			border-radius: var(--radius-xl);
-			padding: var(--space-2) var(--space-3);
-			flex-wrap: wrap;
-			justify-content: center;
+			padding: var(--space-2);
+			/* Stronger liquid-glass blur for the full-width mobile dock */
+			backdrop-filter: saturate(180%) blur(24px);
+			-webkit-backdrop-filter: saturate(180%) blur(24px);
+			/* Allow the action row to scroll horizontally instead of wrapping
+			   so buttons + selectors never overflow the viewport. */
+			overflow-x: auto;
+			overflow-y: hidden;
+			scrollbar-width: none;
+			-webkit-overflow-scrolling: touch;
+			justify-content: flex-start;
 		}
 
-		.action-bar__slot--leading,
-		.action-bar__slot--trailing {
-			flex: 1 1 auto;
-			min-width: 0;
-			justify-content: center;
+		.action-bar__inner::-webkit-scrollbar {
+			display: none;
+		}
+
+		.action-bar__track {
+			/* Centre when the actions fit, scroll from the start when they don't */
+			margin: 0 auto;
+			flex-wrap: nowrap;
+		}
+
+		.action-bar__slot {
+			flex: 0 0 auto;
 		}
 
 		.action-bar__slot + .action-bar__slot::before {
