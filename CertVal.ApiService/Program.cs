@@ -131,12 +131,13 @@ var app = builder.Build();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-app.MapOpenApi();
+app.MapOpenApi("/api/openapi/{documentName}.json");
 app.MapScalarApiReference("/api/scalar", options =>
 {
     options.WithTitle("CertVal API Documentation");
     options.WithTheme(ScalarTheme.Default);
     options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    options.WithOpenApiRoutePattern("/api/openapi/{documentName}.json");
     options.Servers = Array.Empty<ScalarServer>();
 });
 
