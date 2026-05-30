@@ -32,6 +32,7 @@ public static class ServiceRegistration
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IAuthTokenService, AuthTokenService>();
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddSingleton<IWebhookSecurityService, WebhookSecurityService>();
         services.AddScoped<IRateLimitService, RedisRateLimitService>();
@@ -121,6 +122,7 @@ public static class ServiceRegistration
         services.AddScoped<INotificationHistoryRepository, NotificationHistoryRepository>();
         services.AddScoped<IWorkspaceMemberRepository, WorkspaceMemberRepository>();
         services.AddScoped<IApiTokenRepository, ApiTokenRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 
