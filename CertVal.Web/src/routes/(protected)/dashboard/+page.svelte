@@ -295,6 +295,15 @@
 		.metric__divider { display: none; }
 	}
 
+	@media (max-width: 480px) {
+		.hero__metrics {
+			gap: var(--space-4);
+		}
+		.metric__value {
+			font-size: var(--text-3xl);
+		}
+	}
+
 	.metric {
 		display: flex;
 		flex-direction: column;

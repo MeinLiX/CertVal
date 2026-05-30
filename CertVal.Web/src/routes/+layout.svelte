@@ -69,6 +69,12 @@ min-height: calc(100vh - var(--topbar-height));
 padding: var(--space-5) var(--space-6) calc(var(--space-12) + 96px);
 }
 
+@media (max-width: 560px) {
+.app-main--content {
+padding: var(--space-4) var(--space-4) calc(var(--space-10) + 104px);
+}
+}
+
 @media (min-width: 900px) {
 .app-main--content {
 padding: var(--space-6) var(--space-10) calc(var(--space-16) + 96px);

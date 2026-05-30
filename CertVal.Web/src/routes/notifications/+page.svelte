@@ -859,4 +859,15 @@
 			grid-template-columns: 1fr;
 		}
 	}
+
+	@media (max-width: 640px) {
+		/* Compact the workspace selector inside the mobile action dock */
+		.toolbar-field__label {
+			display: none;
+		}
+
+		.toolbar-field__select {
+			min-width: 132px;
+		}
+	}
 </style>

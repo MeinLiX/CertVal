@@ -195,6 +195,13 @@ body {
 	background-color: var(--color-bg);
 	min-height: 100vh;
 	font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+	overflow-x: hidden;
+}
+
+img,
+video {
+	max-width: 100%;
+	height: auto;
 }
 
 h1,
@@ -245,6 +252,18 @@ a {
 
 a:hover {
 	color: var(--color-primary-hover);
+}
+
+@media (max-width: 560px) {
+	h1 {
+		font-size: var(--text-3xl);
+	}
+	h2 {
+		font-size: var(--text-2xl);
+	}
+	h3 {
+		font-size: var(--text-lg);
+	}
 }
 
 *:focus {
