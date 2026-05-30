@@ -19,7 +19,8 @@ services:
       - JwtSettings__SecretKey=${JwtSettings__SecretKey}
       - JwtSettings__Issuer=${JwtSettings__Issuer}
       - JwtSettings__Audience=${JwtSettings__Audience}
-      - JwtSettings__ExpiryHours=${JwtSettings__ExpiryHours}
+      - JwtSettings__AccessTokenExpiryMinutes=${JwtSettings__AccessTokenExpiryMinutes}
+      - JwtSettings__RefreshTokenExpiryDays=${JwtSettings__RefreshTokenExpiryDays}
       - Cors__AllowedOrigins__0=${Cors__AllowedOrigins__0}
       - Cors__AllowedOrigins__1=${Cors__AllowedOrigins__1}
       - CertificateStorage__BucketName=${CertificateStorage__BucketName}
@@ -96,6 +97,7 @@ services:
       args:
         PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
         PUBLIC_GOOGLE_CLIENT_ID: ${PUBLIC_GOOGLE_CLIENT_ID}
+        PUBLIC_COMMIT_HASH: ${PUBLIC_COMMIT_HASH:-dev}
     ports:
       - "${WEB_HTTP_PORT}:3000"
     environment:

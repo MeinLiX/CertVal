@@ -25,6 +25,8 @@ export interface ConfirmEmailCommand {
 export interface LoginResponse {
     token: string;
     expiresAt: string;
+    refreshToken: string;
+    refreshTokenExpiresAt: string;
     user: User;
 }
 
@@ -32,7 +34,7 @@ export class AuthService {
     static async login(command: LoginCommand) {
         const result = await httpClient.post<LoginResponse>('/auth/login', command);
         if (result.data) {
-            userSession.login(result.data.token, result.data.user);
+            userSession.login(result.data.token, result.data.user, result.data.refreshToken, result.data.expiresAt);
             auth.login(result.data.token, result.data.user);
         }
         return result;
@@ -41,7 +43,7 @@ export class AuthService {
     static async googleLogin(idToken: string) {
         const result = await httpClient.post<LoginResponse>('/auth/login/google', { idToken });
         if (result.data) {
-            userSession.login(result.data.token, result.data.user);
+            userSession.login(result.data.token, result.data.user, result.data.refreshToken, result.data.expiresAt);
             auth.login(result.data.token, result.data.user);
         }
         return result;
@@ -56,10 +58,20 @@ export class AuthService {
     }
 
     static async confirmEmail(command: ConfirmEmailCommand) {
-        return await httpClient.post<LoginResponse>('/auth/confirm-email', command);
+        const result = await httpClient.post<LoginResponse>('/auth/confirm-email', command);
+        if (result.data) {
+            userSession.login(result.data.token, result.data.user, result.data.refreshToken, result.data.expiresAt);
+            auth.login(result.data.token, result.data.user);
+        }
+        return result;
     }
 
-    static logout() {
+    static async logout() {
+        const refreshToken = userSession.refreshToken;
+        if (refreshToken) {
+            // Best-effort server-side revocation; ignore failures so logout always proceeds.
+            await httpClient.post('/auth/logout', { refreshToken });
+        }
         userSession.logout();
         auth.logout();
     }

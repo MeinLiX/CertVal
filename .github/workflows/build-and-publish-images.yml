@@ -99,6 +99,7 @@ jobs:
           if [ -z "$TAG_INPUT" ]; then TAG_INPUT="sha-$SHORT_SHA"; fi
           TAGS="$IMAGE_NAME:$TAG_INPUT"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
           echo "Resolved tags: $TAGS"
 
       - name: Build and push web
@@ -112,6 +113,7 @@ jobs:
           build-args: |
             PUBLIC_API_BASE_URL=${{ vars.PUBLIC_API_BASE_URL }}
             PUBLIC_GOOGLE_CLIENT_ID=${{ vars.PUBLIC_GOOGLE_CLIENT_ID }}
+            PUBLIC_COMMIT_HASH=${{ steps.tags.outputs.short_sha }}
 
       - name: Build and push ${{ matrix.image }}
         if: steps.filter.outputs.build == 'true' && matrix.service != 'web'

@@ -22,6 +22,7 @@ public class UnitOfWork : IUnitOfWork
     private readonly Lazy<INotificationHistoryRepository> _notificationHistory;
     private readonly Lazy<IWorkspaceMemberRepository> _workspaceMembers;
     private readonly Lazy<IApiTokenRepository> _apiTokens;
+    private readonly Lazy<IRefreshTokenRepository> _refreshTokens;
     private readonly Lazy<IEventStoreRepository> _eventStore;
 
     public UnitOfWork(ApplicationDbContext context, IDomainEventDispatcher? domainEventDispatcher = null)
@@ -36,6 +37,7 @@ public class UnitOfWork : IUnitOfWork
         _notificationHistory = new Lazy<INotificationHistoryRepository>(() => new NotificationHistoryRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
         _workspaceMembers = new Lazy<IWorkspaceMemberRepository>(() => new WorkspaceMemberRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
         _apiTokens = new Lazy<IApiTokenRepository>(() => new ApiTokenRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _refreshTokens = new Lazy<IRefreshTokenRepository>(() => new RefreshTokenRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
         _eventStore = new Lazy<IEventStoreRepository>(() => new EventStoreRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
@@ -46,6 +48,7 @@ public class UnitOfWork : IUnitOfWork
     public INotificationHistoryRepository NotificationHistory => _notificationHistory.Value;
     public IWorkspaceMemberRepository WorkspaceMembers => _workspaceMembers.Value;
     public IApiTokenRepository ApiTokens => _apiTokens.Value;
+    public IRefreshTokenRepository RefreshTokens => _refreshTokens.Value;
     public IEventStoreRepository EventStore => _eventStore.Value;
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

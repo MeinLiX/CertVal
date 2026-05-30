@@ -17,6 +17,13 @@ public class JwtTokenService : IJwtTokenService
         _configuration = configuration;
     }
 
+    public DateTime GetAccessTokenExpiry()
+    {
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var minutes = jwtSettings.GetValue<int?>("AccessTokenExpiryMinutes") ?? 15;
+        return DateTime.UtcNow.AddMinutes(minutes);
+    }
+
     public string GenerateToken(User user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
@@ -35,7 +42,7 @@ public class JwtTokenService : IJwtTokenService
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(24),
+            Expires = GetAccessTokenExpiry(),
             Issuer = jwtSettings["Issuer"],
             Audience = jwtSettings["Audience"],
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
