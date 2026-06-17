@@ -121,6 +121,7 @@ public class CertificateRepository : BaseRepository<Certificate>, ICertificateRe
         return await DbSet
             .Where(c => !c.IsBundle
                         && !c.IsSkipped
+                        && c.Workspace.OcspMonitoringEnabled
                         && c.Status != CertificateStatus.Revoked
                         && c.NotAfter > now
                         && (c.OcspLastCheckedAt == null || c.OcspLastCheckedAt < dueCutoff))

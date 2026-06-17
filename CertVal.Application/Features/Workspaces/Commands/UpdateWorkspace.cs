@@ -17,6 +17,7 @@ public record UpdateWorkspaceCommand : IRequest<Result<WorkspaceDto>>
     public bool IsPublic { get; init; } = false;
     public bool AllowMemberInvites { get; init; } = true;
     public bool AutoDeleteExpiredCertificates { get; init; } = false;
+    public bool OcspMonitoringEnabled { get; init; } = true;
 }
 
 public class UpdateWorkspaceCommandValidator : AbstractValidator<UpdateWorkspaceCommand>
@@ -68,7 +69,8 @@ public class UpdateWorkspaceCommandHandler : IRequestHandler<UpdateWorkspaceComm
             request.MaxCertificates,
             request.IsPublic,
             request.AllowMemberInvites,
-            request.AutoDeleteExpiredCertificates);
+            request.AutoDeleteExpiredCertificates,
+            request.OcspMonitoringEnabled);
 
         await _unitOfWork.Workspaces.UpdateAsync(workspace, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

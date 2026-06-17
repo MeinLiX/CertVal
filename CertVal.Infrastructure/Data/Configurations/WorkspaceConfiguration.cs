@@ -34,6 +34,9 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
         builder.Property(w => w.AutoDeleteExpiredCertificates)
             .HasDefaultValue(false);
 
+        builder.Property(w => w.OcspMonitoringEnabled)
+            .HasDefaultValue(true);
+
         // Indexes
         builder.HasIndex(w => w.OwnerId)
             .HasDatabaseName("IX_Workspaces_OwnerId");

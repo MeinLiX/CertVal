@@ -23,6 +23,7 @@ export interface Workspace {
     isPublic: boolean;
     allowMemberInvites: boolean;
     autoDeleteExpiredCertificates: boolean;
+    ocspMonitoringEnabled: boolean;
     certificateCount: number;
     memberCount: number;
     createdAt: string;
@@ -36,6 +37,7 @@ export interface UpdateWorkspaceRequest {
     isPublic: boolean;
     allowMemberInvites: boolean;
     autoDeleteExpiredCertificates: boolean;
+    ocspMonitoringEnabled: boolean;
 }
 
 export interface Certificate {
