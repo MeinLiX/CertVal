@@ -13,6 +13,7 @@ public record WorkspaceDto
     public bool IsPublic { get; init; }
     public bool AllowMemberInvites { get; init; }
     public bool AutoDeleteExpiredCertificates { get; init; }
+    public bool OcspMonitoringEnabled { get; init; }
     public int CertificateCount { get; init; }
     public int MemberCount { get; init; }
     public DateTime CreatedAt { get; init; }
@@ -34,6 +35,7 @@ public record CreateWorkspaceRequest
     public bool IsPublic { get; init; } = false;
     public bool AllowMemberInvites { get; init; } = true;
     public bool AutoDeleteExpiredCertificates { get; init; } = false;
+    public bool OcspMonitoringEnabled { get; init; } = true;
 }
 
 public record UpdateWorkspaceRequest
@@ -51,4 +53,5 @@ public record UpdateWorkspaceRequest
     public bool IsPublic { get; init; }
     public bool AllowMemberInvites { get; init; }
     public bool AutoDeleteExpiredCertificates { get; init; }
+    public bool OcspMonitoringEnabled { get; init; } = true;
 }
