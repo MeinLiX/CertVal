@@ -120,6 +120,10 @@ export const translations = {
                 x509: {
                     title: 'Сертифікати X.509 / PKI',
                     subtitle: 'Безкоштовні інструменти для роботи з сертифікатами — усе виконується у вашому браузері.'
+                },
+                online: {
+                    title: 'Онлайн-перевірки',
+                    subtitle: 'Перевірки, що звертаються до зовнішніх хостів через сервер CertVal.'
                 }
             },
             x509: {
@@ -159,6 +163,22 @@ export const translations = {
                     title: 'Перевірка відповідності ключ / сертифікат / CSR',
                     description: 'Порівняння публічних ключів локально у вашому браузері.'
                 }
+            },
+            sslCheck: {
+                cardTitle: 'Перевірка SSL за хостом',
+                cardDescription: 'Введіть домен — сервер під’єднається та покаже сертифікат, термін дії, ланцюжок і версію TLS.',
+                title: 'Перевірка SSL/TLS за хостом',
+                description: 'Перевірка виконується на сервері CertVal. Приватні/внутрішні адреси заблоковані.',
+                hostLabel: 'Хост (домен або host:port)',
+                hostPlaceholder: 'example.com або example.com:443',
+                check: 'Перевірити',
+                reachable: 'З’єднання встановлено',
+                unreachable: 'Не вдалося з’єднатися',
+                protocol: 'Протокол',
+                hostnameMatch: 'Відповідність імені хоста',
+                chainTrusted: 'Ланцюжок довірений',
+                yes: 'Так',
+                no: 'Ні'
             },
             verify: {
                 cardTitle: 'Перевірити підпис',
@@ -1059,6 +1079,22 @@ export const translations = {
                     title: 'Key / certificate / CSR match checker',
                     description: 'Public keys are compared locally in your browser.'
                 }
+            },
+            sslCheck: {
+                cardTitle: 'SSL checker by hostname',
+                cardDescription: 'Enter a domain — the server connects and shows the certificate, expiry, chain and TLS version.',
+                title: 'SSL/TLS checker by hostname',
+                description: 'The check runs on the CertVal server. Private/internal addresses are blocked.',
+                hostLabel: 'Host (domain or host:port)',
+                hostPlaceholder: 'example.com or example.com:443',
+                check: 'Check',
+                reachable: 'Connection established',
+                unreachable: 'Could not connect',
+                protocol: 'Protocol',
+                hostnameMatch: 'Hostname matches',
+                chainTrusted: 'Chain trusted',
+                yes: 'Yes',
+                no: 'No'
             },
             verify: {
                 cardTitle: 'Verify a signature',

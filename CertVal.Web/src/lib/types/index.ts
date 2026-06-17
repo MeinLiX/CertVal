@@ -283,3 +283,29 @@ export interface ThemeState {
     theme: Theme;
     resolved: 'light' | 'dark';
 }
+
+export interface SslCertInfo {
+    subject: string;
+    issuer: string;
+    serialNumber: string;
+    notBefore: string;
+    notAfter: string;
+    daysRemaining: number;
+    isExpired: boolean;
+    subjectAltNames: string[];
+    sha256Thumbprint: string;
+    signatureAlgorithm: string;
+    publicKey: string;
+}
+
+export interface SslCheckResult {
+    host: string;
+    port: number;
+    reachable: boolean;
+    error?: string;
+    negotiatedProtocol?: string;
+    hostnameMatches?: boolean;
+    chainTrusted?: boolean;
+    leaf?: SslCertInfo;
+    chain: SslCertInfo[];
+}
