@@ -36,6 +36,7 @@ public static class ServiceRegistration
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddSingleton<IWebhookSecurityService, WebhookSecurityService>();
         services.AddScoped<IRateLimitService, RedisRateLimitService>();
+        services.AddScoped<ISslInspectionService, SslInspectionService>();
         services.AddScoped<ICertificateExpiryProcessor, CertificateExpiryProcessor>();
 
         AddRevocationChecking(services);

@@ -77,5 +77,18 @@ export const utilsBlocks: UtilsNavBlock[] = [
 				icon: 'checkCircle'
 			}
 		]
+	},
+	{
+		key: 'online',
+		titleKey: 'utils.blocks.online.title',
+		tools: [
+			{
+				key: 'ssl-check',
+				labelKey: 'utils.sslCheck.cardTitle',
+				descKey: 'utils.sslCheck.description',
+				href: '/utils/ssl-check',
+				icon: 'security'
+			}
+		]
 	}
 ];

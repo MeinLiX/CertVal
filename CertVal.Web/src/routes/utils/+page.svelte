@@ -84,6 +84,19 @@
 					icon: 'checkCircle'
 				}
 			]
+		},
+		{
+			titleKey: 'utils.blocks.online.title',
+			subtitleKey: 'utils.blocks.online.subtitle',
+			tools: [
+				{
+					key: 'ssl-check',
+					titleKey: 'utils.sslCheck.cardTitle',
+					descKey: 'utils.sslCheck.cardDescription',
+					href: '/utils/ssl-check',
+					icon: 'security'
+				}
+			]
 		}
 	];
 </script>
