@@ -49,6 +49,10 @@ public class CertificateConfiguration : IEntityTypeConfiguration<Certificate>
         builder.Property(c => c.IsSkipped)
             .HasDefaultValue(false);
 
+        builder.Property(c => c.Tags)
+            .HasColumnType("text[]")
+            .HasDefaultValueSql("'{}'::text[]");
+
         builder.Property(c => c.OcspStatus)
             .IsRequired()
             .HasConversion<int>()

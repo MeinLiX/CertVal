@@ -53,6 +53,7 @@ export interface Certificate {
     fileFormat: string;
     fileSize: number;
     isSkipped: boolean;
+    tags?: string[];
     previousCertificateId?: string;
     nextCertificateId?: string;
     isBundle: boolean;

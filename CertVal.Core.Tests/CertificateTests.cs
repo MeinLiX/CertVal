@@ -96,4 +96,41 @@ public class CertificateTests
         cert.ToggleSkipMonitoring(true);
         Assert.True(cert.IsSkipped);
     }
+
+    [Fact]
+    public void SetTags_NormalizesTrimsDedupesAndDropsEmpties()
+    {
+        var cert = NewCertificate();
+
+        cert.SetTags(["  prod ", "PROD", "", "  ", "team:payments"]);
+
+        Assert.Equal(2, cert.Tags.Count);
+        Assert.Contains("prod", cert.Tags);
+        Assert.Contains("team:payments", cert.Tags);
+    }
+
+    [Fact]
+    public void SetTags_CapsTagCountAndLength()
+    {
+        var cert = NewCertificate();
+        var many = Enumerable.Range(0, 40).Select(i => $"tag{i}");
+
+        cert.SetTags(many);
+        Assert.Equal(Certificate.MaxTags, cert.Tags.Count);
+
+        cert.SetTags([new string('x', 100)]);
+        Assert.Single(cert.Tags);
+        Assert.Equal(Certificate.MaxTagLength, cert.Tags[0].Length);
+    }
+
+    [Fact]
+    public void SetTags_WithNull_ClearsTags()
+    {
+        var cert = NewCertificate();
+        cert.SetTags(["a", "b"]);
+        Assert.Equal(2, cert.Tags.Count);
+
+        cert.SetTags(null);
+        Assert.Empty(cert.Tags);
+    }
 }
