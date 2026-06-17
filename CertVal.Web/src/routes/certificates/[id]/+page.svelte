@@ -12,6 +12,7 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 	import OcspBadge from '$lib/components/certificates/OcspBadge.svelte';
+	import CertificateTags from '$lib/components/certificates/CertificateTags.svelte';
 	import type { Certificate } from '$lib/types';
 
 	let certificate = $state<Certificate | null>(null);
@@ -318,6 +319,15 @@
 						</div>
 					</div>
 				</section>
+
+				{#if !certificate.isBundle}
+					<CertificateTags
+						{certificate}
+						onUpdated={(updated) => {
+							if (certificate) certificate.tags = updated;
+						}}
+					/>
+				{/if}
 
 				{#if certificate.isBundle && certificate.childCertificates.length > 0}
 					<section class="card">

@@ -36,6 +36,9 @@ public class Certificate : BaseEntity
     // Monitoring
     public bool IsSkipped { get; private set; }
 
+    // Organization
+    public List<string> Tags { get; private set; } = [];
+
     // OCSP revocation tracking
     public OcspStatus OcspStatus { get; private set; } = OcspStatus.NotChecked;
     public DateTime? OcspLastCheckedAt { get; private set; }
@@ -142,6 +145,34 @@ public class Certificate : BaseEntity
     public void ToggleSkipMonitoring(bool isSkipped)
     {
         IsSkipped = isSkipped;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public const int MaxTags = 25;
+    public const int MaxTagLength = 40;
+
+    /// <summary>
+    /// Replaces the certificate's tags with a normalized set: trimmed, de-duplicated
+    /// case-insensitively, empties removed, each capped at <see cref="MaxTagLength"/>
+    /// characters and the whole set capped at <see cref="MaxTags"/> entries.
+    /// </summary>
+    public void SetTags(IEnumerable<string>? tags)
+    {
+        var normalized = new List<string>();
+        if (tags is not null)
+        {
+            foreach (var raw in tags)
+            {
+                var tag = raw?.Trim();
+                if (string.IsNullOrEmpty(tag)) continue;
+                if (tag.Length > MaxTagLength) tag = tag[..MaxTagLength];
+                if (!normalized.Any(x => string.Equals(x, tag, StringComparison.OrdinalIgnoreCase)))
+                    normalized.Add(tag);
+                if (normalized.Count >= MaxTags) break;
+            }
+        }
+
+        Tags = normalized;
         UpdatedAt = DateTime.UtcNow;
     }
 
