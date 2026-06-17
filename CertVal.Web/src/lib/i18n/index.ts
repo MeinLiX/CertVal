@@ -116,6 +116,48 @@ export const translations = {
                 signing: {
                     title: 'Електронний підпис',
                     subtitle: 'Підписання документів та перевірка підпису з використанням бібліотек АТ "ІІТ".'
+                },
+                x509: {
+                    title: 'Сертифікати X.509 / PKI',
+                    subtitle: 'Безкоштовні інструменти для роботи з сертифікатами — усе виконується у вашому браузері.'
+                }
+            },
+            x509: {
+                common: {
+                    pasteLabel: 'Вставте PEM / base64 або перетягніть файл',
+                    pasteHint: 'Підтримуються PEM та DER. Дані не надсилаються на сервер.',
+                    parse: 'Розібрати',
+                    clear: 'Очистити',
+                    copyJson: 'Копіювати як JSON',
+                    copied: 'Скопійовано',
+                    download: 'Завантажити',
+                    privacy: 'Усі обчислення виконуються локально у вашому браузері — нічого не завантажується на сервер.',
+                    noInput: 'Спочатку надайте дані.',
+                    error: 'Не вдалося розібрати вхідні дані.'
+                },
+                decode: {
+                    cardTitle: 'Декодер сертифіката',
+                    cardDescription: 'Розшифруйте сертифікат (PEM/DER) і перегляньте всі поля: суб’єкт, видавця, термін дії, SAN, відбитки тощо.',
+                    title: 'Декодер / інспектор сертифіката',
+                    description: 'Вставте або перетягніть сертифікат — інструмент локально покаже його деталі.'
+                },
+                generate: {
+                    cardTitle: 'Генератор CSR / ключа',
+                    cardDescription: 'Згенеруйте пару ключів і CSR або самопідписаний сертифікат прямо у браузері (WebCrypto).',
+                    title: 'Генератор CSR та самопідписаного сертифіката',
+                    description: 'Ключі генеруються локально у вашому браузері й ніколи не передаються на сервер.'
+                },
+                convert: {
+                    cardTitle: 'Конвертер форматів',
+                    cardDescription: 'Перетворення між PEM та DER і розбиття ланцюжка сертифікатів — локально у браузері.',
+                    title: 'Конвертер форматів сертифікатів',
+                    description: 'PEM ↔ DER та розділення ланцюжка на окремі сертифікати.'
+                },
+                match: {
+                    cardTitle: 'Перевірка відповідності',
+                    cardDescription: 'Перевірте, чи відповідають приватний ключ, сертифікат та CSR один одному.',
+                    title: 'Перевірка відповідності ключ / сертифікат / CSR',
+                    description: 'Порівняння публічних ключів локально у вашому браузері.'
                 }
             },
             verify: {
@@ -974,6 +1016,48 @@ export const translations = {
                 signing: {
                     title: 'Electronic signature',
                     subtitle: 'Sign documents and verify signatures using IIT (АТ "ІІТ") libraries.'
+                },
+                x509: {
+                    title: 'X.509 / PKI tools',
+                    subtitle: 'Free certificate tools — everything runs locally in your browser.'
+                }
+            },
+            x509: {
+                common: {
+                    pasteLabel: 'Paste PEM / base64 or drop a file',
+                    pasteHint: 'PEM and DER are supported. Nothing is sent to the server.',
+                    parse: 'Parse',
+                    clear: 'Clear',
+                    copyJson: 'Copy as JSON',
+                    copied: 'Copied',
+                    download: 'Download',
+                    privacy: 'Everything runs locally in your browser — nothing is uploaded.',
+                    noInput: 'Provide input first.',
+                    error: 'Could not parse the input.'
+                },
+                decode: {
+                    cardTitle: 'Certificate decoder',
+                    cardDescription: 'Decode a certificate (PEM/DER) and inspect every field: subject, issuer, validity, SANs, fingerprints and more.',
+                    title: 'Certificate decoder / inspector',
+                    description: 'Paste or drop a certificate — it is decoded locally and shown in full.'
+                },
+                generate: {
+                    cardTitle: 'CSR / key generator',
+                    cardDescription: 'Generate a key pair and a CSR or a self-signed certificate right in your browser (WebCrypto).',
+                    title: 'CSR & self-signed certificate generator',
+                    description: 'Keys are generated locally in your browser and never sent to the server.'
+                },
+                convert: {
+                    cardTitle: 'Format converter',
+                    cardDescription: 'Convert between PEM and DER and split a certificate chain — locally in your browser.',
+                    title: 'Certificate format converter',
+                    description: 'PEM ↔ DER and splitting a chain into individual certificates.'
+                },
+                match: {
+                    cardTitle: 'Match checker',
+                    cardDescription: 'Check whether a private key, certificate and CSR belong together.',
+                    title: 'Key / certificate / CSR match checker',
+                    description: 'Public keys are compared locally in your browser.'
                 }
             },
             verify: {
