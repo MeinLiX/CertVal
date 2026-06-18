@@ -9,11 +9,15 @@
 		certificate,
 		workspaceName = '',
 		status: externalStatus,
+		selectionMode = false,
+		selected = false,
 		onclick
 	}: {
 		certificate: Certificate;
 		workspaceName?: string;
 		status?: 'valid' | 'expiring' | 'expired';
+		selectionMode?: boolean;
+		selected?: boolean;
 		onclick?: () => void;
 	} = $props();
 
@@ -43,9 +47,20 @@
 <button
 	type="button"
 	class="cert-card {statusInfo.class}"
+	class:cert-card--selected={selected}
 	onclick={onclick}
 	data-test-id="certificate-card-{certificate.id}"
 >
+	{#if selectionMode}
+		<div class="cert-card__check" class:cert-card__check--on={selected} aria-hidden="true">
+			{#if selected}
+				<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+					<polyline points="20 6 9 17 4 12" />
+				</svg>
+			{/if}
+		</div>
+	{/if}
+
 	{#if certificate.isSkipped}
 		<div class="cert-card__badge" title={t('certificates.ignored', language.current)}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -125,6 +140,32 @@
 		outline: none;
 		border-color: var(--color-primary);
 		box-shadow: 0 0 0 3px var(--color-primary-alpha);
+	}
+
+	.cert-card--selected {
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 2px var(--color-primary);
+	}
+
+	.cert-card__check {
+		position: absolute;
+		top: var(--space-3);
+		left: var(--space-3);
+		z-index: 2;
+		width: 20px;
+		height: 20px;
+		border-radius: var(--radius-sm);
+		border: 2px solid var(--color-border-strong);
+		background: var(--color-surface);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: #fff;
+	}
+
+	.cert-card__check--on {
+		background: var(--color-primary);
+		border-color: var(--color-primary);
 	}
 
 	.cert-card__indicator {
