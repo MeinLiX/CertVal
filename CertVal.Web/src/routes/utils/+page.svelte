@@ -50,6 +50,60 @@
 					icon: 'checkCircle'
 				}
 			]
+		},
+		{
+			titleKey: 'utils.blocks.x509.title',
+			subtitleKey: 'utils.blocks.x509.subtitle',
+			tools: [
+				{
+					key: 'decode',
+					titleKey: 'utils.x509.decode.cardTitle',
+					descKey: 'utils.x509.decode.cardDescription',
+					href: '/utils/decode',
+					icon: 'document'
+				},
+				{
+					key: 'generate',
+					titleKey: 'utils.x509.generate.cardTitle',
+					descKey: 'utils.x509.generate.cardDescription',
+					href: '/utils/generate',
+					icon: 'key'
+				},
+				{
+					key: 'convert',
+					titleKey: 'utils.x509.convert.cardTitle',
+					descKey: 'utils.x509.convert.cardDescription',
+					href: '/utils/convert',
+					icon: 'settings'
+				},
+				{
+					key: 'match',
+					titleKey: 'utils.x509.match.cardTitle',
+					descKey: 'utils.x509.match.cardDescription',
+					href: '/utils/match',
+					icon: 'checkCircle'
+				},
+				{
+					key: 'hash',
+					titleKey: 'utils.hash.cardTitle',
+					descKey: 'utils.hash.cardDescription',
+					href: '/utils/hash',
+					icon: 'hash'
+				}
+			]
+		},
+		{
+			titleKey: 'utils.blocks.online.title',
+			subtitleKey: 'utils.blocks.online.subtitle',
+			tools: [
+				{
+					key: 'ssl-check',
+					titleKey: 'utils.sslCheck.cardTitle',
+					descKey: 'utils.sslCheck.cardDescription',
+					href: '/utils/ssl-check',
+					icon: 'security'
+				}
+			]
 		}
 	];
 </script>

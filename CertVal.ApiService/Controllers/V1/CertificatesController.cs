@@ -159,7 +159,32 @@ public class CertificatesController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/update")]
+    [HttpPut("{id:guid}/tags")]
+    [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<List<string>>> SetTags(
+        Guid id,
+        [FromBody] SetCertificateTagsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new SetCertificateTagsCommand(request.WorkspaceId, id, request.Tags);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error.Contains("not found"))
+                return NotFound(new ErrorResponseDto(result.Error));
+            if (result.Error.Contains("Access denied"))
+                return Forbid();
+
+            return BadRequest(new ErrorResponseDto(result.Error));
+        }
+
+        return Ok(result.Value);
+    }
     [ProducesResponseType(typeof(CertificateDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -1,9 +1,11 @@
 using CertVal.Application.Common.Interfaces;
+using CertVal.Application.Common.Telemetry;
 using CertVal.Core.Enums;
 using CertVal.Core.Repositories;
 using CertVal.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 
 namespace CertVal.Infrastructure.Services;
 
@@ -32,6 +34,9 @@ public sealed class CertificateRevocationProcessor : ICertificateRevocationProce
 
     public async Task ProcessRevocationChecksAsync(CancellationToken cancellationToken = default)
     {
+        using var activity = CertValDiagnostics.ActivitySource.StartActivity("ocsp.cycle", ActivityKind.Internal);
+        var stopwatch = Stopwatch.StartNew();
+
         var batchSize = _options.BatchSize;
         var minInterval = TimeSpan.FromMinutes(_options.MinPerCertificateIntervalMinutes);
         var maxConcurrency = Math.Max(1, _options.MaxConcurrency);
@@ -40,8 +45,12 @@ public sealed class CertificateRevocationProcessor : ICertificateRevocationProce
         if (due.Count == 0)
         {
             _logger.LogDebug("OCSP cycle: no certificates are due for revocation check");
+            activity?.SetTag("certval.ocsp.due", 0);
+            CertValDiagnostics.OcspCycleDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
             return;
         }
+
+        activity?.SetTag("certval.ocsp.due", due.Count);
 
         _logger.LogInformation(
             "OCSP cycle: checking {Count} certificate(s) (batch size {Batch}, concurrency {Concurrency})",
@@ -91,6 +100,18 @@ public sealed class CertificateRevocationProcessor : ICertificateRevocationProce
         var good = results.Count(r => r.Value.Status == OcspStatus.Good);
         var notConfigured = results.Count(r => r.Value.Status == OcspStatus.NotConfigured);
         var failed = results.Count(r => r.Value.Status == OcspStatus.CheckFailed);
+
+        CertValDiagnostics.OcspChecks.Add(good, new KeyValuePair<string, object?>("result", "good"));
+        CertValDiagnostics.OcspChecks.Add(revoked, new KeyValuePair<string, object?>("result", "revoked"));
+        CertValDiagnostics.OcspChecks.Add(notConfigured, new KeyValuePair<string, object?>("result", "not_configured"));
+        CertValDiagnostics.OcspChecks.Add(failed, new KeyValuePair<string, object?>("result", "failed"));
+        if (revoked > 0)
+            CertValDiagnostics.OcspRevocations.Add(revoked);
+
+        stopwatch.Stop();
+        CertValDiagnostics.OcspCycleDuration.Record(stopwatch.Elapsed.TotalMilliseconds);
+        activity?.SetTag("certval.ocsp.revoked", revoked);
+        activity?.SetTag("certval.ocsp.failed", failed);
 
         _logger.LogInformation(
             "OCSP cycle complete: good={Good}, revoked={Revoked}, notConfigured={NotConfigured}, failed={Failed}",

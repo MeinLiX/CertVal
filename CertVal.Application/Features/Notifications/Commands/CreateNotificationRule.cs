@@ -1,5 +1,6 @@
 using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
+using CertVal.Application.Common.Notifications;
 using CertVal.Application.DTOs;
 using CertVal.Core.Entities;
 using CertVal.Core.Enums;
@@ -50,6 +51,21 @@ public class CreateNotificationRuleCommandValidator : AbstractValidator<CreateNo
         RuleFor(x => x.RecipientUserIds)
             .NotEmpty().WithMessage("Recipient user IDs are required for email notifications")
             .When(x => x.ChannelType == NotificationChannelType.Email);
+
+        // Validate the channel-specific configuration shape at the API boundary.
+        // Email recipients are supplied via RecipientUserIds and the config is built
+        // server-side, so only the non-email channels are shape-checked here.
+        RuleFor(x => x.ChannelConfig)
+            .Custom((channelConfig, context) =>
+            {
+                var command = context.InstanceToValidate;
+                if (command.ChannelType == NotificationChannelType.Email)
+                    return;
+
+                var result = NotificationChannelConfigValidator.Validate(command.ChannelType, channelConfig);
+                if (result.IsFailure)
+                    context.AddFailure(nameof(command.ChannelConfig), result.Error);
+            });
     }
 
     private static bool BeValidJson(string json)

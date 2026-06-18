@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore CertVal.sln
+
+      - name: Build
+        run: dotnet build CertVal.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test CertVal.sln --configuration Release --no-build --verbosity normal
+
+  web:
+    name: Web build & check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: CertVal.Web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        # package-lock.json is intentionally gitignored in this repo, so use
+        # `npm install` (not `npm ci`, which requires a committed lockfile).
+        run: npm install
+
+      - name: Type-check
+        run: npm run check
+
+      - name: Build
+        run: npm run build

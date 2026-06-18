@@ -20,6 +20,7 @@ public record GetCertificatesQuery : IRequest<Result<PagedResult<CertificateDto>
     public CertificateStatusFilter StatusFilter { get; init; } = CertificateStatusFilter.All;
     public bool? IsBundle { get; init; }
     public string? Status { get; init; }
+    public string? Tag { get; init; }
     public string? SortBy { get; init; }
     public bool SortDescending { get; init; }
     public int PageNumber { get; init; } = 1;
@@ -138,6 +139,12 @@ public class GetCertificatesQueryHandler : IRequestHandler<GetCertificatesQuery,
 
         if (!string.IsNullOrEmpty(request.Status) && Enum.TryParse<CertificateStatus>(request.Status, out var status))
             query = query.Where(c => c.Status == status);
+
+        if (!string.IsNullOrWhiteSpace(request.Tag))
+        {
+            var tag = request.Tag.Trim();
+            query = query.Where(c => c.Tags.Any(x => string.Equals(x, tag, StringComparison.OrdinalIgnoreCase)));
+        }
 
         return query;
     }

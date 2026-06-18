@@ -1,4 +1,5 @@
 ﻿using CertVal.Application.Common.Interfaces;
+using CertVal.Application.Common.Jobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -107,7 +108,17 @@ public class CertificateExpiryCheckerService : BackgroundService, ICertificateEx
     private async Task CheckCertificateExpiryAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
+        var locks = scope.ServiceProvider.GetRequiredService<IDistributedLockService>();
         var processor = scope.ServiceProvider.GetRequiredService<ICertificateExpiryProcessor>();
-        await processor.ProcessExpiryAsync(cancellationToken);
+
+        var ran = await DistributedJob.RunIfAcquiredAsync(
+            locks,
+            "certificate-expiry-cycle",
+            TimeSpan.FromMinutes(15),
+            processor.ProcessExpiryAsync,
+            cancellationToken);
+
+        if (!ran)
+            _logger.LogDebug("Certificate expiry cycle skipped: another instance holds the lock");
     }
 }

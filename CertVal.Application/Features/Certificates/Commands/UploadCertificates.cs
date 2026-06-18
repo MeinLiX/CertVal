@@ -1,5 +1,6 @@
 ﻿using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
+using CertVal.Application.Common.Telemetry;
 using CertVal.Application.Configuration;
 using CertVal.Application.DTOs;
 using CertVal.Application.Services;
@@ -241,6 +242,7 @@ public class UploadCertificatesCommandHandler : IRequestHandler<UploadCertificat
                 results.Add(new BulkUploadItemResult { FileName = file.FileName, Success = true, CertificateId = parentCertificate.Id, Subject = parentCertificate.Subject, IsSkipped = false });
                 successCount++;
                 currentCertificateCount += countToAdd;
+                CertValDiagnostics.CertificatesUploaded.Add(1);
             }
             catch (Exception ex)
             {

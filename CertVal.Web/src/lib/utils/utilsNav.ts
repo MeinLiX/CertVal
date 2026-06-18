@@ -43,5 +43,59 @@ export const utilsBlocks: UtilsNavBlock[] = [
 				icon: 'checkCircle'
 			}
 		]
+	},
+	{
+		key: 'x509',
+		titleKey: 'utils.blocks.x509.title',
+		tools: [
+			{
+				key: 'decode',
+				labelKey: 'utils.x509.decode.cardTitle',
+				descKey: 'utils.x509.decode.description',
+				href: '/utils/decode',
+				icon: 'document'
+			},
+			{
+				key: 'generate',
+				labelKey: 'utils.x509.generate.cardTitle',
+				descKey: 'utils.x509.generate.description',
+				href: '/utils/generate',
+				icon: 'key'
+			},
+			{
+				key: 'convert',
+				labelKey: 'utils.x509.convert.cardTitle',
+				descKey: 'utils.x509.convert.description',
+				href: '/utils/convert',
+				icon: 'settings'
+			},
+			{
+				key: 'match',
+				labelKey: 'utils.x509.match.cardTitle',
+				descKey: 'utils.x509.match.description',
+				href: '/utils/match',
+				icon: 'checkCircle'
+			},
+			{
+				key: 'hash',
+				labelKey: 'utils.hash.cardTitle',
+				descKey: 'utils.hash.description',
+				href: '/utils/hash',
+				icon: 'hash'
+			}
+		]
+	},
+	{
+		key: 'online',
+		titleKey: 'utils.blocks.online.title',
+		tools: [
+			{
+				key: 'ssl-check',
+				labelKey: 'utils.sslCheck.cardTitle',
+				descKey: 'utils.sslCheck.description',
+				href: '/utils/ssl-check',
+				icon: 'security'
+			}
+		]
 	}
 ];
