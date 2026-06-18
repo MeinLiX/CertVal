@@ -43,11 +43,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: npm
-          cache-dependency-path: CertVal.Web/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        # package-lock.json is intentionally gitignored in this repo, so use
+        # `npm install` (not `npm ci`, which requires a committed lockfile).
+        run: npm install
 
       - name: Type-check
         run: npm run check
