@@ -1,4 +1,5 @@
 using CertVal.Application.Common.Interfaces;
+using CertVal.Application.Common.Jobs;
 using CertVal.Infrastructure.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -74,8 +75,18 @@ public sealed class CertificateRevocationCheckService : BackgroundService, ICert
     private async Task RunCycleAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
+        var locks = scope.ServiceProvider.GetRequiredService<IDistributedLockService>();
         var processor = scope.ServiceProvider.GetRequiredService<ICertificateRevocationProcessor>();
-        await processor.ProcessRevocationChecksAsync(cancellationToken);
+
+        var ran = await DistributedJob.RunIfAcquiredAsync(
+            locks,
+            "ocsp-revocation-cycle",
+            TimeSpan.FromMinutes(15),
+            processor.ProcessRevocationChecksAsync,
+            cancellationToken);
+
+        if (!ran)
+            _logger.LogDebug("OCSP revocation cycle skipped: another instance holds the lock");
     }
 
     private async Task<bool> DelayCancellableAsync(TimeSpan delay, CancellationToken stoppingToken)
