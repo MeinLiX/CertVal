@@ -185,6 +185,27 @@ public class CertificatesController : ControllerBase
 
         return Ok(result.Value);
     }
+
+    [HttpPost("bulk")]
+    [ProducesResponseType(typeof(BulkOperationResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<BulkOperationResultDto>> BulkOperation(
+        [FromBody] BulkCertificateOperationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new BulkCertificateOperationCommand(
+            request.WorkspaceId, request.CertificateIds, request.Operation, request.Tags);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+            return result.Error.Contains("Access denied") ? Forbid() : BadRequest(new ErrorResponseDto(result.Error));
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("{id:guid}/update")]
     [ProducesResponseType(typeof(CertificateDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

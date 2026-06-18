@@ -1,4 +1,6 @@
 ﻿using CertVal.Application.Common.Interfaces;
+using CertVal.Application.Common.Notifications;
+using CertVal.Core.Enums;
 using CertVal.Core.Events;
 using CertVal.Core.Repositories;
 using Microsoft.Extensions.Logging;
@@ -108,7 +110,9 @@ public class WebhookNotificationEventHandlers :
 
         return allRules.Where(r =>
             r.IsEnabled &&
-            r.ChannelType == Core.Enums.NotificationChannelType.Webhook &&
+            (r.ChannelType == NotificationChannelType.Webhook ||
+             r.ChannelType == NotificationChannelType.Slack ||
+             r.ChannelType == NotificationChannelType.Telegram) &&
             r.DaysBeforeExpiry >= daysUntilExpiry).ToList();
     }
 
@@ -147,54 +151,141 @@ public class WebhookNotificationEventHandlers :
     {
         try
         {
-            var webhookConfig = ParseWebhookConfig(rule.ChannelConfig);
-            if (webhookConfig?.Url == null)
-            {
-                _logger.LogWarning("Invalid webhook configuration for rule {RuleId}", rule.Id);
-                return;
-            }
-
-            var (valid, uri, error) = await _security.ValidateUrlAsync(webhookConfig.Url, cancellationToken);
-            if (!valid || uri == null)
-            {
-                _logger.LogWarning("Webhook URL rejected for rule {RuleId}: {Error}", rule.Id, error);
-                return;
-            }
-
             var subject = GenerateSubject(certificate, daysUntilExpiry);
             var message = GenerateMessage(certificate, workspace, daysUntilExpiry);
 
+            var delivery = await PrepareDeliveryAsync(rule, certificate, workspace, daysUntilExpiry, subject, message, cancellationToken);
+            if (!delivery.Ok || delivery.Uri is null)
+            {
+                _logger.LogWarning("Notification delivery could not be prepared for rule {RuleId}: {Error}", rule.Id, delivery.Error);
+                return;
+            }
+
             var notificationHistory = Core.Entities.NotificationHistory.Create(
                 rule.Id, certificate.Id, rule.ChannelType,
-                uri.ToString(), subject, message, DateTime.UtcNow);
+                delivery.Uri.ToString(), subject, message, DateTime.UtcNow);
 
             await _unitOfWork.NotificationHistory.AddAsync(notificationHistory, cancellationToken);
 
-            var success = await SendWebhookAsync(uri, webhookConfig, certificate, workspace, daysUntilExpiry, cancellationToken);
+            var success = await SendAsync(delivery.Uri, delivery.Payload, delivery.Headers, cancellationToken);
 
             if (success)
             {
                 notificationHistory.MarkAsSent();
-                _logger.LogDebug("Successfully sent webhook notification for rule {RuleId}", rule.Id);
+                _logger.LogDebug("Successfully sent {Channel} notification for rule {RuleId}", rule.ChannelType, rule.Id);
             }
             else
             {
-                notificationHistory.MarkAsFailed("Webhook request failed");
-                _logger.LogWarning("Webhook notification failed for rule {RuleId}", rule.Id);
+                notificationHistory.MarkAsFailed($"{rule.ChannelType} request failed");
+                _logger.LogWarning("{Channel} notification failed for rule {RuleId}", rule.ChannelType, rule.Id);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing webhook rule {RuleId}", rule.Id);
+            _logger.LogError(ex, "Error processing notification rule {RuleId}", rule.Id);
         }
     }
 
-    private async Task<bool> SendWebhookAsync(
-        Uri uri,
-        WebhookConfig config,
+    private async Task<(bool Ok, Uri? Uri, string Payload, Dictionary<string, string>? Headers, string? Error)> PrepareDeliveryAsync(
+        Core.Entities.NotificationRule rule,
         Core.Entities.Certificate certificate,
         Core.Entities.Workspace workspace,
         int daysUntilExpiry,
+        string subject,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        using var doc = JsonDocument.Parse(rule.ChannelConfig);
+        var root = doc.RootElement;
+
+        switch (rule.ChannelType)
+        {
+            case NotificationChannelType.Webhook:
+            {
+                if (!root.TryGetProperty("url", out var urlEl) || string.IsNullOrWhiteSpace(urlEl.GetString()))
+                    return (false, null, string.Empty, null, "Webhook URL missing");
+
+                var (valid, uri, error) = await _security.ValidateUrlAsync(urlEl.GetString(), cancellationToken);
+                if (!valid || uri is null) return (false, null, string.Empty, null, error);
+
+                Dictionary<string, string>? headers = null;
+                if (root.TryGetProperty("headers", out var hEl) && hEl.ValueKind == JsonValueKind.Object)
+                {
+                    var temp = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var p in hEl.EnumerateObject())
+                        if (p.Value.ValueKind == JsonValueKind.String) temp[p.Name] = p.Value.GetString() ?? string.Empty;
+                    headers = _security.SanitizeHeaders(temp).ToDictionary(k => k.Key, v => v.Value);
+                }
+
+                var payload = BuildWebhookPayload(certificate, workspace, daysUntilExpiry);
+                return (true, uri, payload, headers, null);
+            }
+
+            case NotificationChannelType.Slack:
+            {
+                if (!root.TryGetProperty("webhookUrl", out var urlEl) || string.IsNullOrWhiteSpace(urlEl.GetString()))
+                    return (false, null, string.Empty, null, "Slack webhookUrl missing");
+
+                var (valid, uri, error) = await _security.ValidateUrlAsync(urlEl.GetString(), cancellationToken);
+                if (!valid || uri is null) return (false, null, string.Empty, null, error);
+
+                return (true, uri, ChatNotificationFormatter.BuildSlackPayload(subject, message), null, null);
+            }
+
+            case NotificationChannelType.Telegram:
+            {
+                var botToken = root.TryGetProperty("botToken", out var tEl) ? tEl.GetString() : null;
+                var chatId = root.TryGetProperty("chatId", out var cEl) ? cEl.GetString() : null;
+                if (string.IsNullOrWhiteSpace(botToken) || string.IsNullOrWhiteSpace(chatId))
+                    return (false, null, string.Empty, null, "Telegram botToken/chatId missing");
+
+                var url = ChatNotificationFormatter.BuildTelegramUrl(botToken);
+                var (valid, uri, error) = await _security.ValidateUrlAsync(url, cancellationToken);
+                if (!valid || uri is null) return (false, null, string.Empty, null, error);
+
+                return (true, uri, ChatNotificationFormatter.BuildTelegramPayload(chatId, subject, message), null, null);
+            }
+
+            default:
+                return (false, null, string.Empty, null, "Unsupported channel");
+        }
+    }
+
+    private string BuildWebhookPayload(
+        Core.Entities.Certificate certificate,
+        Core.Entities.Workspace workspace,
+        int daysUntilExpiry)
+    {
+        var payload = new
+        {
+            EventType = daysUntilExpiry <= 0 ? "CertificateExpired" : "CertificateExpiring",
+            Timestamp = DateTime.UtcNow,
+            Certificate = new
+            {
+                certificate.Id,
+                Subject = _security.SanitizeValue(certificate.Subject, 256),
+                Issuer = _security.SanitizeValue(certificate.Issuer, 256),
+                SerialNumber = _security.SanitizeValue(certificate.SerialNumber, 128),
+                certificate.NotAfter,
+                DaysUntilExpiry = daysUntilExpiry,
+                IsExpired = daysUntilExpiry <= 0,
+                FileName = _security.SanitizeValue(certificate.OriginalFileName, 128)
+            },
+            Workspace = new
+            {
+                workspace.Id,
+                Name = _security.SanitizeValue(workspace.Name, 200),
+                Owner = _security.SanitizeValue(workspace.Owner.Email, 200)
+            }
+        };
+
+        return JsonSerializer.Serialize(payload, JsonOptions);
+    }
+
+    private async Task<bool> SendAsync(
+        Uri uri,
+        string payloadJson,
+        Dictionary<string, string>? headers,
         CancellationToken cancellationToken)
     {
         try
@@ -202,36 +293,12 @@ public class WebhookNotificationEventHandlers :
             using var httpClient = _httpClientFactory.CreateClient("webhook");
             httpClient.Timeout = TimeSpan.FromSeconds(30);
 
-            var payload = new
-            {
-                EventType = daysUntilExpiry <= 0 ? "CertificateExpired" : "CertificateExpiring",
-                Timestamp = DateTime.UtcNow,
-                Certificate = new
-                {
-                    certificate.Id,
-                    Subject = _security.SanitizeValue(certificate.Subject, 256),
-                    Issuer = _security.SanitizeValue(certificate.Issuer, 256),
-                    SerialNumber = _security.SanitizeValue(certificate.SerialNumber, 128),
-                    certificate.NotAfter,
-                    DaysUntilExpiry = daysUntilExpiry,
-                    IsExpired = daysUntilExpiry <= 0,
-                    FileName = _security.SanitizeValue(certificate.OriginalFileName, 128)
-                },
-                Workspace = new
-                {
-                    workspace.Id,
-                    Name = _security.SanitizeValue(workspace.Name, 200),
-                    Owner = _security.SanitizeValue(workspace.Owner.Email, 200)
-                }
-            };
+            var content = new StringContent(payloadJson, System.Text.Encoding.UTF8, "application/json");
 
-            var json = JsonSerializer.Serialize(payload, JsonOptions);
-            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-            var headers = _security.SanitizeHeaders(config.Headers);
-            foreach (var (key, value) in headers)
+            if (headers is not null)
             {
-                httpClient.DefaultRequestHeaders.TryAddWithoutValidation(key, value);
+                foreach (var (key, value) in headers)
+                    httpClient.DefaultRequestHeaders.TryAddWithoutValidation(key, value);
             }
 
             var response = await httpClient.PostAsync(uri, content, cancellationToken);
@@ -239,21 +306,8 @@ public class WebhookNotificationEventHandlers :
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending webhook to {Url}", uri);
+            _logger.LogError(ex, "Error sending notification to {Url}", uri);
             return false;
-        }
-    }
-
-    private WebhookConfig? ParseWebhookConfig(string channelConfig)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<WebhookConfig>(channelConfig, JsonOptions);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to parse webhook config: {Config}", channelConfig);
-            return null;
         }
     }
 
@@ -268,6 +322,4 @@ public class WebhookNotificationEventHandlers :
         var status = daysUntilExpiry <= 0 ? "has expired" : $"expires in {daysUntilExpiry} day(s)";
         return $"Certificate '{certificate.Subject}' in workspace '{workspace.Name}' {status}. Please renew immediately.";
     }
-
-    private record WebhookConfig(string? Url, Dictionary<string, string>? Headers = null);
 }

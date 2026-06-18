@@ -7,6 +7,7 @@
 	import { language } from '$lib/stores/language.svelte';
 	import { CertificateService, type CertificateFilter } from '$lib/services/CertificateService';
 	import { WorkspaceService } from '$lib/services/WorkspaceService';
+	import { api } from '$lib/utils/api';
 	import { t } from '$lib/i18n';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
@@ -32,6 +33,11 @@
 
 	let activeResultTab = $state<'success' | 'skipped' | 'failure'>('success');
 	let resultSearchQuery = $state('');
+
+	let selectionMode = $state(false);
+	let selectedIds = $state<Set<string>>(new Set());
+	let bulkTag = $state('');
+	let bulkBusy = $state(false);
 
 	const filters = $derived({
 		subjectTerm: page.url.searchParams.get('search') || '',
@@ -195,6 +201,58 @@
 		const ws = workspaceList.find((w) => w.id === workspaceId);
 		return ws?.name || '';
 	}
+
+	function toggleSelectionMode() {
+		selectionMode = !selectionMode;
+		if (!selectionMode) selectedIds = new Set();
+	}
+
+	function toggleSelected(id: string) {
+		const next = new Set(selectedIds);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		selectedIds = next;
+	}
+
+	function onCardClick(certificate: Certificate) {
+		if (selectionMode) toggleSelected(certificate.id);
+		else goto(`/certificates/${certificate.id}`);
+	}
+
+	async function runBulk(operation: number, tags?: string[]) {
+		const selected = certificates.filter((c) => selectedIds.has(c.id));
+		if (selected.length === 0) return;
+
+		// The bulk endpoint is workspace-scoped, so group the selection by workspace.
+		const byWorkspace = new Map<string, string[]>();
+		for (const c of selected) {
+			const list = byWorkspace.get(c.workspaceId) ?? [];
+			list.push(c.id);
+			byWorkspace.set(c.workspaceId, list);
+		}
+
+		bulkBusy = true;
+		try {
+			for (const [workspaceId, certificateIds] of byWorkspace) {
+				await api.post('/certificates/bulk', { workspaceId, certificateIds, operation, tags });
+			}
+			selectedIds = new Set();
+			bulkTag = '';
+			await loadCertificates();
+		} finally {
+			bulkBusy = false;
+		}
+	}
+
+	function bulkAddTag() {
+		const tag = bulkTag.trim();
+		if (tag) runBulk(4, [tag]);
+	}
+
+	function bulkRemoveTag() {
+		const tag = bulkTag.trim();
+		if (tag) runBulk(5, [tag]);
+	}
 </script>
 
 <svelte:head>
@@ -226,8 +284,41 @@
 				<option value="Expiring">{t('certificates.expiring', language.current)}</option>
 				<option value="Expired">{t('certificates.expired', language.current)}</option>
 			</select>
+
+			<Button variant="secondary" onclick={toggleSelectionMode}>
+				{selectionMode ? t('certificates.bulkDone', language.current) : t('certificates.bulkSelect', language.current)}
+			</Button>
 		</div>
 	</div>
+
+	{#if selectionMode}
+		<div class="bulkbar" data-test-id="bulk-bar">
+			<span class="bulkbar__count">{selectedIds.size} {t('certificates.bulkSelected', language.current)}</span>
+			<div class="bulkbar__actions">
+				<Button variant="secondary" disabled={selectedIds.size === 0 || bulkBusy} onclick={() => runBulk(2)}>
+					{t('certificates.bulkSkip', language.current)}
+				</Button>
+				<Button variant="secondary" disabled={selectedIds.size === 0 || bulkBusy} onclick={() => runBulk(3)}>
+					{t('certificates.bulkUnskip', language.current)}
+				</Button>
+				<input
+					class="bulkbar__tag"
+					bind:value={bulkTag}
+					placeholder={t('certificates.bulkTagPlaceholder', language.current)}
+					maxlength="40"
+				/>
+				<Button variant="secondary" disabled={selectedIds.size === 0 || bulkBusy || !bulkTag.trim()} onclick={bulkAddTag}>
+					{t('certificates.bulkAddTag', language.current)}
+				</Button>
+				<Button variant="secondary" disabled={selectedIds.size === 0 || bulkBusy || !bulkTag.trim()} onclick={bulkRemoveTag}>
+					{t('certificates.bulkRemoveTag', language.current)}
+				</Button>
+				<Button variant="danger" disabled={selectedIds.size === 0 || bulkBusy} onclick={() => runBulk(1)}>
+					{t('certificates.bulkDelete', language.current)}
+				</Button>
+			</div>
+		</div>
+	{/if}
 
 	{#if isInitialLoad}
 		<div class="cert-grid">
@@ -262,8 +353,10 @@
 			{#each certificates as certificate (certificate.id)}
 				<CertificateCard
 					{certificate}
+					{selectionMode}
+					selected={selectedIds.has(certificate.id)}
 					workspaceName={getWorkspaceName(certificate.workspaceId)}
-					onclick={() => goto(`/certificates/${certificate.id}`)}
+					onclick={() => onCardClick(certificate)}
 				/>
 			{/each}
 		</div>
@@ -427,6 +520,39 @@
 	@keyframes fadeIn {
 		from { opacity: 0; }
 		to { opacity: 1; }
+	}
+
+	.bulkbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		flex-wrap: wrap;
+		padding: var(--space-3) var(--space-4);
+		margin-bottom: var(--space-4);
+		border: 1px solid var(--color-primary);
+		border-radius: var(--radius-md);
+		background: var(--color-primary-light);
+	}
+	.bulkbar__count {
+		font-weight: var(--font-semibold);
+		color: var(--color-primary);
+		white-space: nowrap;
+	}
+	.bulkbar__actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+	}
+	.bulkbar__tag {
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-surface);
+		color: var(--color-text);
+		font: inherit;
+		width: 160px;
 	}
 
 	.filters {
