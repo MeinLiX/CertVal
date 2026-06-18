@@ -103,6 +103,16 @@ export const translations = {
             documentation: 'Документація',
             utils: 'Утиліти'
         },
+        commandPalette: {
+            placeholder: 'Пошук або команда…',
+            navigation: 'Навігація',
+            certificates: 'Сертифікати',
+            tools: 'Інструменти',
+            empty: 'Нічого не знайдено',
+            searching: 'Пошук…',
+            hint: 'для навігації',
+            open: 'Швидкий пошук'
+        },
         utils: {
             eyebrow: 'Безкоштовні інструменти',
             title: 'Утиліти CertVal',
@@ -1027,6 +1037,16 @@ export const translations = {
             apiTokens: 'API Tokens',
             documentation: 'Documentation',
             utils: 'Utilities'
+        },
+        commandPalette: {
+            placeholder: 'Search or jump to…',
+            navigation: 'Navigation',
+            certificates: 'Certificates',
+            tools: 'Tools',
+            empty: 'No results',
+            searching: 'Searching…',
+            hint: 'to navigate',
+            open: 'Quick search'
         },
         utils: {
             eyebrow: 'Free tools',

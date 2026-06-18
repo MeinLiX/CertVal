@@ -4,7 +4,9 @@ import { page } from '$app/state';
 import { language } from '$lib/stores/language.svelte';
 import { theme } from '$lib/stores/theme.svelte';
 import { appState } from '$lib/stores/appState.svelte';
+import { commandPalette } from '$lib/stores/commandPalette.svelte';
 import TopBar from '$lib/components/layout/TopBar.svelte';
+import CommandPalette from '$lib/components/layout/CommandPalette.svelte';
 import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 import { onMount } from 'svelte';
 
@@ -21,7 +23,19 @@ const timer = setTimeout(() => {
 isAppLoading = false;
 appState.setLoading(false);
 }, 600);
-return () => clearTimeout(timer);
+
+function onKeydown(e: KeyboardEvent) {
+if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+e.preventDefault();
+commandPalette.toggle();
+}
+}
+window.addEventListener('keydown', onKeydown);
+
+return () => {
+clearTimeout(timer);
+window.removeEventListener('keydown', onKeydown);
+};
 });
 
 const isAuthPage = $derived(page.url.pathname.startsWith('/auth'));
@@ -38,6 +52,7 @@ const isAuthPage = $derived(page.url.pathname.startsWith('/auth'));
 </main>
 {:else}
 <TopBar />
+<CommandPalette />
 <main class="app-main app-main--content" data-test-id="app-layout-main">
 <div class="app-content animate-fadeIn">
 {@render children?.()}
