@@ -319,3 +319,12 @@ export interface SslCheckResult {
     leaf?: SslCertInfo;
     chain: SslCertInfo[];
 }
+
+export interface AuditLogEntry {
+    id: number;
+    eventType: string;
+    category: string;
+    description: string;
+    aggregateId?: string;
+    occurredAt: string;
+}

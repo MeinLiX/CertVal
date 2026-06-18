@@ -30,6 +30,8 @@ public class StoredEventConfiguration : IEntityTypeConfiguration<StoredEvent>
 
         builder.Property(se => se.AggregateId);
 
+        builder.Property(se => se.WorkspaceId);
+
         builder.Property(se => se.UserId)
             .HasMaxLength(450);
 
@@ -83,5 +85,9 @@ public class StoredEventConfiguration : IEntityTypeConfiguration<StoredEvent>
         builder.HasIndex(se => new { se.UserId, se.OccurredAt })
             .HasDatabaseName("IX_StoredEvents_User_OccurredAt")
             .HasFilter("\"UserId\" IS NOT NULL");
+
+        builder.HasIndex(se => new { se.WorkspaceId, se.OccurredAt })
+            .HasDatabaseName("IX_StoredEvents_Workspace_OccurredAt")
+            .HasFilter("\"WorkspaceId\" IS NOT NULL");
     }
 }

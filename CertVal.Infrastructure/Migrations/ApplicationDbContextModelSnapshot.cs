@@ -486,6 +486,9 @@ namespace CertVal.Infrastructure.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("character varying(450)");
 
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CorrelationId")
@@ -522,6 +525,10 @@ namespace CertVal.Infrastructure.Migrations
                     b.HasIndex("UserId", "OccurredAt")
                         .HasDatabaseName("IX_StoredEvents_User_OccurredAt")
                         .HasFilter("\"UserId\" IS NOT NULL");
+
+                    b.HasIndex("WorkspaceId", "OccurredAt")
+                        .HasDatabaseName("IX_StoredEvents_Workspace_OccurredAt")
+                        .HasFilter("\"WorkspaceId\" IS NOT NULL");
 
                     b.HasIndex("AggregateType", "AggregateId", "OccurredAt")
                         .HasDatabaseName("IX_StoredEvents_Aggregate_OccurredAt");

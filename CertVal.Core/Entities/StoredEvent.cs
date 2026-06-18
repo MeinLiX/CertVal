@@ -10,6 +10,7 @@ public class StoredEvent
     public string EventData { get; private set; } = string.Empty;
     public string AggregateType { get; private set; } = string.Empty;
     public Guid? AggregateId { get; private set; }
+    public Guid? WorkspaceId { get; private set; }
     public string? UserId { get; private set; }
     public string? CorrelationId { get; private set; }
     public DateTime OccurredAt { get; private set; }
@@ -41,6 +42,38 @@ public class StoredEvent
             CorrelationId = correlationId,
             OccurredAt = domainEvent.OccurredAt,
             Metadata = metadata != null ? JsonSerializer.Serialize(metadata) : null
+        };
+    }
+
+    /// <summary>
+    /// Builds a stored event from a runtime-typed domain event, deriving the
+    /// owning workspace and aggregate via <see cref="Events.DomainEventScope"/>.
+    /// Used by the dispatcher where the compile-time type is the base
+    /// <see cref="Events.DomainEvent"/>.
+    /// </summary>
+    public static StoredEvent FromRuntimeEvent(
+        Events.DomainEvent domainEvent,
+        string? userId = null,
+        string? correlationId = null)
+    {
+        var (workspaceId, aggregateId, aggregateType) = Events.DomainEventScope.Extract(domainEvent);
+        var runtimeType = domainEvent.GetType();
+
+        return new StoredEvent
+        {
+            EventId = domainEvent.Id,
+            EventType = runtimeType.Name,
+            EventData = JsonSerializer.Serialize(domainEvent, runtimeType, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            }),
+            AggregateType = aggregateType,
+            AggregateId = aggregateId,
+            WorkspaceId = workspaceId,
+            UserId = userId,
+            CorrelationId = correlationId,
+            OccurredAt = domainEvent.OccurredAt
         };
     }
 

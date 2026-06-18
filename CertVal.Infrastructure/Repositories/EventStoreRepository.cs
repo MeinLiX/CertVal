@@ -91,6 +91,27 @@ public class EventStoreRepository : IEventStoreRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<StoredEvent>> GetEventsByWorkspaceAsync(
+        Guid workspaceId,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.StoredEvents.Where(e => e.WorkspaceId == workspaceId);
+
+        if (fromDate.HasValue)
+            query = query.Where(e => e.OccurredAt >= fromDate.Value);
+
+        if (toDate.HasValue)
+            query = query.Where(e => e.OccurredAt <= toDate.Value);
+
+        return await query
+            .OrderByDescending(e => e.Id)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IEnumerable<StoredEvent>> GetEventsByCorrelationAsync(
         string correlationId,
         CancellationToken cancellationToken = default)
