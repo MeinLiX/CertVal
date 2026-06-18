@@ -5,7 +5,6 @@ using CertVal.Application.Features.Workspaces.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 namespace CertVal.ApiService.Controllers.V1;
 
 [ApiController]
@@ -135,5 +134,28 @@ public class WorkspacesController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/audit")]
+    [ProducesResponseType(typeof(IReadOnlyList<AuditLogEntryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<AuditLogEntryDto>>> GetAuditLog(
+        Guid id,
+        [FromQuery] int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetWorkspaceAuditLogQuery(id, take), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error.Contains("Access denied"))
+                return Forbid();
+
+            return BadRequest(new ErrorResponseDto(result.Error));
+        }
+
+        return Ok(result.Value);
     }
 }

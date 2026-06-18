@@ -1,10 +1,10 @@
 using CertVal.Application.Common.Interfaces;
 using CertVal.Core.Entities;
+using CertVal.Infrastructure.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace CertVal.Infrastructure.Services;
 
@@ -27,8 +27,7 @@ public class JwtTokenService : IJwtTokenService
     public string GenerateToken(User user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
-        var key = Encoding.ASCII.GetBytes(secretKey);
+        var securityKey = JwtSigningKey.GetSecurityKey(_configuration);
 
         var claims = new[]
         {
@@ -45,7 +44,7 @@ public class JwtTokenService : IJwtTokenService
             Expires = GetAccessTokenExpiry(),
             Issuer = jwtSettings["Issuer"],
             Audience = jwtSettings["Audience"],
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            SigningCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature)
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -58,14 +57,13 @@ public class JwtTokenService : IJwtTokenService
         try
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
-            var key = Encoding.ASCII.GetBytes(secretKey);
+            var securityKey = JwtSigningKey.GetSecurityKey(_configuration);
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var validationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
+                IssuerSigningKey = securityKey,
                 ValidateIssuer = true,
                 ValidIssuer = jwtSettings["Issuer"],
                 ValidateAudience = true,

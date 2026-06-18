@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace CertVal.Infrastructure.Authentication;
 
@@ -11,8 +10,7 @@ public static class AuthenticationExtensions
     public static IServiceCollection AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
-        var key = Encoding.ASCII.GetBytes(secretKey);
+        var securityKey = JwtSigningKey.GetSecurityKey(configuration);
 
         services.AddAuthentication(options =>
         {
@@ -41,7 +39,7 @@ public static class AuthenticationExtensions
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
+                IssuerSigningKey = securityKey,
                 ValidateIssuer = true,
                 ValidIssuer = jwtSettings["Issuer"],
                 ValidateAudience = true,

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using CertVal.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CertVal.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260618120552_AddStoredEventWorkspaceId")]
+    partial class AddStoredEventWorkspaceId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -238,85 +241,6 @@ namespace CertVal.Infrastructure.Migrations
                         .HasDatabaseName("IX_Certificates_Workspace_Expiry_Status");
 
                     b.ToTable("Certificates", (string)null);
-                });
-
-            modelBuilder.Entity("CertVal.Core.Entities.MonitoredEndpoint", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("CheckIntervalMinutes")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(360);
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Host")
-                        .IsRequired()
-                        .HasMaxLength(253)
-                        .HasColumnType("character varying(253)");
-
-                    b.Property<bool>("IsEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTime?>("LastCheckedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastError")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("LastGrade")
-                        .HasMaxLength(2)
-                        .HasColumnType("character varying(2)");
-
-                    b.Property<string>("LastProtocol")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<bool?>("LastReachable")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LeafNotAfter")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LeafSubject")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("LeafThumbprint")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<int>("Port")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(443);
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("WorkspaceId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WorkspaceId")
-                        .HasDatabaseName("IX_MonitoredEndpoints_WorkspaceId");
-
-                    b.HasIndex("IsEnabled", "LastCheckedAt")
-                        .HasDatabaseName("IX_MonitoredEndpoints_Due");
-
-                    b.HasIndex("WorkspaceId", "Host", "Port")
-                        .IsUnique()
-                        .HasDatabaseName("IX_MonitoredEndpoints_Workspace_Host_Port");
-
-                    b.ToTable("MonitoredEndpoints", (string)null);
                 });
 
             modelBuilder.Entity("CertVal.Core.Entities.NotificationHistory", b =>
@@ -866,17 +790,6 @@ namespace CertVal.Infrastructure.Migrations
                     b.Navigation("ParentCertificate");
 
                     b.Navigation("PreviousCertificate");
-
-                    b.Navigation("Workspace");
-                });
-
-            modelBuilder.Entity("CertVal.Core.Entities.MonitoredEndpoint", b =>
-                {
-                    b.HasOne("CertVal.Core.Entities.Workspace", "Workspace")
-                        .WithMany()
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Workspace");
                 });
