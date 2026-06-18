@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Core.Tests", "CertV
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Application.Tests", "CertVal.Application.Tests\CertVal.Application.Tests.csproj", "{3D032742-500B-4C77-82F0-3A0836F4381F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CertVal.Infrastructure.Tests", "CertVal.Infrastructure.Tests\CertVal.Infrastructure.Tests.csproj", "{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -154,6 +156,18 @@ Global
 		{3D032742-500B-4C77-82F0-3A0836F4381F}.Release|x64.Build.0 = Release|Any CPU
 		{3D032742-500B-4C77-82F0-3A0836F4381F}.Release|x86.ActiveCfg = Release|Any CPU
 		{3D032742-500B-4C77-82F0-3A0836F4381F}.Release|x86.Build.0 = Release|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Debug|x64.Build.0 = Debug|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Debug|x86.Build.0 = Debug|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Release|x64.ActiveCfg = Release|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Release|x64.Build.0 = Release|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Release|x86.ActiveCfg = Release|Any CPU
+		{B7044D58-B7EE-476C-B2F4-DC03A14FC94B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
