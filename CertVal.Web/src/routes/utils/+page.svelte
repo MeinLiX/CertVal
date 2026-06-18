@@ -82,6 +82,13 @@
 					descKey: 'utils.x509.match.cardDescription',
 					href: '/utils/match',
 					icon: 'checkCircle'
+				},
+				{
+					key: 'hash',
+					titleKey: 'utils.hash.cardTitle',
+					descKey: 'utils.hash.cardDescription',
+					href: '/utils/hash',
+					icon: 'hash'
 				}
 			]
 		},

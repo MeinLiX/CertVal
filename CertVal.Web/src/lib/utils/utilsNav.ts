@@ -75,6 +75,13 @@ export const utilsBlocks: UtilsNavBlock[] = [
 				descKey: 'utils.x509.match.description',
 				href: '/utils/match',
 				icon: 'checkCircle'
+			},
+			{
+				key: 'hash',
+				labelKey: 'utils.hash.cardTitle',
+				descKey: 'utils.hash.description',
+				href: '/utils/hash',
+				icon: 'hash'
 			}
 		]
 	},

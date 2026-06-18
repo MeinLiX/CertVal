@@ -174,6 +174,22 @@ export const translations = {
                     description: 'Порівняння публічних ключів локально у вашому браузері.'
                 }
             },
+            hash: {
+                cardTitle: 'Калькулятор хешів',
+                cardDescription: 'Обчисліть SHA-1/256/384/512 для тексту або файлу — локально у вашому браузері.',
+                title: 'Калькулятор хешів та контрольних сум',
+                description: 'SHA-1, SHA-256, SHA-384 та SHA-512 обчислюються локально.',
+                privacy: 'Усі обчислення виконуються локально у вашому браузері — нічого не завантажується на сервер.',
+                textLabel: 'Текст',
+                fileLabel: 'Або перетягніть файл',
+                fileHint: 'Файл не залишає ваш браузер',
+                compute: 'Обчислити',
+                clear: 'Очистити',
+                copy: 'Копіювати',
+                copied: 'Скопійовано',
+                noInput: 'Спочатку надайте дані.',
+                error: 'Не вдалося обчислити хеш.'
+            },
             sslCheck: {
                 cardTitle: 'Перевірка SSL за хостом',
                 cardDescription: 'Введіть домен — сервер під’єднається та покаже сертифікат, термін дії, ланцюжок, версію TLS та оцінку безпеки.',
@@ -1104,6 +1120,22 @@ export const translations = {
                     title: 'Key / certificate / CSR match checker',
                     description: 'Public keys are compared locally in your browser.'
                 }
+            },
+            hash: {
+                cardTitle: 'Hash calculator',
+                cardDescription: 'Compute SHA-1/256/384/512 of text or a file — locally in your browser.',
+                title: 'Hash & checksum calculator',
+                description: 'SHA-1, SHA-256, SHA-384 and SHA-512 are computed locally.',
+                privacy: 'Everything runs locally in your browser — nothing is uploaded.',
+                textLabel: 'Text',
+                fileLabel: 'Or drop a file',
+                fileHint: 'The file never leaves your browser',
+                compute: 'Compute',
+                clear: 'Clear',
+                copy: 'Copy',
+                copied: 'Copied',
+                noInput: 'Provide input first.',
+                error: 'Could not compute hash.'
             },
             sslCheck: {
                 cardTitle: 'SSL checker by hostname',
