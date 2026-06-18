@@ -40,6 +40,8 @@ public static class ServiceRegistration
         services.AddScoped<ISslInspectionService, SslInspectionService>();
         services.AddScoped<ICertificateExpiryProcessor, CertificateExpiryProcessor>();
 
+        services.AddHostedService<EndpointMonitoringService>();
+
         AddRevocationChecking(services);
 
         return services;
@@ -125,6 +127,7 @@ public static class ServiceRegistration
         services.AddScoped<IWorkspaceMemberRepository, WorkspaceMemberRepository>();
         services.AddScoped<IApiTokenRepository, ApiTokenRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IMonitoredEndpointRepository, MonitoredEndpointRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 

@@ -34,3 +34,6 @@ public record NotificationFailedEvent(Guid NotificationId, Guid CertificateId, s
 public record ApiTokenCreatedEvent(Guid TokenId, Guid UserId, string Name, string Scope) : DomainEvent;
 public record ApiTokenUsedEvent(Guid TokenId, Guid UserId, string? IpAddress) : DomainEvent;
 public record ApiTokenRevokedEvent(Guid TokenId, Guid UserId) : DomainEvent;
+
+// Monitored endpoint events
+public record EndpointCertificateChangedEvent(Guid EndpointId, Guid WorkspaceId, string Target, string OldThumbprint, string NewThumbprint) : DomainEvent;

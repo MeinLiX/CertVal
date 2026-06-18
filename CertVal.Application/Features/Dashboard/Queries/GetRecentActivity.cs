@@ -1,4 +1,5 @@
-﻿using CertVal.Application.Common.Interfaces;
+using CertVal.Application.Common.Audit;
+using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
 using CertVal.Application.DTOs;
 using CertVal.Core.Repositories;
@@ -45,32 +46,11 @@ public class GetRecentActivityQueryHandler : IRequestHandler<GetRecentActivityQu
             {
                 Id = e.Id,
                 EventType = e.EventType,
-                Description = GetEventDescription(e.EventType, e.EventData),
+                Description = AuditEventDescriptions.Describe(e.EventType),
                 OccurredAt = e.OccurredAt,
                 AggregateId = e.AggregateId
             }).ToList();
 
         return Result.Success<IEnumerable<RecentActivityDto>>(activities);
-    }
-
-    private static string GetEventDescription(string eventType, string eventData)
-    {
-        return eventType switch
-        {
-            "CertificateUploadedEvent" => "Certificate uploaded",
-            "CertificateExpiringEvent" => "Certificate expiring soon",
-            "CertificateExpiredEvent" => "Certificate expired",
-            "WorkspaceCreatedEvent" => "Workspace created",
-            "WorkspaceUpdatedEvent" => "Workspace updated",
-            "NotificationSentEvent" => "Notification sent",
-            "NotificationFailedEvent" => "Notification failed",
-            "ApiTokenCreatedEvent" => "API token created",
-            "ApiTokenUsedEvent" => "API token used",
-            "UserRegisteredEvent" => "User registered",
-            "UserEmailConfirmedEvent" => "Email confirmed",
-            "WorkspaceMemberInvitedEvent" => "Member invited",
-            "WorkspaceMemberJoinedEvent" => "Member joined",
-            _ => eventType.Replace("Event", "")
-        };
     }
 }

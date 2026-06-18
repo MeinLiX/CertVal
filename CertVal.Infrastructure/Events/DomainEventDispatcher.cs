@@ -1,4 +1,6 @@
-﻿using CertVal.Core.Events;
+using CertVal.Core.Entities;
+using CertVal.Core.Events;
+using CertVal.Core.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -50,6 +52,9 @@ public class BackgroundDomainEventDispatcher : BackgroundService, IBackgroundDom
             var handlerType = typeof(IDomainEventHandler<>).MakeGenericType(domainEvent.GetType());
 
             using var scope = _serviceProvider.CreateScope();
+
+            await PersistEventAsync(scope.ServiceProvider, domainEvent, cancellationToken);
+
             var handlers = scope.ServiceProvider.GetServices(handlerType);
 
             foreach (var handler in handlers)
@@ -79,6 +84,22 @@ public class BackgroundDomainEventDispatcher : BackgroundService, IBackgroundDom
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error publishing domain event: {EventType} with ID {EventId}",
+                domainEvent.GetType().Name, domainEvent.Id);
+        }
+    }
+
+    private async Task PersistEventAsync(IServiceProvider scopedProvider, DomainEvent domainEvent, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var eventStore = scopedProvider.GetRequiredService<IEventStoreRepository>();
+            var storedEvent = StoredEvent.FromRuntimeEvent(domainEvent);
+            await eventStore.SaveEventAsync(storedEvent, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // Persisting the audit record must never break event handling.
+            _logger.LogError(ex, "Failed to persist domain event {EventType} with ID {EventId} to the event store",
                 domainEvent.GetType().Name, domainEvent.Id);
         }
     }
