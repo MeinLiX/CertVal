@@ -47,6 +47,9 @@
 		recipientAggregationMode: 'SingleEmailToAll'
 	});
 	let webhookUrl = $state('');
+	let slackWebhookUrl = $state('');
+	let telegramBotToken = $state('');
+	let telegramChatId = $state('');
 	let errors = $state<Record<string, string>>({});
 
 	onMount(async () => {
@@ -133,6 +136,10 @@
 
 		if (createForm.channelType === 'Webhook') {
 			createForm.channelConfig = JSON.stringify({ url: webhookUrl });
+		} else if (createForm.channelType === 'Slack') {
+			createForm.channelConfig = JSON.stringify({ webhookUrl: slackWebhookUrl });
+		} else if (createForm.channelType === 'Telegram') {
+			createForm.channelConfig = JSON.stringify({ botToken: telegramBotToken, chatId: telegramChatId });
 		}
 
 		try {
@@ -312,6 +319,8 @@
 			<select id="channel" class="select" bind:value={createForm.channelType}>
 				<option value="Email">Email</option>
 				<option value="Webhook">Webhook</option>
+				<option value="Slack">Slack</option>
+				<option value="Telegram">Telegram</option>
 			</select>
 		</div>
 
@@ -322,6 +331,20 @@
 				required
 				placeholder="https://api.example.com/webhook"
 			/>
+		{/if}
+
+		{#if createForm.channelType === 'Slack'}
+			<Input
+				label="Slack Incoming Webhook URL"
+				bind:value={slackWebhookUrl}
+				required
+				placeholder="https://hooks.slack.com/services/T.../B.../..."
+			/>
+		{/if}
+
+		{#if createForm.channelType === 'Telegram'}
+			<Input label="Telegram Bot Token" bind:value={telegramBotToken} required placeholder="123456:ABC-DEF..." />
+			<Input label="Telegram Chat ID" bind:value={telegramChatId} required placeholder="-1001234567890" />
 		{/if}
 
 		{#if createForm.channelType === 'Email'}
