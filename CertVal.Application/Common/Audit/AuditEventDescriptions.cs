@@ -26,6 +26,7 @@ public static class AuditEventDescriptions
         "ApiTokenCreatedEvent" => "API token created",
         "ApiTokenUsedEvent" => "API token used",
         "ApiTokenRevokedEvent" => "API token revoked",
+        "EndpointCertificateChangedEvent" => "Monitored endpoint certificate changed",
         "UserRegisteredEvent" => "User registered",
         "UserEmailConfirmedEvent" => "Email confirmed",
         "UserPasswordChangedEvent" => "Password changed",
@@ -35,6 +36,7 @@ public static class AuditEventDescriptions
     public static string Category(string eventType)
     {
         if (eventType.StartsWith("Certificate", StringComparison.Ordinal)) return "Certificate";
+        if (eventType.StartsWith("Endpoint", StringComparison.Ordinal)) return "Endpoint";
         if (eventType.StartsWith("Workspace", StringComparison.Ordinal)) return "Workspace";
         if (eventType.StartsWith("Notification", StringComparison.Ordinal)) return "Notification";
         if (eventType.StartsWith("ApiToken", StringComparison.Ordinal)) return "ApiToken";

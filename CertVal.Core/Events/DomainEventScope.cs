@@ -20,6 +20,9 @@ public static class DomainEventScope
         if (name.StartsWith("Certificate", StringComparison.Ordinal))
             return (workspaceId, GetGuid(domainEvent, type, "CertificateId") ?? GetGuid(domainEvent, type, "ParentCertificateId"), "Certificate");
 
+        if (name.StartsWith("Endpoint", StringComparison.Ordinal))
+            return (workspaceId, GetGuid(domainEvent, type, "EndpointId"), "Endpoint");
+
         if (name.StartsWith("Workspace", StringComparison.Ordinal))
             return (workspaceId, workspaceId, "Workspace");
 

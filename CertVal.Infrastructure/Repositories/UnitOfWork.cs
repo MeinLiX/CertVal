@@ -24,6 +24,7 @@ public class UnitOfWork : IUnitOfWork
     private readonly Lazy<IApiTokenRepository> _apiTokens;
     private readonly Lazy<IRefreshTokenRepository> _refreshTokens;
     private readonly Lazy<IEventStoreRepository> _eventStore;
+    private readonly Lazy<IMonitoredEndpointRepository> _monitoredEndpoints;
 
     public UnitOfWork(ApplicationDbContext context, IDomainEventDispatcher? domainEventDispatcher = null)
     {
@@ -39,6 +40,7 @@ public class UnitOfWork : IUnitOfWork
         _apiTokens = new Lazy<IApiTokenRepository>(() => new ApiTokenRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
         _refreshTokens = new Lazy<IRefreshTokenRepository>(() => new RefreshTokenRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
         _eventStore = new Lazy<IEventStoreRepository>(() => new EventStoreRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
+        _monitoredEndpoints = new Lazy<IMonitoredEndpointRepository>(() => new MonitoredEndpointRepository(_context), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     public IUserRepository Users => _users.Value;
@@ -50,6 +52,7 @@ public class UnitOfWork : IUnitOfWork
     public IApiTokenRepository ApiTokens => _apiTokens.Value;
     public IRefreshTokenRepository RefreshTokens => _refreshTokens.Value;
     public IEventStoreRepository EventStore => _eventStore.Value;
+    public IMonitoredEndpointRepository MonitoredEndpoints => _monitoredEndpoints.Value;
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
