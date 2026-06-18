@@ -104,6 +104,8 @@ public sealed class SslInspectionService : ISslInspectionService
             .Distinct()
             .ToList();
 
+        var (keyAlg, keyBits) = DescribePublicKeyParts(cert);
+
         return new SslCertInfoDto
         {
             Subject = cert.Subject,
@@ -116,7 +118,9 @@ public sealed class SslInspectionService : ISslInspectionService
             SubjectAltNames = sans,
             Sha256Thumbprint = Convert.ToHexString(cert.GetCertHash(HashAlgorithmName.SHA256)),
             SignatureAlgorithm = cert.SignatureAlgorithm.FriendlyName ?? cert.SignatureAlgorithm.Value ?? string.Empty,
-            PublicKey = DescribePublicKey(cert)
+            PublicKey = keyBits > 0 ? $"{keyAlg} {keyBits} bits" : keyAlg,
+            PublicKeyAlgorithm = keyAlg,
+            PublicKeyBits = keyBits
         };
     }
 
@@ -132,14 +136,14 @@ public sealed class SslInspectionService : ISslInspectionService
         }
     }
 
-    private static string DescribePublicKey(X509Certificate2 cert)
+    private static (string Algorithm, int Bits) DescribePublicKeyParts(X509Certificate2 cert)
     {
         using var rsa = cert.GetRSAPublicKey();
-        if (rsa is not null) return $"RSA {rsa.KeySize} bits";
+        if (rsa is not null) return ("RSA", rsa.KeySize);
 
         using var ecdsa = cert.GetECDsaPublicKey();
-        if (ecdsa is not null) return $"EC {ecdsa.KeySize} bits";
+        if (ecdsa is not null) return ("EC", ecdsa.KeySize);
 
-        return cert.PublicKey.Oid.FriendlyName ?? "unknown";
+        return (cert.PublicKey.Oid.FriendlyName ?? "unknown", 0);
     }
 }

@@ -297,6 +297,13 @@ export interface SslCertInfo {
     sha256Thumbprint: string;
     signatureAlgorithm: string;
     publicKey: string;
+    publicKeyAlgorithm: string;
+    publicKeyBits: number;
+}
+
+export interface TlsFinding {
+    severity: 'info' | 'warning' | 'blocking';
+    message: string;
 }
 
 export interface SslCheckResult {
@@ -307,6 +314,8 @@ export interface SslCheckResult {
     negotiatedProtocol?: string;
     hostnameMatches?: boolean;
     chainTrusted?: boolean;
+    grade?: string;
+    findings: TlsFinding[];
     leaf?: SslCertInfo;
     chain: SslCertInfo[];
 }
