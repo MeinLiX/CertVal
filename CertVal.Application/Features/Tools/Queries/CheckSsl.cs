@@ -1,5 +1,6 @@
 using CertVal.Application.Common.Interfaces;
 using CertVal.Application.Common.Models;
+using CertVal.Application.Common.Tools;
 using CertVal.Application.DTOs;
 using FluentValidation;
 using MediatR;
@@ -55,6 +56,10 @@ public class CheckSslQueryHandler : IRequestHandler<CheckSslQuery, Result<SslChe
             return Result.Failure<SslCheckResultDto>($"Host rejected: {error}");
 
         var result = await _sslInspection.InspectAsync(host, port, cancellationToken);
+
+        var (grade, findings) = TlsGradeCalculator.Evaluate(result);
+        result = result with { Grade = grade, Findings = findings };
+
         return Result.Success(result);
     }
 }

@@ -19,7 +19,11 @@ public record SslCertInfoDto
     public string Sha256Thumbprint { get; init; } = string.Empty;
     public string SignatureAlgorithm { get; init; } = string.Empty;
     public string PublicKey { get; init; } = string.Empty;
+    public string PublicKeyAlgorithm { get; init; } = string.Empty;
+    public int PublicKeyBits { get; init; }
 }
+
+public record TlsFindingDto(string Severity, string Message);
 
 public record SslCheckResultDto
 {
@@ -30,6 +34,8 @@ public record SslCheckResultDto
     public string? NegotiatedProtocol { get; init; }
     public bool? HostnameMatches { get; init; }
     public bool? ChainTrusted { get; init; }
+    public string? Grade { get; init; }
+    public List<TlsFindingDto> Findings { get; init; } = [];
     public SslCertInfoDto? Leaf { get; init; }
     public List<SslCertInfoDto> Chain { get; init; } = [];
 }
