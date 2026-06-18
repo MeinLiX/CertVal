@@ -23,6 +23,7 @@ export interface Workspace {
     isPublic: boolean;
     allowMemberInvites: boolean;
     autoDeleteExpiredCertificates: boolean;
+    ocspMonitoringEnabled: boolean;
     certificateCount: number;
     memberCount: number;
     createdAt: string;
@@ -36,6 +37,7 @@ export interface UpdateWorkspaceRequest {
     isPublic: boolean;
     allowMemberInvites: boolean;
     autoDeleteExpiredCertificates: boolean;
+    ocspMonitoringEnabled: boolean;
 }
 
 export interface Certificate {
@@ -51,6 +53,7 @@ export interface Certificate {
     fileFormat: string;
     fileSize: number;
     isSkipped: boolean;
+    tags?: string[];
     previousCertificateId?: string;
     nextCertificateId?: string;
     isBundle: boolean;
@@ -280,4 +283,39 @@ export type Theme = 'light' | 'dark';
 export interface ThemeState {
     theme: Theme;
     resolved: 'light' | 'dark';
+}
+
+export interface SslCertInfo {
+    subject: string;
+    issuer: string;
+    serialNumber: string;
+    notBefore: string;
+    notAfter: string;
+    daysRemaining: number;
+    isExpired: boolean;
+    subjectAltNames: string[];
+    sha256Thumbprint: string;
+    signatureAlgorithm: string;
+    publicKey: string;
+    publicKeyAlgorithm: string;
+    publicKeyBits: number;
+}
+
+export interface TlsFinding {
+    severity: 'info' | 'warning' | 'blocking';
+    message: string;
+}
+
+export interface SslCheckResult {
+    host: string;
+    port: number;
+    reachable: boolean;
+    error?: string;
+    negotiatedProtocol?: string;
+    hostnameMatches?: boolean;
+    chainTrusted?: boolean;
+    grade?: string;
+    findings: TlsFinding[];
+    leaf?: SslCertInfo;
+    chain: SslCertInfo[];
 }

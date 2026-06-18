@@ -43,7 +43,8 @@
 		maxCertificates: 1000,
 		isPublic: false,
 		allowMemberInvites: true,
-		autoDeleteExpiredCertificates: false
+		autoDeleteExpiredCertificates: false,
+		ocspMonitoringEnabled: true
 	});
 	let confirmDeleteName = $state('');
 	let isProcessing = $state(false);
@@ -178,7 +179,8 @@
 			maxCertificates: workspace.maxCertificates,
 			isPublic: workspace.isPublic,
 			allowMemberInvites: workspace.allowMemberInvites,
-			autoDeleteExpiredCertificates: workspace.autoDeleteExpiredCertificates
+			autoDeleteExpiredCertificates: workspace.autoDeleteExpiredCertificates,
+			ocspMonitoringEnabled: workspace.ocspMonitoringEnabled ?? true
 		};
 		errors = {};
 		showEditModal = true;
@@ -650,6 +652,10 @@
 		<label class="checkbox-field">
 			<input type="checkbox" bind:checked={editForm.autoDeleteExpiredCertificates} />
 			<span>{t('workspaces.autoDeleteExpired', language.current)}</span>
+		</label>
+		<label class="checkbox-field">
+			<input type="checkbox" bind:checked={editForm.ocspMonitoringEnabled} />
+			<span>{t('workspaces.ocspMonitoring', language.current)}</span>
 		</label>
 		<div class="modal-form__actions">
 			<Button type="button" variant="secondary" onclick={() => { showEditModal = false; }}>

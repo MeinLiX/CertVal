@@ -20,6 +20,7 @@ public record CertificateDto
     public bool IsBundle { get; init; }
     public Guid? ParentCertificateId { get; init; }
     public bool IsSkipped { get; init; }
+    public List<string> Tags { get; init; } = [];
     public Guid? PreviousCertificateId { get; init; }
     public Guid? NextCertificateId { get; init; }
     public string Status { get; init; } = string.Empty;
@@ -87,4 +88,12 @@ public record ToggleCertificateSkipRequest
 
     [Required]
     public bool IsSkipped { get; init; }
+}
+
+public record SetCertificateTagsRequest
+{
+    [Required]
+    public Guid WorkspaceId { get; init; }
+
+    public List<string> Tags { get; init; } = [];
 }

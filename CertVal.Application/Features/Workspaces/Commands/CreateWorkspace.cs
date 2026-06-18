@@ -60,7 +60,8 @@ public class CreateWorkspaceCommandHandler : IRequestHandler<CreateWorkspaceComm
             request.Dto.MaxCertificates,
             request.Dto.IsPublic,
             request.Dto.AllowMemberInvites,
-            request.Dto.AutoDeleteExpiredCertificates);
+            request.Dto.AutoDeleteExpiredCertificates,
+            request.Dto.OcspMonitoringEnabled);
 
         await _unitOfWork.Workspaces.AddAsync(workspace, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

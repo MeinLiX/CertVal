@@ -79,7 +79,8 @@ public static class Extensions
                         "Microsoft.AspNetCore.Hosting",
                         "Microsoft.AspNetCore.Server.Kestrel",
                         "System.Net.Http",
-                        "OpenTelemetry.Instrumentation.Runtime");
+                        "OpenTelemetry.Instrumentation.Runtime",
+                        "CertVal");
                 if (useOtlp)
                 {
                     metrics.AddOtlpExporter();
@@ -88,6 +89,7 @@ public static class Extensions
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    .AddSource("CertVal")
                     .AddAspNetCoreInstrumentation()
                     .AddEntityFrameworkCoreInstrumentation()
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)

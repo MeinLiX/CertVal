@@ -103,6 +103,16 @@ export const translations = {
             documentation: 'Документація',
             utils: 'Утиліти'
         },
+        commandPalette: {
+            placeholder: 'Пошук або команда…',
+            navigation: 'Навігація',
+            certificates: 'Сертифікати',
+            tools: 'Інструменти',
+            empty: 'Нічого не знайдено',
+            searching: 'Пошук…',
+            hint: 'для навігації',
+            open: 'Швидкий пошук'
+        },
         utils: {
             eyebrow: 'Безкоштовні інструменти',
             title: 'Утиліти CertVal',
@@ -116,7 +126,87 @@ export const translations = {
                 signing: {
                     title: 'Електронний підпис',
                     subtitle: 'Підписання документів та перевірка підпису з використанням бібліотек АТ "ІІТ".'
+                },
+                x509: {
+                    title: 'Сертифікати X.509 / PKI',
+                    subtitle: 'Безкоштовні інструменти для роботи з сертифікатами — усе виконується у вашому браузері.'
+                },
+                online: {
+                    title: 'Онлайн-перевірки',
+                    subtitle: 'Перевірки, що звертаються до зовнішніх хостів через сервер CertVal.'
                 }
+            },
+            x509: {
+                common: {
+                    pasteLabel: 'Вставте PEM / base64 або перетягніть файл',
+                    pasteHint: 'Підтримуються PEM та DER. Дані не надсилаються на сервер.',
+                    parse: 'Розібрати',
+                    clear: 'Очистити',
+                    copyJson: 'Копіювати як JSON',
+                    copied: 'Скопійовано',
+                    download: 'Завантажити',
+                    privacy: 'Усі обчислення виконуються локально у вашому браузері — нічого не завантажується на сервер.',
+                    noInput: 'Спочатку надайте дані.',
+                    error: 'Не вдалося розібрати вхідні дані.'
+                },
+                decode: {
+                    cardTitle: 'Декодер сертифіката',
+                    cardDescription: 'Розшифруйте сертифікат (PEM/DER) і перегляньте всі поля: суб’єкт, видавця, термін дії, SAN, відбитки тощо.',
+                    title: 'Декодер / інспектор сертифіката',
+                    description: 'Вставте або перетягніть сертифікат — інструмент локально покаже його деталі.'
+                },
+                generate: {
+                    cardTitle: 'Генератор CSR / ключа',
+                    cardDescription: 'Згенеруйте пару ключів і CSR або самопідписаний сертифікат прямо у браузері (WebCrypto).',
+                    title: 'Генератор CSR та самопідписаного сертифіката',
+                    description: 'Ключі генеруються локально у вашому браузері й ніколи не передаються на сервер.'
+                },
+                convert: {
+                    cardTitle: 'Конвертер форматів',
+                    cardDescription: 'Перетворення між PEM та DER і розбиття ланцюжка сертифікатів — локально у браузері.',
+                    title: 'Конвертер форматів сертифікатів',
+                    description: 'PEM ↔ DER та розділення ланцюжка на окремі сертифікати.'
+                },
+                match: {
+                    cardTitle: 'Перевірка відповідності',
+                    cardDescription: 'Перевірте, чи відповідають приватний ключ, сертифікат та CSR один одному.',
+                    title: 'Перевірка відповідності ключ / сертифікат / CSR',
+                    description: 'Порівняння публічних ключів локально у вашому браузері.'
+                }
+            },
+            hash: {
+                cardTitle: 'Калькулятор хешів',
+                cardDescription: 'Обчисліть SHA-1/256/384/512 для тексту або файлу — локально у вашому браузері.',
+                title: 'Калькулятор хешів та контрольних сум',
+                description: 'SHA-1, SHA-256, SHA-384 та SHA-512 обчислюються локально.',
+                privacy: 'Усі обчислення виконуються локально у вашому браузері — нічого не завантажується на сервер.',
+                textLabel: 'Текст',
+                fileLabel: 'Або перетягніть файл',
+                fileHint: 'Файл не залишає ваш браузер',
+                compute: 'Обчислити',
+                clear: 'Очистити',
+                copy: 'Копіювати',
+                copied: 'Скопійовано',
+                noInput: 'Спочатку надайте дані.',
+                error: 'Не вдалося обчислити хеш.'
+            },
+            sslCheck: {
+                cardTitle: 'Перевірка SSL за хостом',
+                cardDescription: 'Введіть домен — сервер під’єднається та покаже сертифікат, термін дії, ланцюжок, версію TLS та оцінку безпеки.',
+                title: 'Перевірка SSL/TLS за хостом',
+                description: 'Перевірка виконується на сервері CertVal. Приватні/внутрішні адреси заблоковані.',
+                hostLabel: 'Хост (домен або host:port)',
+                hostPlaceholder: 'example.com або example.com:443',
+                check: 'Перевірити',
+                reachable: 'З’єднання встановлено',
+                unreachable: 'Не вдалося з’єднатися',
+                protocol: 'Протокол',
+                grade: 'Оцінка',
+                findings: 'Результати аналізу',
+                hostnameMatch: 'Відповідність імені хоста',
+                chainTrusted: 'Ланцюжок довірений',
+                yes: 'Так',
+                no: 'Ні'
             },
             verify: {
                 cardTitle: 'Перевірити підпис',
@@ -568,6 +658,7 @@ export const translations = {
             exportData: 'Експорт даних',
             allowMemberInvites: 'Дозволити запрошення учасників',
             autoDeleteExpired: 'Автоматично видаляти сертифікати, які прострочені більше ніж 30 днів',
+            ocspMonitoring: 'Перевіряти відкликання сертифікатів через OCSP',
             edit: 'Редагувати',
             unknownWorkspace: 'Невідомий робочий простір',
             notFound: 'Робочий простір не знайдено',
@@ -677,6 +768,9 @@ export const translations = {
             copyToClipboard: 'Копіювати в буфер обміну',
             validFrom: 'Дійсний з',
             validUntil: 'Дійсний до',
+            tags: 'Теги',
+            noTags: 'Тегів немає',
+            tagPlaceholder: 'Додати тег…',
             bundleContents: 'Вміст пакету',
             bundleContainsCount: 'Цей пакет містить {count} сертифікатів',
             baseCertificate: 'Базовий сертифікат',
@@ -960,6 +1054,16 @@ export const translations = {
             documentation: 'Documentation',
             utils: 'Utilities'
         },
+        commandPalette: {
+            placeholder: 'Search or jump to…',
+            navigation: 'Navigation',
+            certificates: 'Certificates',
+            tools: 'Tools',
+            empty: 'No results',
+            searching: 'Searching…',
+            hint: 'to navigate',
+            open: 'Quick search'
+        },
         utils: {
             eyebrow: 'Free tools',
             title: 'CertVal Utilities',
@@ -973,7 +1077,83 @@ export const translations = {
                 signing: {
                     title: 'Electronic signature',
                     subtitle: 'Sign documents and verify signatures using IIT (АТ "ІІТ") libraries.'
+                },
+                x509: {
+                    title: 'X.509 / PKI tools',
+                    subtitle: 'Free certificate tools — everything runs locally in your browser.'
                 }
+            },
+            x509: {
+                common: {
+                    pasteLabel: 'Paste PEM / base64 or drop a file',
+                    pasteHint: 'PEM and DER are supported. Nothing is sent to the server.',
+                    parse: 'Parse',
+                    clear: 'Clear',
+                    copyJson: 'Copy as JSON',
+                    copied: 'Copied',
+                    download: 'Download',
+                    privacy: 'Everything runs locally in your browser — nothing is uploaded.',
+                    noInput: 'Provide input first.',
+                    error: 'Could not parse the input.'
+                },
+                decode: {
+                    cardTitle: 'Certificate decoder',
+                    cardDescription: 'Decode a certificate (PEM/DER) and inspect every field: subject, issuer, validity, SANs, fingerprints and more.',
+                    title: 'Certificate decoder / inspector',
+                    description: 'Paste or drop a certificate — it is decoded locally and shown in full.'
+                },
+                generate: {
+                    cardTitle: 'CSR / key generator',
+                    cardDescription: 'Generate a key pair and a CSR or a self-signed certificate right in your browser (WebCrypto).',
+                    title: 'CSR & self-signed certificate generator',
+                    description: 'Keys are generated locally in your browser and never sent to the server.'
+                },
+                convert: {
+                    cardTitle: 'Format converter',
+                    cardDescription: 'Convert between PEM and DER and split a certificate chain — locally in your browser.',
+                    title: 'Certificate format converter',
+                    description: 'PEM ↔ DER and splitting a chain into individual certificates.'
+                },
+                match: {
+                    cardTitle: 'Match checker',
+                    cardDescription: 'Check whether a private key, certificate and CSR belong together.',
+                    title: 'Key / certificate / CSR match checker',
+                    description: 'Public keys are compared locally in your browser.'
+                }
+            },
+            hash: {
+                cardTitle: 'Hash calculator',
+                cardDescription: 'Compute SHA-1/256/384/512 of text or a file — locally in your browser.',
+                title: 'Hash & checksum calculator',
+                description: 'SHA-1, SHA-256, SHA-384 and SHA-512 are computed locally.',
+                privacy: 'Everything runs locally in your browser — nothing is uploaded.',
+                textLabel: 'Text',
+                fileLabel: 'Or drop a file',
+                fileHint: 'The file never leaves your browser',
+                compute: 'Compute',
+                clear: 'Clear',
+                copy: 'Copy',
+                copied: 'Copied',
+                noInput: 'Provide input first.',
+                error: 'Could not compute hash.'
+            },
+            sslCheck: {
+                cardTitle: 'SSL checker by hostname',
+                cardDescription: 'Enter a domain — the server connects and shows the certificate, expiry, chain, TLS version and a security grade.',
+                title: 'SSL/TLS checker by hostname',
+                description: 'The check runs on the CertVal server. Private/internal addresses are blocked.',
+                hostLabel: 'Host (domain or host:port)',
+                hostPlaceholder: 'example.com or example.com:443',
+                check: 'Check',
+                reachable: 'Connection established',
+                unreachable: 'Could not connect',
+                protocol: 'Protocol',
+                grade: 'Grade',
+                findings: 'Findings',
+                hostnameMatch: 'Hostname matches',
+                chainTrusted: 'Chain trusted',
+                yes: 'Yes',
+                no: 'No'
             },
             verify: {
                 cardTitle: 'Verify a signature',
@@ -1425,6 +1605,7 @@ export const translations = {
             exportData: 'Export Data',
             allowMemberInvites: 'Allow member invites',
             autoDeleteExpired: 'Automatically delete certificates expired for more than 30 days',
+            ocspMonitoring: 'Check certificate revocation via OCSP',
             edit: 'Edit',
             unknownWorkspace: 'Unknown Workspace',
             notFound: 'Workspace not found',
@@ -1541,6 +1722,9 @@ export const translations = {
             copyToClipboard: 'Copy to clipboard',
             validFrom: 'Valid From',
             validUntil: 'Valid Until',
+            tags: 'Tags',
+            noTags: 'No tags yet',
+            tagPlaceholder: 'Add a tag…',
             bundleContents: 'Bundle Contents',
             bundleContainsCount: 'This bundle contains {count} certificates',
             baseCertificate: 'Base certificate',

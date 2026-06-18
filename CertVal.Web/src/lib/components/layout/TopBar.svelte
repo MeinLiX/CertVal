@@ -4,6 +4,7 @@
 	import { language } from '$lib/stores/language.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { userSession } from '$lib/stores/userSession.svelte';
+	import { commandPalette } from '$lib/stores/commandPalette.svelte';
 	import { AuthService } from '$lib/services/AuthService';
 	import { t } from '$lib/i18n';
 	import logoUrl from '$lib/assets/favicon.svg?url';
@@ -153,6 +154,17 @@
 
 		<!-- Right cluster -->
 		<div class="topbar__actions">
+			<button
+				type="button"
+				class="topbar__icon-btn"
+				onclick={() => commandPalette.show()}
+				aria-label={t('commandPalette.open', language.current)}
+				title={t('commandPalette.open', language.current)}
+				data-test-id="command-palette-trigger"
+			>
+				<Icon name="search" size="md" />
+			</button>
+
 			<button
 				type="button"
 				class="topbar__icon-btn"
