@@ -109,6 +109,8 @@ public class CreateNotificationRuleCommandHandler : IRequestHandler<CreateNotifi
         {
             NotificationChannelType.Email => await BuildEmailChannelConfigAsync(request, existingRules, cancellationToken),
             NotificationChannelType.Webhook => await BuildWebhookChannelConfigAsync(request, existingRules, cancellationToken),
+            NotificationChannelType.Slack => Common.Notifications.NotificationChannelConfigValidator.Validate(NotificationChannelType.Slack, request.ChannelConfig),
+            NotificationChannelType.Telegram => Common.Notifications.NotificationChannelConfigValidator.Validate(NotificationChannelType.Telegram, request.ChannelConfig),
             _ => Result.Failure<string>($"Channel type '{request.ChannelType}' is not implemented.")
         };
 
