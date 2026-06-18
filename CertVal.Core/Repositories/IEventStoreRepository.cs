@@ -27,6 +27,13 @@ public interface IEventStoreRepository
         DateTime? toDate = null,
         CancellationToken cancellationToken = default);
 
+    Task<IEnumerable<StoredEvent>> GetEventsByWorkspaceAsync(
+        Guid workspaceId,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int take = 100,
+        CancellationToken cancellationToken = default);
+
     Task<IEnumerable<StoredEvent>> GetEventsByCorrelationAsync(
         string correlationId,
         CancellationToken cancellationToken = default);

@@ -268,6 +268,9 @@
 					<Button variant="secondary" onclick={() => goto(`/notifications?workspace=${workspaceId}`)}>
 						{t('workspaces.manageNotifications', language.current)}
 					</Button>
+					<Button variant="secondary" onclick={() => goto(`/workspaces/${workspaceId}/audit`)}>
+						{t('workspaces.auditLog', language.current)}
+					</Button>
 					{#if canManage}
 						<Button variant="primary" onclick={openEditModal}>
 							{t('workspaces.edit', language.current)}
