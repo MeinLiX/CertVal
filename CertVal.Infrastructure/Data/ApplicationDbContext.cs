@@ -15,6 +15,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<StoredEvent> StoredEvents => Set<StoredEvent>();
+    public DbSet<MonitoredEndpoint> MonitoredEndpoints => Set<MonitoredEndpoint>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

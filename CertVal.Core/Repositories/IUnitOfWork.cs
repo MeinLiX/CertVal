@@ -11,6 +11,7 @@ public interface IUnitOfWork : IDisposable
     IApiTokenRepository ApiTokens { get; }
     IRefreshTokenRepository RefreshTokens { get; }
     IEventStoreRepository EventStore { get; }
+    IMonitoredEndpointRepository MonitoredEndpoints { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);

@@ -328,3 +328,35 @@ export interface AuditLogEntry {
     aggregateId?: string;
     occurredAt: string;
 }
+
+export interface MonitoredEndpoint {
+    id: string;
+    workspaceId: string;
+    host: string;
+    port: number;
+    isEnabled: boolean;
+    checkIntervalMinutes: number;
+    lastCheckedAt?: string;
+    lastReachable?: boolean;
+    lastGrade?: string;
+    lastProtocol?: string;
+    leafNotAfter?: string;
+    leafSubject?: string;
+    leafThumbprint?: string;
+    lastError?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateMonitoredEndpointRequest {
+    host: string;
+    port: number;
+    checkIntervalMinutes: number;
+}
+
+export interface UpdateMonitoredEndpointRequest {
+    host: string;
+    port: number;
+    isEnabled: boolean;
+    checkIntervalMinutes: number;
+}
