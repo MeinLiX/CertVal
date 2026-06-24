@@ -14,7 +14,7 @@ services:
       - ASPNETCORE_HTTP_PORTS=8080
       - "ConnectionStrings__CertVal-database=Host=certval.postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       - "ConnectionStrings__CertVal-rabbitmq=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@certval.rabbitmq:5672/"
-      - "ConnectionStrings__CertVal-redis=redis://:${REDIS_PASSWORD}@certval.redis:6379"
+      - "ConnectionStrings__CertVal-redis=certval.redis:6379,password=${REDIS_PASSWORD},abortConnect=false"
       - "ConnectionStrings__CertVal-minio=Endpoint=http://certval.minio:9000;AccessKey=${MINIO_ROOT_USER};SecretKey=${MINIO_ROOT_PASSWORD}"
       - JwtSettings__SecretKey=${JwtSettings__SecretKey}
       - JwtSettings__Issuer=${JwtSettings__Issuer}
