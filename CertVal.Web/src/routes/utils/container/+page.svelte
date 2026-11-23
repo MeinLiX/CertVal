@@ -329,7 +329,6 @@
 	}
 	.privacy-note p { margin: 0; }
 	.status { padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; }
-	.status.info { background: var(--color-primary-light); color: var(--color-primary); }
 	.status.error { background: var(--color-error-light); color: var(--color-error); }
 	.form { display: flex; flex-direction: column; gap: 0.75rem; }
 	.data-slot > summary {

@@ -155,17 +155,6 @@
 		flex-direction: column;
 		gap: var(--space-8);
 	}
-	.utils__notice {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--space-2);
-		padding: var(--space-2) var(--space-3);
-		background-color: var(--color-primary-light);
-		color: var(--color-primary);
-		border-radius: var(--radius-md);
-		font-size: var(--text-sm);
-		align-self: flex-start;
-	}
 	.utils__block {
 		display: flex;
 		flex-direction: column;

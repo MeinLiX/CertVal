@@ -324,7 +324,6 @@
 		border-radius: 8px;
 		font-size: 0.9rem;
 	}
-	.status.info { background: var(--color-primary-light); color: var(--color-primary); }
 	.status.error { background: var(--color-error-light); color: var(--color-error); }
 	.form { display: flex; flex-direction: column; gap: 1rem; }
 	.field { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -427,8 +426,6 @@
 	dt { color: var(--color-text-muted); white-space: nowrap; }
 	dd { margin: 0; word-break: break-word; }
 	.mono { font-family: monospace; font-size: 0.8rem; }
-	.ok-text { color: var(--color-success); font-weight: 500; }
-	.err-text { color: var(--color-error); font-weight: 500; }
 	/* Download buttons - elegantly centered */
 	.dl { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
 	.dl button {

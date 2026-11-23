@@ -3,17 +3,19 @@
 	import { t } from '$lib/i18n';
 	import GlobalLoader from '$lib/components/ui/GlobalLoader.svelte';
 
+	interface Props {
+		onSuccess: (token: string) => void;
+		onError: (error: string) => void;
+		onLoad?: () => void;
+		'data-test-id'?: string;
+	}
+
 	let {
 		onSuccess,
 		onError,
 		onLoad,
 		'data-test-id': testId = 'google-signin-button'
-	} = $props<{
-		onSuccess: (token: string) => void;
-		onError: (error: string) => void;
-		onLoad?: () => void;
-		'data-test-id'?: string;
-	}>();
+	}: Props = $props();
 
 	let container = $state<HTMLDivElement>();
 	let isLoading = $state(true);
